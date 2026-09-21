@@ -106,17 +106,22 @@ export default defineEventHandler(async (event) => {
             skipped++
             continue
           } else {
-            // Update existing candidate
+            // Update existing candidate — only overwrite non-empty fields to prevent data loss
+            const updatePayload: Record<string, any> = {
+              updatedAt: new Date(),
+            }
+            if (nd.firstName) updatePayload.firstName = nd.firstName
+            if (nd.lastName) updatePayload.lastName = nd.lastName
+            if (nd.phone) updatePayload.phone = nd.phone
+            if (nd.linkedinUrl) updatePayload.linkedinUrl = nd.linkedinUrl
+            if (nd.company) updatePayload.company = nd.company
+            if (nd.position) updatePayload.position = nd.position
+            if (nd.connectedOn) updatePayload.connectedOn = nd.connectedOn
+            // Only set source if not already set
+            updatePayload.source = 'linkedin'
+
             await tx.update(candidate)
-              .set({
-                firstName: nd.firstName || '',
-                lastName: nd.lastName || '',
-                phone: nd.phone || null,
-                linkedinUrl: nd.linkedinUrl || null,
-                company: nd.company || null,
-                position: nd.position || null,
-                updatedAt: new Date(),
-              })
+              .set(updatePayload)
               .where(eq(candidate.id, existingId))
             candidateId = existingId
             updated++
@@ -136,7 +141,8 @@ export default defineEventHandler(async (event) => {
             linkedinUrl: nd.linkedinUrl || null,
             company: nd.company || null,
             position: nd.position || null,
-            source: 'csv_import',
+            source: 'linkedin',
+            connectedOn: nd.connectedOn || null,
           }).returning({ id: candidate.id })
 
           if (!newCandidate) {
