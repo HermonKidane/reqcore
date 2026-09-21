@@ -7,7 +7,7 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'Applications — Reqcore',
+  title: 'Applications — MyRecruiter',
   description: 'Manage applications across all jobs',
 })
 

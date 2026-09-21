@@ -7,7 +7,7 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'Candidates — Reqcore',
+  title: 'Candidates — MyRecruiter',
   description: 'Manage your candidate pool',
 })
 

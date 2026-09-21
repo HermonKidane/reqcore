@@ -3,7 +3,7 @@ import tailwindcss from '@tailwindcss/vite'
 
 const railwayEnvironmentName = process.env.RAILWAY_ENVIRONMENT_NAME?.toLowerCase() ?? ''
 const railwayPublicDomain = process.env.RAILWAY_PUBLIC_DOMAIN?.toLowerCase() ?? ''
-const siteUrl = process.env.NUXT_PUBLIC_SITE_URL || 'https://reqcore.com'
+const siteUrl = process.env.NUXT_PUBLIC_SITE_URL || 'https://ats.myrecruiter.uk'
 const i18nDefaultLocale = 'en'
 const i18nLocales = [
   { code: 'en', language: 'en-US', name: 'English', file: 'en.json' },
@@ -62,8 +62,8 @@ export default defineNuxtConfig({
   // ─────────────────────────────────────────────
   site: {
     url: siteUrl,
-    name: 'Reqcore',
-    description: 'Open-source applicant tracking system with transparent AI, no per-seat pricing, and full data ownership. Self-host on your own infrastructure.',
+    name: 'MyRecruiter',
+    description: 'Applicant tracking system with transparent AI, no per-seat pricing, and full data ownership. Self-host on your own infrastructure.',
     defaultLocale: i18nDefaultLocale,
   },
 
@@ -72,21 +72,14 @@ export default defineNuxtConfig({
   // ─────────────────────────────────────────────
   app: {
     head: {
-      titleTemplate: '%s — Reqcore',
+      titleTemplate: '%s',
       link: [
         { rel: 'icon', type: 'image/png', href: '/favicon.png' },
-        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
-        { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' },
+        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
+        { rel: 'apple-touch-icon', sizes: '180x180', href: '/favicon-256.png' },
       ],
       meta: [
         { name: 'theme-color', content: '#09090b' },
-      ],
-      script: [
-        {
-          defer: true,
-          'data-domain': 'reqcore.com',
-          src: 'https://test-plausible.kjadfu.easypanel.host/js/script.js',
-        },
       ],
     },
   },
@@ -155,9 +148,9 @@ export default defineNuxtConfig({
   schemaOrg: {
     identity: {
       type: 'Organization',
-      name: 'Reqcore',
-      url: 'https://reqcore.com',
-      logo: 'https://reqcore.com/og-image.png',
+      name: 'MyRecruiter',
+      url: 'https://ats.myrecruiter.uk',
+      logo: 'https://ats.myrecruiter.uk/myrecruiter-icon.png',
       sameAs: ['https://github.com/reqcore-inc/reqcore'],
     },
   },

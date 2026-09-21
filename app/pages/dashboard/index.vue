@@ -10,7 +10,7 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'My Jobs — Reqcore',
+  title: 'My Jobs — MyRecruiter',
   description: 'Your active job postings',
 })
 
@@ -151,7 +151,7 @@ const isEmpty = computed(() => jobs.value.length === 0)
       <div class="rounded-2xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-10 text-center max-w-md">
         <Briefcase class="size-12 text-brand-400 mx-auto mb-4" />
         <h2 class="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-2">
-          Welcome to Reqcore
+          Welcome to MyRecruiter
         </h2>
         <p class="text-sm text-surface-500 dark:text-surface-400 mb-6 leading-relaxed">
           Create your first job posting to start receiving and managing candidates.

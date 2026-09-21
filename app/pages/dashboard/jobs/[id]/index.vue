@@ -212,7 +212,7 @@ watch(currentApplicationId, async (id) => {
 
 useSeoMeta({
   title: computed(() =>
-    jobData.value ? `Pipeline — ${jobData.value.title} — Reqcore` : 'Pipeline — Reqcore',
+    jobData.value ? `Pipeline — ${jobData.value.title} — MyRecruiter` : 'Pipeline — MyRecruiter',
   ),
   robots: 'noindex, nofollow',
 })

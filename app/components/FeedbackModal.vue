@@ -250,7 +250,7 @@ function resetAndClose() {
             Feedback submitted!
           </h4>
           <p class="text-sm text-surface-500 dark:text-surface-400 mb-5">
-            Thank you for helping improve Reqcore. Your feedback has been recorded.
+            Thank you for helping improve MyRecruiter. Your feedback has been recorded.
           </p>
           <div class="flex items-center justify-center gap-3">
             <a
@@ -275,7 +275,7 @@ function resetAndClose() {
         <form v-else class="flex min-h-0 flex-col" @submit.prevent="handleSubmit">
           <div class="min-h-0 overflow-y-auto px-5 py-4 space-y-4">
             <div class="rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800/50 px-3 py-2 text-xs text-surface-600 dark:text-surface-300">
-              Submitting this form creates a GitHub issue for the Reqcore maintainers.
+              Submitting this form creates a GitHub issue for the MyRecruiter maintainers.
             </div>
 
             <!-- Type toggle -->
@@ -431,7 +431,7 @@ function resetAndClose() {
                       v-model="featureDesiredWorkflow"
                       rows="2"
                       maxlength="1000"
-                      placeholder="How should this work in Reqcore?"
+                      placeholder="How should this work in MyRecruiter?"
                       class="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors resize-y"
                     />
                   </div>

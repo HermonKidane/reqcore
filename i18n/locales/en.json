@@ -16,15 +16,15 @@
       "logIn": "Log in",
       "signUp": "Sign up"
     },
-    "badge": "Open Source and Self-Hosted",
-    "hero": {
-      "titleLine1": "The hiring system",
-      "titleHighlight": "you actually own",
-      "subtitleLine1": "Purpose-built for recruiting teams who refuse per-seat pricing.",
-      "subtitleLine2": "Designed for the self-hosted era.",
-      "ctaDemo": "Try live demo",
-      "ctaStart": "Get started free",
-      "hint": "No sign-up needed - instant access with sample data"
-    }
+  "badge": "Coming soon — the 30-step process, built in",
+  "hero": {
+   "titleLine1": "Your desk. Your candidates.",
+   "titleHighlight": "First call to fee, one platform.",
+   "subtitleLine1": "The platform you'll run your perm desk on — jobs, candidates, clients and every conversation in one place.",
+   "subtitleLine2": "Built for executive search, delivered on contingency.",
+   "ctaDemo": "See it in action",
+   "ctaStart": "Start working your desk",
+   "hint": "Explore with sample data — no setup needed"
+  }
   }
 }

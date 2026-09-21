@@ -6,8 +6,8 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'Join Organization — Reqcore',
-  description: 'Accept an invitation to join an organization on Reqcore',
+  title: 'Join Organization — MyRecruiter',
+  description: 'Accept an invitation to join an organization on MyRecruiter',
   robots: 'noindex, nofollow',
 })
 
@@ -140,7 +140,7 @@ function getRoleIcon(role: string) {
   <div v-else-if="linkInfo" class="flex flex-col gap-5">
     <div class="text-center">
       <h2 class="text-xl font-semibold text-surface-900 dark:text-surface-100 mb-1">Join organization</h2>
-      <p class="text-sm text-surface-500 dark:text-surface-400">You've been invited to join a team on Reqcore.</p>
+      <p class="text-sm text-surface-500 dark:text-surface-400">You've been invited to join a team on MyRecruiter.</p>
     </div>
 
     <!-- Org info card -->

@@ -38,7 +38,7 @@ function closeModal() {
           </p>
 
           <p class="text-sm text-surface-500 dark:text-surface-400">
-            Reqcore is 100% free and open-source. Deploy your own instance in minutes to get full read &amp; write access.
+            MyRecruiter is 100% free and open-source. Deploy your own instance in minutes to get full read &amp; write access.
           </p>
 
           <div class="flex flex-wrap items-center gap-2">

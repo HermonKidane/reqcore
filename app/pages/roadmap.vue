@@ -29,14 +29,14 @@ import {
 useSeoMeta({
   title: 'Product Roadmap — Open-Source ATS Development',
   description:
-    'See what we\'ve shipped, what we\'re building, and where we\'re headed. Follow the transparent Reqcore product roadmap.',
-  ogTitle: 'Reqcore Roadmap — Open-Source ATS Development',
+    'See what we\'ve shipped, what we\'re building, and where we\'re headed. Follow the transparent MyRecruiter product roadmap.',
+  ogTitle: 'MyRecruiter Roadmap — Open-Source ATS Development',
   ogDescription:
-    'Follow the Reqcore product roadmap — transparent progress on the open-source ATS you actually own.',
+    'Follow the MyRecruiter product roadmap — transparent progress on the open-source ATS you actually own.',
   ogType: 'website',
   ogImage: '/og-image.png',
   twitterCard: 'summary_large_image',
-  twitterTitle: 'Reqcore Product Roadmap',
+  twitterTitle: 'MyRecruiter Product Roadmap',
   twitterDescription:
     'Transparent progress updates on the open-source ATS you actually own.',
 })
@@ -263,7 +263,7 @@ const items: RoadmapItem[] = [
   },
   {
     title: 'Production Hardening',
-    description: 'Everything needed to run Reqcore in production with confidence — security, compliance, and reliability.',
+    description: 'Everything needed to run MyRecruiter in production with confidence — security, compliance, and reliability.',
     highlights: [
       'Live on Railway with auto-TLS and Cloudflare CDN',
       'Security headers, rate limiting, and server-proxied docs',
@@ -387,7 +387,7 @@ const upcomingItems = computed(() => items.filter(item => item.status !== 'shipp
       <div class="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
         <NuxtLink :to="$localePath('/')" class="flex items-center gap-2.5 text-[15px] font-semibold tracking-tight text-white">
           <span class="flex h-7 w-7 items-center justify-center rounded-md bg-brand-500 text-xs font-black text-white">A</span>
-          Reqcore
+          MyRecruiter
         </NuxtLink>
 
         <div class="flex items-center gap-2">
@@ -767,7 +767,7 @@ const upcomingItems = computed(() => items.filter(item => item.status !== 'shipp
             Shape the future
           </h2>
           <p class="mt-3 text-sm leading-relaxed text-surface-400">
-            Reqcore is open source. Suggest features, report bugs, or contribute directly.
+            MyRecruiter is open source. Suggest features, report bugs, or contribute directly.
           </p>
           <div class="mt-6 flex flex-col gap-3 sm:flex-row">
             <a

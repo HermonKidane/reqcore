@@ -19,6 +19,7 @@ import {
   Telescope,
   Quote,
   Play,
+  Phone,
   LayoutDashboard,
   Users,
   Inbox,
@@ -32,36 +33,36 @@ import {
 const { t } = useI18n()
 
 useSeoMeta({
-  title: 'Open-Source Applicant Tracking System — Self-Hosted ATS',
+  title: 'MyRecruiter — Applicant Tracking System',
   description:
-    'Reqcore is a free, open-source ATS you can self-host. No per-seat pricing, full data ownership, and a modern tech stack. The best Greenhouse & Lever alternative.',
-  ogTitle: 'Reqcore — Open-Source Applicant Tracking System',
+    'MyRecruiter is the desk platform for agency recruiters — jobs, candidates, clients and a proven perm process in one place. From first call to fee collected.',
+  ogTitle: 'MyRecruiter — Applicant Tracking System',
   ogDescription:
-    'Free, self-hosted ATS with zero per-seat fees and full data ownership. Deploy on your own infrastructure in minutes.',
+    'The desk platform for perm recruiters — jobs, candidates, clients and a proven process. From first call to fee collected.',
   ogType: 'website',
-  ogImage: '/og-image.png',
+  ogImage: 'https://ats.myrecruiter.uk/og-image.png',
   twitterCard: 'summary_large_image',
-  twitterTitle: 'Reqcore — Open-Source Applicant Tracking System',
+  twitterTitle: 'MyRecruiter — Applicant Tracking System',
   twitterDescription:
-    'Self-hosted ATS with no per-seat pricing, full data ownership, and a modern tech stack.',
+    'The desk platform for perm recruiters. Jobs, candidates, clients and process in one place.',
 })
 
 // ─── Schema.org: Organization + WebSite ──────────────
 useSchemaOrg([
   defineOrganization({
-    name: 'Reqcore',
-    url: 'https://reqcore.com',
-    logo: 'https://reqcore.com/og-image.png',
+    name: 'MyRecruiter',
+    url: 'https://ats.myrecruiter.uk',
+    logo: 'https://ats.myrecruiter.uk/myrecruiter-icon.png',
     sameAs: ['https://github.com/reqcore-inc/reqcore'],
-    description: 'Open-source applicant tracking system with full data ownership and no per-seat pricing.',
+    description: 'The desk platform for agency recruiters — jobs, candidates, clients and a proven perm process in one place.',
   }),
   defineWebSite({
-    name: 'Reqcore',
-    description: 'Open-source applicant tracking system with no per-seat pricing and full data ownership.',
+    name: 'MyRecruiter',
+    description: 'The desk platform for perm recruiters. From first call to fee collected.',
   }),
   defineWebPage({
-    name: 'Reqcore — Open-Source Applicant Tracking System',
-    description: 'Free, self-hosted ATS with zero per-seat fees and full data ownership.',
+    name: 'MyRecruiter — Applicant Tracking System',
+    description: 'The desk platform for agency recruiters. From first call to fee collected.',
   }),
 ])
 
@@ -76,7 +77,7 @@ useHead({
     {
       rel: 'preload',
       as: 'image',
-      href: '/eagle-mascot-logo-128.png',
+      href: '/myrecruiter-icon-128.png',
       fetchpriority: 'high',
     },
   ],
@@ -99,8 +100,8 @@ const ctaRef = useScrollFade()
       <div class="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
         <NuxtLink :to="$localePath('/')" class="flex items-center gap-2.5 text-[15px] font-semibold tracking-tight text-white">
           <img
-            src="/eagle-mascot-logo-128.png"
-            alt="Reqcore mascot"
+            src="/myrecruiter-icon-128.png"
+            alt="MyRecruiter logo"
             width="28"
             height="28"
             loading="eager"
@@ -108,7 +109,7 @@ const ctaRef = useScrollFade()
             fetchpriority="high"
             class="h-7 w-7 object-contain"
           />
-          Reqcore
+          MyRecruiter
         </NuxtLink>
 
         <!-- Center nav links -->
@@ -125,26 +126,11 @@ const ctaRef = useScrollFade()
           >
             {{ t('home.nav.openPositions') }}
           </NuxtLink>
-          <NuxtLink
-            :to="$localePath('/roadmap')"
-            class="rounded-md px-3 py-1.5 text-[13px] font-medium text-surface-400 transition hover:text-white"
-          >
-            {{ t('home.nav.roadmap') }}
-          </NuxtLink>
-          <NuxtLink
-            to="/blog"
-            class="rounded-md px-3 py-1.5 text-[13px] font-medium text-surface-400 transition hover:text-white"
-          >
-            {{ t('home.nav.blog') }}
-          </NuxtLink>
           <a
-            href="https://github.com/reqcore-inc/reqcore"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13px] font-medium text-surface-400 transition hover:text-white"
+            href="#coming-soon"
+            class="rounded-md px-3 py-1.5 text-[13px] font-medium text-surface-400 transition hover:text-white"
           >
-            <Github class="h-3.5 w-3.5" />
-            {{ t('home.nav.github') }}
+            The 30 Steps
           </a>
         </div>
 
@@ -186,9 +172,7 @@ const ctaRef = useScrollFade()
         <!-- Announcement badge -->
         <div class="hero-animate hero-delay-1 mb-10 flex items-center justify-center gap-4">
           <a
-            href="https://github.com/reqcore-inc/reqcore"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="#coming-soon"
             class="group inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-4 py-1.5 text-[13px] font-medium text-surface-300 transition hover:border-white/[0.15] hover:bg-white/[0.06]"
           >
             <Star class="h-3.5 w-3.5 text-brand-400" :stroke-width="2" />
@@ -243,7 +227,7 @@ const ctaRef = useScrollFade()
             <span class="h-2.5 w-2.5 rounded-full bg-[#ff5f57]/80" />
             <span class="h-2.5 w-2.5 rounded-full bg-[#febc2e]/80" />
             <span class="h-2.5 w-2.5 rounded-full bg-[#28c840]/80" />
-            <span class="ml-3 text-[11px] text-surface-500">Reqcore — Dashboard</span>
+            <span class="ml-3 text-[11px] text-surface-500">MyRecruiter — Dashboard</span>
           </div>
 
           <!-- App layout mockup -->
@@ -411,13 +395,13 @@ const ctaRef = useScrollFade()
 
       <div class="relative mx-auto max-w-6xl px-6">
         <div class="mx-auto max-w-2xl text-center">
-          <p class="text-sm font-semibold tracking-[0.2em] text-brand-400 uppercase">Why Reqcore</p>
+          <p class="text-sm font-semibold tracking-[0.2em] text-brand-400 uppercase">Why MyRecruiter</p>
           <h2 class="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
-            The Glass Box alternative
+            Everything your desk needs. Nothing it doesn't.
           </h2>
           <p class="mt-5 text-base leading-relaxed text-surface-400 sm:text-lg">
-            Stop renting access to your own talent data. Own your infrastructure,
-            control your process, and scale without penalty.
+            Run the full perm cycle from first call to fee collected — without
+            spreadsheets, scattered inboxes, or forgotten follow-ups.
           </p>
         </div>
 
@@ -435,22 +419,22 @@ const ctaRef = useScrollFade()
                 <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500/10 text-brand-400 ring-1 ring-inset ring-brand-500/20">
                   <img src="/database-icon.png" alt="Database" class="h-4 w-4 object-contain" />
                 </div>
-                <h3 class="text-[15px] font-semibold text-white">Ownership over Access</h3>
+                <h3 class="text-[15px] font-semibold text-white">Everything in one place</h3>
               </div>
               <p class="mt-3 text-sm leading-relaxed text-surface-400">
-                Your Postgres database, your MinIO storage.
-                Cancel anytime — your talent pool stays with you <span class="font-medium text-white">forever</span>.
+                Jobs, candidates, clients and pipeline share a single record.
+                Walk into every call with the <span class="font-medium text-white">full picture</span>.
               </p>
               <!-- Badges -->
               <div class="mt-4 flex flex-wrap gap-1.5">
                 <span class="inline-flex items-center gap-1 rounded-full border border-brand-500/20 bg-brand-500/[0.06] px-2.5 py-0.5 text-[10px] font-medium text-brand-300">
-                  <Check class="h-2.5 w-2.5" :stroke-width="2.5" /> 100% portable
+                  <Check class="h-2.5 w-2.5" :stroke-width="2.5" /> Jobs + candidates
                 </span>
                 <span class="inline-flex items-center gap-1 rounded-full border border-brand-500/20 bg-brand-500/[0.06] px-2.5 py-0.5 text-[10px] font-medium text-brand-300">
-                  <Check class="h-2.5 w-2.5" :stroke-width="2.5" /> pg_dump compatible
+                  <Check class="h-2.5 w-2.5" :stroke-width="2.5" /> Clients + contacts
                 </span>
                 <span class="inline-flex items-center gap-1 rounded-full border border-brand-500/20 bg-brand-500/[0.06] px-2.5 py-0.5 text-[10px] font-medium text-brand-300">
-                  <Check class="h-2.5 w-2.5" :stroke-width="2.5" /> Self-hosted storage
+                  <Check class="h-2.5 w-2.5" :stroke-width="2.5" /> Documents &amp; CVs
                 </span>
               </div>
             </div>
@@ -505,10 +489,11 @@ const ctaRef = useScrollFade()
                 <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-500/10 text-accent-400 ring-1 ring-inset ring-accent-500/20">
                   <ScanEye class="h-4 w-4" :stroke-width="1.75" />
                 </div>
-                <h3 class="text-[15px] font-semibold text-white">Full Visibility</h3>
+                <h3 class="text-[15px] font-semibold text-white">Know your next action</h3>
               </div>
               <p class="mt-3 text-sm leading-relaxed text-surface-400">
-                See every candidate's journey at a glance. Track applications through your pipeline with a <span class="font-medium text-white">visual Kanban board</span> and real-time stats.
+                Every live job shows its pipeline at a glance — who's where, what's next, and what's stuck.
+                A <span class="font-medium text-white">visual Kanban board</span> keeps your desk honest.
               </p>
             </div>
 
@@ -572,43 +557,44 @@ const ctaRef = useScrollFade()
                 <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-success-500/10 text-success-400 ring-1 ring-inset ring-success-500/20">
                   <UsersRound class="h-4 w-4" :stroke-width="1.75" />
                 </div>
-                <h3 class="text-[15px] font-semibold text-white">Anti-Growth Tax</h3>
+                <h3 class="text-[15px] font-semibold text-white">Prepped for every conversation</h3>
               </div>
               <p class="mt-3 text-sm leading-relaxed text-surface-400">
-                No per-seat pricing. Add as many recruiters and hiring managers as you need — <span class="font-medium text-white">your bill doesn't change</span>.
+                AI-assisted call scripts and structured post-call notes turn every conversation into
+                <span class="font-medium text-white">clear next steps</span>. You focus on the relationship — the platform keeps the record.
               </p>
             </div>
 
-            <!-- Visual area — pricing comparison, bottom-aligned with fade -->
+            <!-- Visual area — call prep, bottom-aligned with fade -->
             <div class="relative mt-auto px-7 pt-2 pb-0">
               <div class="space-y-2">
-                <div class="flex items-center gap-3 rounded-t-lg border border-b-0 border-danger-500/10 bg-danger-500/[0.04] px-3.5 py-2">
-                  <div class="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-danger-500/10 text-[9px] font-bold text-danger-400">&#10005;</div>
+                <div class="flex items-center gap-3 rounded-t-lg border border-b-0 border-brand-500/10 bg-brand-500/[0.04] px-3.5 py-2">
+                  <div class="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-brand-500/10 text-[9px] font-bold text-brand-400">1</div>
                   <div class="min-w-0 flex-1">
-                    <div class="text-[10px] font-medium text-surface-300">Typical SaaS ATS</div>
-                    <div class="text-[9px] text-surface-500">$6,000/yr for 10 seats</div>
+                    <div class="text-[10px] font-medium text-surface-300">Pre-call script — trial close</div>
+                    <div class="text-[9px] text-surface-500">Generated from the job order + candidate history</div>
                   </div>
-                  <span class="text-[12px] font-semibold text-danger-400 line-through">$600/seat</span>
+                  <span class="text-[12px] font-semibold text-brand-400">Ready</span>
                 </div>
                 <div class="flex items-center gap-3 rounded-lg border border-success-500/15 bg-success-500/[0.04] px-3.5 py-2">
                   <div class="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-success-500/10 text-[9px] font-bold text-success-400">&#10003;</div>
                   <div class="min-w-0 flex-1">
-                    <div class="text-[10px] font-medium text-surface-300">Reqcore</div>
-                    <div class="text-[9px] text-surface-500">Unlimited seats forever</div>
+                    <div class="text-[10px] font-medium text-surface-300">Post-call notes</div>
+                    <div class="text-[9px] text-surface-500">Structured, saved to the candidate record</div>
                   </div>
-                  <span class="text-[12px] font-semibold text-success-400">$0</span>
+                  <span class="text-[12px] font-semibold text-success-400">Saved</span>
                 </div>
               </div>
 
               <!-- Team avatars row -->
               <div class="mt-3 flex items-center gap-1">
-                <div class="flex h-6 w-6 items-center justify-center rounded-full bg-brand-500/20 text-[8px] font-bold text-brand-300 ring-1 ring-inset ring-brand-500/20">JD</div>
-                <div class="-ml-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-accent-500/20 text-[8px] font-bold text-accent-300 ring-1 ring-inset ring-accent-500/20">AK</div>
+                <div class="flex h-6 w-6 items-center justify-center rounded-full bg-brand-500/20 text-[8px] font-bold text-brand-300 ring-1 ring-inset ring-brand-500/20">HK</div>
+                <div class="-ml-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-accent-500/20 text-[8px] font-bold text-accent-300 ring-1 ring-inset ring-accent-500/20">JD</div>
                 <div class="-ml-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-success-500/20 text-[8px] font-bold text-success-300 ring-1 ring-inset ring-success-500/20">MS</div>
                 <div class="-ml-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-warning-500/20 text-[8px] font-bold text-warning-300 ring-1 ring-inset ring-warning-500/20">TC</div>
                 <div class="-ml-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-info-500/20 text-[8px] font-bold text-info-300 ring-1 ring-inset ring-info-500/20">LW</div>
-                <div class="-ml-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-white/[0.06] text-[8px] font-bold text-surface-400 ring-1 ring-inset ring-white/[0.08]">+∞</div>
-                <span class="ml-2 text-[10px] text-surface-500">No limits on your team</span>
+                <div class="-ml-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-white/[0.06] text-[8px] font-bold text-surface-400 ring-1 ring-inset ring-white/[0.08]">+</div>
+                <span class="ml-2 text-[10px] text-surface-500">Your whole desk, one system</span>
               </div>
               <div class="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[#0c0c0f] to-transparent" />
             </div>
@@ -625,33 +611,34 @@ const ctaRef = useScrollFade()
                 <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-warning-500/10 text-warning-400 ring-1 ring-inset ring-warning-500/20">
                   <ShieldCheck class="h-4 w-4" :stroke-width="1.75" />
                 </div>
-                <h3 class="text-[15px] font-semibold text-white">Privacy Sovereignty</h3>
+                <h3 class="text-[15px] font-semibold text-white">Your data, protected</h3>
               </div>
               <p class="mt-3 text-sm leading-relaxed text-surface-400">
-                Self-hosted storage with MinIO. Candidate PII <span class="font-medium text-white">never has to leave your private network</span>.
+                Candidate and client records live on our own secure infrastructure — access-controlled and GDPR-conscious.
+                <span class="font-medium text-white">Your relationships stay the agency's asset.</span>
               </p>
             </div>
 
-            <!-- Visual area — docker infra diagram, bottom-aligned with fade -->
+            <!-- Visual area — infra diagram, bottom-aligned with fade -->
             <div class="relative mt-auto px-7 pt-2 pb-0">
               <div class="overflow-hidden rounded-t-lg border border-b-0 border-white/[0.06] bg-white/[0.02]">
                 <div class="border-b border-white/[0.06] bg-white/[0.03] px-3 py-1.5">
-                  <span class="text-[10px] font-semibold text-surface-300">Your Infrastructure</span>
+                  <span class="text-[10px] font-semibold text-surface-300">ats.myrecruiter.uk — private infrastructure</span>
                 </div>
                 <div class="space-y-1.5 px-3 py-2.5">
                   <div class="flex items-center gap-2 text-[10px]">
-                    <Container class="h-3 w-3 text-warning-400" :stroke-width="2" />
-                    <span class="font-mono text-surface-300">docker compose up</span>
+                    <ShieldCheck class="h-3 w-3 text-success-400" :stroke-width="2" />
+                    <span class="font-mono text-surface-300">encrypted connection · role-based access</span>
                   </div>
                   <div class="ml-5 space-y-1 border-l border-white/[0.06] pl-3">
                     <div class="flex items-center gap-1.5 text-[9px] text-surface-500">
-                      <span class="h-1.5 w-1.5 rounded-full bg-success-400" /> reqcore-app
+                      <span class="h-1.5 w-1.5 rounded-full bg-success-400" /> candidate records
                     </div>
                     <div class="flex items-center gap-1.5 text-[9px] text-surface-500">
-                      <span class="h-1.5 w-1.5 rounded-full bg-success-400" /> postgres:16
+                      <span class="h-1.5 w-1.5 rounded-full bg-success-400" /> client records
                     </div>
                     <div class="flex items-center gap-1.5 text-[9px] text-surface-500">
-                      <span class="h-1.5 w-1.5 rounded-full bg-success-400" /> minio
+                      <span class="h-1.5 w-1.5 rounded-full bg-success-400" /> documents &amp; CVs
                     </div>
                   </div>
                 </div>
@@ -664,7 +651,7 @@ const ctaRef = useScrollFade()
 
         <!-- Tagline -->
         <p class="mt-10 text-center text-[15px] text-surface-500">
-          <span class="font-semibold text-surface-300">Use one or all.</span> Best-of-breed components. Integrated as a platform.
+          <span class="font-semibold text-surface-300">From first call to fee collected.</span> One workflow, zero gaps.
         </p>
       </div>
     </section>
@@ -681,7 +668,7 @@ const ctaRef = useScrollFade()
         <div class="mx-auto max-w-2xl text-center">
           <p class="text-sm font-semibold tracking-[0.2em] text-brand-400 uppercase">Why we exist</p>
           <h2 class="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Stop renting. Start owning.
+            Why I built this
           </h2>
         </div>
 
@@ -695,42 +682,35 @@ const ctaRef = useScrollFade()
 
           <div class="space-y-6 text-base leading-[1.8] text-surface-300 sm:text-lg sm:leading-[1.85]">
             <p>
-              I'm building this because I'm tired of seeing companies get charged
-              <span class="font-semibold text-white">huge amounts of money for simple features.</span>
+              I started this agency to do contingency perm recruitment
+              <span class="font-semibold text-white">properly</span> — proper qualification,
+              proper prep, proper follow-through. Too much of our industry runs on
+              memory, inboxes and good intentions.
             </p>
 
             <p>
-              If you use Greenhouse or Workday, you know how it works. These big SaaS
-              companies don't care about the community. They just want to extract as
-              much money as they can &mdash; and they
-              <span class="font-semibold text-white">&ldquo;tax&rdquo; you just for growing.</span>
-              You're forced to pay them because, until now, there hasn't been a great
-              open-source alternative.
+              So I built the platform I always wanted to work from: one that tells you
+              <span class="font-semibold text-white">what to do next</span>, writes the admin
+              for you, and never lets a candidate or client fall through the cracks.
             </p>
 
             <p>
-              I want to change that. I'm building a tool that is
-              <span class="font-semibold text-white">100% AGPL-3.0 open source</span>
-              &mdash; in the same transparent spirit as Grafana or PostHog, but for hiring.
-            </p>
-
-            <p>
-              This is about giving the power back to the recruiters. You should be able
-              to <span class="font-semibold text-white">own your data and your process</span>
-              without being squeezed by a corporate boardroom.
+              When you join, you don't get a login and good luck. You inherit a
+              <span class="font-semibold text-white">proven operating model</span> — the same
+              process, the same standards, from your first job order to your first fee.
             </p>
 
             <p class="text-lg font-semibold text-white sm:text-xl">
-              Let's stop renting our hiring tools and start owning them.
+              Your job is to build relationships. The platform handles everything else.
             </p>
           </div>
 
           <!-- Separator + attribution -->
           <div class="mt-8 flex items-center gap-4 border-t border-white/[0.06] pt-8">
-            <img src="/eagle-mascot-logo-128.png" alt="Reqcore mascot" class="h-10 w-10 object-contain" />
+            <img src="/myrecruiter-icon-128.png" alt="MyRecruiter logo" class="h-10 w-10 object-contain" />
             <div>
-              <div class="text-sm font-semibold text-white">The Reqcore Team</div>
-              <div class="text-[13px] text-surface-500">Building the open-source applicant tracking system</div>
+              <div class="text-sm font-semibold text-white">Hermon Kidane</div>
+              <div class="text-[13px] text-surface-500">Founder, MyRecruiter</div>
             </div>
           </div>
         </div>
@@ -741,7 +721,7 @@ const ctaRef = useScrollFade()
             :to="$localePath('/auth/sign-up')"
             class="group inline-flex items-center gap-2 rounded-lg border border-white/[0.1] bg-white/[0.04] px-6 py-3 text-sm font-semibold text-white transition hover:border-white/[0.2] hover:bg-white/[0.08]"
           >
-            Join the mission
+            Start here
             <ArrowRight class="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
           </NuxtLink>
         </div>
@@ -761,10 +741,10 @@ const ctaRef = useScrollFade()
         <div class="mx-auto max-w-2xl text-center">
           <p class="text-sm font-semibold tracking-[0.2em] text-brand-400 uppercase">How It Works</p>
           <h2 class="mt-4 text-3xl font-bold tracking-[-0.02em] text-white sm:text-4xl lg:text-[2.75rem]">
-            Up and running in minutes
+            From job order to fee collected
           </h2>
           <p class="mt-5 text-base leading-relaxed text-surface-400 sm:text-lg">
-            No vendor lock-in. No cloud dependencies. Clone, compose, hire.
+            One workflow, three movements. The platform guides you through each.
           </p>
         </div>
 
@@ -800,64 +780,65 @@ const ctaRef = useScrollFade()
                   <div class="mb-4 sm:hidden">
                     <span class="how-step-number text-xs font-bold">STEP 01</span>
                   </div>
-                  <h3 class="text-xl font-bold tracking-tight text-white sm:text-2xl">Deploy</h3>
+                  <h3 class="text-xl font-bold tracking-tight text-white sm:text-2xl">Take the order, build the search</h3>
                   <p class="mt-3 text-[15px] leading-relaxed text-surface-400">
-                    Clone the repo and run a single command. Postgres, MinIO, and the app spin up on
-                    <span class="font-medium text-surface-300">your infrastructure</span> — not ours.
+                    Capture a complete job order, plan the sourcing approach and build your longlist.
+                    The brief, the plan and every name stay in
+                    <span class="font-medium text-surface-300">one place</span>.
                   </p>
                   <div class="mt-5 flex flex-wrap gap-2">
                     <span class="inline-flex items-center gap-1.5 rounded-full border border-white/[0.06] bg-white/[0.03] px-3 py-1 text-[11px] font-medium text-surface-300">
-                      <Container class="h-3 w-3 text-[#2496ED]" :stroke-width="2" />
-                      Docker ready
+                      <Briefcase class="h-3 w-3 text-brand-400" :stroke-width="2" />
+                      Full job order
                     </span>
                     <span class="inline-flex items-center gap-1.5 rounded-full border border-white/[0.06] bg-white/[0.03] px-3 py-1 text-[11px] font-medium text-surface-300">
                       <Check class="h-3 w-3 text-success-400" :stroke-width="2.5" />
-                      One command
+                      Sourcing plan
                     </span>
                     <span class="inline-flex items-center gap-1.5 rounded-full border border-white/[0.06] bg-white/[0.03] px-3 py-1 text-[11px] font-medium text-surface-300">
-                      <ShieldCheck class="h-3 w-3 text-brand-400" :stroke-width="2" />
-                      Your servers
+                      <UsersRound class="h-3 w-3 text-accent-400" :stroke-width="2" />
+                      Longlist builder
                     </span>
                   </div>
                 </div>
 
-                <!-- Terminal mockup -->
+                <!-- Job order mockup -->
                 <div class="relative border-t border-white/[0.06] bg-[#0a0a0d] lg:border-t-0 lg:border-l">
                   <!-- Window chrome -->
                   <div class="flex items-center gap-2 border-b border-white/[0.06] px-4 py-2.5">
                     <span class="h-2 w-2 rounded-full bg-[#ff5f57]/70" />
                     <span class="h-2 w-2 rounded-full bg-[#febc2e]/70" />
                     <span class="h-2 w-2 rounded-full bg-[#28c840]/70" />
-                    <span class="ml-3 text-[11px] text-surface-600">Terminal</span>
+                    <span class="ml-3 text-[11px] text-surface-600">Job Order</span>
                   </div>
-                  <!-- Terminal content -->
+                  <!-- Job order content -->
                   <div class="p-5 font-mono text-[12px] leading-[1.8] sm:p-6 sm:text-[13px]">
-                    <div class="text-surface-500">$ git clone https://github.com/reqcore-inc/reqcore</div>
-                    <div class="text-surface-500">$ cd reqcore</div>
-                    <div class="mt-1">
-                      <span class="text-surface-500">$ </span><span class="text-brand-300">docker compose up</span>
-                    </div>
+                    <div class="text-surface-500">$ new job-order</div>
                     <div class="mt-3 space-y-0.5 text-[11px]">
                       <div class="flex items-center gap-2">
+                        <span class="text-surface-500">Role</span>
+                        <span class="text-surface-300">Head of Quality — Life Sciences</span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <span class="text-surface-500">Client</span>
+                        <span class="text-surface-300">Confidential — Series C biotech</span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <span class="text-surface-500">Package</span>
+                        <span class="text-surface-300">£75–90k + bonus</span>
+                      </div>
+                      <div class="mt-2 flex items-center gap-2">
                         <span class="text-success-400">✓</span>
-                        <span class="text-surface-500">Container</span>
-                        <span class="text-surface-300">postgres</span>
-                        <span class="ml-auto text-success-400/70">Started</span>
+                        <span class="text-surface-500">Requirements captured</span>
+                        <span class="ml-auto text-success-400/70">8/8</span>
                       </div>
                       <div class="flex items-center gap-2">
                         <span class="text-success-400">✓</span>
-                        <span class="text-surface-500">Container</span>
-                        <span class="text-surface-300">minio</span>
-                        <span class="ml-auto text-success-400/70">Started</span>
-                      </div>
-                      <div class="flex items-center gap-2">
-                        <span class="text-success-400">✓</span>
-                        <span class="text-surface-500">Container</span>
-                        <span class="text-surface-300">reqcore-app</span>
-                        <span class="ml-auto text-success-400/70">Started</span>
+                        <span class="text-surface-500">Sourcing plan drafted</span>
+                        <span class="ml-auto text-success-400/70">Ready</span>
                       </div>
                       <div class="mt-2 text-surface-400">
-                        <span class="text-brand-400">→</span> Ready on <span class="text-brand-300">http://localhost:3000</span>
+                        <span class="text-brand-400">→</span> Saved to your pipeline
                       </div>
                     </div>
                   </div>
@@ -894,10 +875,10 @@ const ctaRef = useScrollFade()
                     <!-- Org header -->
                     <div class="flex items-center justify-between rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3">
                       <div class="flex items-center gap-3">
-                        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500 text-[10px] font-bold text-white">A</div>
+                        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500 text-[10px] font-bold text-white">M</div>
                         <div>
-                          <div class="text-[13px] font-semibold text-white">Acme Corp</div>
-                          <div class="text-[10px] text-surface-500">Organization created</div>
+                          <div class="text-[13px] font-semibold text-white">MyRecruiter</div>
+                          <div class="text-[10px] text-surface-500">Your desk is ready</div>
                         </div>
                       </div>
                       <Check class="h-4 w-4 text-success-400" :stroke-width="2.5" />
@@ -920,23 +901,23 @@ const ctaRef = useScrollFade()
                     <!-- Team -->
                     <div class="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
                       <div class="mb-3 flex items-center justify-between">
-                        <span class="text-[11px] font-semibold tracking-wider text-surface-500 uppercase">Team Members</span>
-                        <span class="text-[10px] text-surface-500">No seat limits</span>
+                        <span class="text-[11px] font-semibold tracking-wider text-surface-500 uppercase">Your Desk</span>
+                        <span class="text-[10px] text-surface-500">Shared visibility</span>
                       </div>
                       <div class="space-y-2">
                         <div class="flex items-center gap-2.5">
-                          <div class="flex h-6 w-6 items-center justify-center rounded-full bg-brand-500/20 text-[9px] font-bold text-brand-300">YO</div>
-                          <span class="text-[12px] text-surface-300">you@acme.com</span>
-                          <span class="ml-auto rounded-full bg-brand-500/10 px-2 py-0.5 text-[9px] font-medium text-brand-400">Admin</span>
+                          <div class="flex h-6 w-6 items-center justify-center rounded-full bg-brand-500/20 text-[9px] font-bold text-brand-300">HK</div>
+                          <span class="text-[12px] text-surface-300">hermon@myrecruiter.uk</span>
+                          <span class="ml-auto rounded-full bg-brand-500/10 px-2 py-0.5 text-[9px] font-medium text-brand-400">Founder</span>
                         </div>
                         <div class="flex items-center gap-2.5">
-                          <div class="flex h-6 w-6 items-center justify-center rounded-full bg-accent-500/20 text-[9px] font-bold text-accent-300">JD</div>
-                          <span class="text-[12px] text-surface-300">jane@acme.com</span>
+                          <div class="flex h-6 w-6 items-center justify-center rounded-full bg-accent-500/20 text-[9px] font-bold text-accent-300">YO</div>
+                          <span class="text-[12px] text-surface-300">you@myrecruiter.uk</span>
                           <span class="ml-auto rounded-full bg-white/[0.06] px-2 py-0.5 text-[9px] font-medium text-surface-400">Recruiter</span>
                         </div>
                         <div class="flex items-center gap-2.5 text-surface-600">
                           <div class="flex h-6 w-6 items-center justify-center rounded-full border border-dashed border-white/[0.1] text-[9px]">+</div>
-                          <span class="text-[12px]">Invite more...</span>
+                          <span class="text-[12px]">The next hire...</span>
                         </div>
                       </div>
                     </div>
@@ -948,19 +929,20 @@ const ctaRef = useScrollFade()
                   <div class="mb-4 sm:hidden">
                     <span class="how-step-number-accent text-xs font-bold">STEP 02</span>
                   </div>
-                  <h3 class="text-xl font-bold tracking-tight text-white sm:text-2xl">Configure</h3>
+                  <h3 class="text-xl font-bold tracking-tight text-white sm:text-2xl">Run the pipeline</h3>
                   <p class="mt-3 text-[15px] leading-relaxed text-surface-400">
-                    Create your organization, define your pipeline stages, and invite your team.
-                    <span class="font-medium text-surface-300">No seat limits. No upsells. Ever.</span>
+                    Move candidates through first and second interviews with prepped calls,
+                    structured debriefs and reference checks.
+                    <span class="font-medium text-surface-300">Every stage shows the next action</span> — nothing relies on memory.
                   </p>
                   <div class="mt-5 flex flex-wrap gap-2">
                     <span class="inline-flex items-center gap-1.5 rounded-full border border-white/[0.06] bg-white/[0.03] px-3 py-1 text-[11px] font-medium text-surface-300">
-                      <UsersRound class="h-3 w-3 text-accent-400" :stroke-width="2" />
-                      Unlimited seats
+                      <Phone class="h-3 w-3 text-accent-400" :stroke-width="2" />
+                      Prepped calls
                     </span>
                     <span class="inline-flex items-center gap-1.5 rounded-full border border-white/[0.06] bg-white/[0.03] px-3 py-1 text-[11px] font-medium text-surface-300">
                       <Settings class="h-3 w-3 text-surface-400" :stroke-width="2" />
-                      Custom pipeline
+                      Structured debriefs
                     </span>
                   </div>
                 </div>
@@ -992,23 +974,23 @@ const ctaRef = useScrollFade()
                   <div class="mb-4 sm:hidden">
                     <span class="how-step-number-success text-xs font-bold">STEP 03</span>
                   </div>
-                  <h3 class="text-xl font-bold tracking-tight text-white sm:text-2xl">Hire</h3>
+                  <h3 class="text-xl font-bold tracking-tight text-white sm:text-2xl">Close, onboard, collect</h3>
                   <p class="mt-3 text-[15px] leading-relaxed text-surface-400">
-                    Post jobs with a public career page, receive applications, and move candidates through
-                    <span class="font-medium text-surface-300">your pipeline — from screening to hired</span>.
+                    Manage offers, resignation and counter-offer risk, pre-start follow-ups and invoicing.
+                    <span class="font-medium text-surface-300">The placement isn't finished until the fee is collected</span>.
                   </p>
                   <div class="mt-5 flex flex-wrap gap-2">
                     <span class="inline-flex items-center gap-1.5 rounded-full border border-white/[0.06] bg-white/[0.03] px-3 py-1 text-[11px] font-medium text-surface-300">
                       <Briefcase class="h-3 w-3 text-warning-400" :stroke-width="2" />
-                      Public job board
+                      Offer management
                     </span>
                     <span class="inline-flex items-center gap-1.5 rounded-full border border-white/[0.06] bg-white/[0.03] px-3 py-1 text-[11px] font-medium text-surface-300">
-                      <Eye class="h-3 w-3 text-surface-400" :stroke-width="2" />
-                      Pipeline tracking
+                      <ShieldCheck class="h-3 w-3 text-surface-400" :stroke-width="2" />
+                      Counter-offer prep
                     </span>
                     <span class="inline-flex items-center gap-1.5 rounded-full border border-white/[0.06] bg-white/[0.03] px-3 py-1 text-[11px] font-medium text-surface-300">
                       <FileText class="h-3 w-3 text-surface-400" :stroke-width="2" />
-                      Document storage
+                      Invoice to collection
                     </span>
                   </div>
                 </div>
@@ -1021,9 +1003,9 @@ const ctaRef = useScrollFade()
                       <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2.5">
                           <Briefcase class="h-3.5 w-3.5 text-brand-400" :stroke-width="1.75" />
-                          <span class="text-[13px] font-semibold text-white">Senior Frontend Engineer</span>
+                          <span class="text-[13px] font-semibold text-white">Head of Quality — Life Sciences</span>
                         </div>
-                        <span class="rounded-full bg-success-500/10 px-2 py-0.5 text-[10px] font-medium text-success-400">Live</span>
+                        <span class="rounded-full bg-success-500/10 px-2 py-0.5 text-[10px] font-medium text-success-400">Offer stage</span>
                       </div>
                       <!-- Mini pipeline -->
                       <div class="mt-3 flex h-1.5 overflow-hidden rounded-full bg-white/[0.04]">
@@ -1033,10 +1015,10 @@ const ctaRef = useScrollFade()
                         <div class="h-full bg-success-500/80" style="width: 15%" />
                       </div>
                       <div class="mt-2 flex gap-3 text-[10px] text-surface-500">
-                        <span>12 new</span>
-                        <span>5 screening</span>
-                        <span>8 interview</span>
-                        <span>3 offer</span>
+                        <span>6 longlist</span>
+                        <span>3 first interview</span>
+                        <span>2 second</span>
+                        <span>1 offer</span>
                       </div>
                     </div>
 
@@ -1048,23 +1030,23 @@ const ctaRef = useScrollFade()
                           <div class="flex h-7 w-7 items-center justify-center rounded-full bg-brand-500/20 text-[9px] font-bold text-brand-300">JD</div>
                           <div class="flex-1">
                             <div class="text-[12px] font-medium text-white">Jane Doe</div>
-                            <div class="text-[10px] text-surface-500">Senior Frontend Engineer</div>
+                            <div class="text-[10px] text-surface-500">Head of Quality — Life Sciences</div>
                           </div>
-                          <span class="rounded-full bg-brand-500/10 px-2 py-0.5 text-[10px] font-medium text-brand-400">Interview</span>
+                          <span class="rounded-full bg-brand-500/10 px-2 py-0.5 text-[10px] font-medium text-brand-400">2nd interview</span>
                         </div>
                         <div class="flex items-center gap-3 rounded-md px-3 py-2">
                           <div class="flex h-7 w-7 items-center justify-center rounded-full bg-accent-500/20 text-[9px] font-bold text-accent-300">AK</div>
                           <div class="flex-1">
                             <div class="text-[12px] font-medium text-white">Alex Kim</div>
-                            <div class="text-[10px] text-surface-500">Product Designer</div>
+                            <div class="text-[10px] text-surface-500">Regulatory Affairs Director</div>
                           </div>
-                          <span class="rounded-full bg-warning-500/10 px-2 py-0.5 text-[10px] font-medium text-warning-400">New</span>
+                          <span class="rounded-full bg-warning-500/10 px-2 py-0.5 text-[10px] font-medium text-warning-400">Longlist</span>
                         </div>
                         <div class="flex items-center gap-3 rounded-md px-3 py-2">
                           <div class="flex h-7 w-7 items-center justify-center rounded-full bg-warning-500/20 text-[9px] font-bold text-warning-300">MS</div>
                           <div class="flex-1">
                             <div class="text-[12px] font-medium text-white">Maria Silva</div>
-                            <div class="text-[10px] text-surface-500">DevOps Engineer</div>
+                            <div class="text-[10px] text-surface-500">Grid Connections Manager</div>
                           </div>
                           <span class="rounded-full bg-accent-500/10 px-2 py-0.5 text-[10px] font-medium text-accent-400">Offer</span>
                         </div>
@@ -1092,12 +1074,13 @@ const ctaRef = useScrollFade()
 
       <div class="relative mx-auto max-w-6xl px-6">
         <div class="mx-auto max-w-2xl text-center">
-          <p class="text-sm font-semibold tracking-[0.2em] text-brand-400 uppercase">Built With</p>
+          <p class="text-sm font-semibold tracking-[0.2em] text-brand-400 uppercase">The Foundations</p>
           <h2 class="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Modern, boring technology
+            Fast, secure and always on
           </h2>
           <p class="mt-4 text-base leading-relaxed text-surface-400 sm:text-lg">
-            Battle-tested tools. No exotic dependencies. Easy to understand, contribute to, and maintain.
+            The platform runs on our own secure infrastructure with encrypted connections and
+            role-based access. Candidate data is handled GDPR-consciously and never leaves our control.
           </p>
         </div>
 
@@ -1113,7 +1096,7 @@ const ctaRef = useScrollFade()
               </div>
               <div class="min-w-0">
                 <h3 class="text-[15px] font-semibold text-white">Nuxt 4</h3>
-                <p class="mt-1 text-[13px] leading-relaxed text-surface-500">Full-stack Vue framework with SSR, file-based routing, and server API.</p>
+                <p class="mt-1 text-[13px] leading-relaxed text-surface-500">A modern interface that stays fast with thousands of candidates and notes.</p>
               </div>
             </div>
           </div>
@@ -1127,7 +1110,7 @@ const ctaRef = useScrollFade()
               </div>
               <div class="min-w-0">
                 <h3 class="text-[15px] font-semibold text-white">PostgreSQL</h3>
-                <p class="mt-1 text-[13px] leading-relaxed text-surface-500">Rock-solid relational database. Full ACID compliance, your data stays yours.</p>
+                <p class="mt-1 text-[13px] leading-relaxed text-surface-500">Every candidate, client and note in one rock-solid system of record.</p>
               </div>
             </div>
           </div>
@@ -1141,7 +1124,7 @@ const ctaRef = useScrollFade()
               </div>
               <div class="min-w-0">
                 <h3 class="text-[15px] font-semibold text-white">Drizzle ORM</h3>
-                <p class="mt-1 text-[13px] leading-relaxed text-surface-500">Type-safe SQL with zero abstraction overhead. Migrations that just work.</p>
+                <p class="mt-1 text-[13px] leading-relaxed text-surface-500">Reliable data handling — no lost notes, no corrupted records.</p>
               </div>
             </div>
           </div>
@@ -1155,7 +1138,7 @@ const ctaRef = useScrollFade()
               </div>
               <div class="min-w-0">
                 <h3 class="text-[15px] font-semibold text-white">Better Auth</h3>
-                <p class="mt-1 text-[13px] leading-relaxed text-surface-500">Framework-agnostic authentication. Sessions, OAuth, and org management built in.</p>
+                <p class="mt-1 text-[13px] leading-relaxed text-surface-500">Secure sign-in with role-based access for founders, recruiters and guests.</p>
               </div>
             </div>
           </div>
@@ -1169,7 +1152,7 @@ const ctaRef = useScrollFade()
               </div>
               <div class="min-w-0">
                 <h3 class="text-[15px] font-semibold text-white">MinIO / S3</h3>
-                <p class="mt-1 text-[13px] leading-relaxed text-surface-500">S3-compatible object storage. Self-hosted or cloud — resumes stay on your infra.</p>
+                <p class="mt-1 text-[13px] leading-relaxed text-surface-500">CVs and documents stored on our own private infrastructure, not a third-party cloud.</p>
               </div>
             </div>
           </div>
@@ -1183,7 +1166,7 @@ const ctaRef = useScrollFade()
               </div>
               <div class="min-w-0">
                 <h3 class="text-[15px] font-semibold text-white">Docker</h3>
-                <p class="mt-1 text-[13px] leading-relaxed text-surface-500">One command to deploy. Compose up, port forward, done — every time.</p>
+                <p class="mt-1 text-[13px] leading-relaxed text-surface-500">Runs as a monitored, always-on service with automatic restarts.</p>
               </div>
             </div>
           </div>
@@ -1191,8 +1174,8 @@ const ctaRef = useScrollFade()
       </div>
     </section>
 
-    <!-- ─── Roadmap ─────────────────────────────────────── -->
-    <section ref="roadmapRef" class="scroll-fade relative overflow-hidden border-t border-white/[0.06] py-24 sm:py-32">
+    <!-- ─── Coming Soon: 30-Step Process ──────────────── -->
+    <section id="coming-soon" ref="roadmapRef" class="scroll-fade relative overflow-hidden border-t border-white/[0.06] py-24 sm:py-32">
       <!-- Glow -->
       <div class="pointer-events-none absolute inset-0" aria-hidden="true">
         <div class="absolute top-1/2 left-1/4 h-[500px] w-[600px] -translate-y-1/2 rounded-full bg-success-500/[0.04] blur-[150px]" />
@@ -1201,79 +1184,114 @@ const ctaRef = useScrollFade()
 
       <div class="relative mx-auto max-w-6xl px-6">
         <div class="mx-auto max-w-2xl text-center">
-          <p class="text-sm font-semibold tracking-[0.2em] text-brand-400 uppercase">Product Roadmap</p>
+          <p class="text-sm font-semibold tracking-[0.2em] text-brand-400 uppercase">Coming Soon</p>
           <h2 class="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Built in the open
+            The 30-Step Recruitment Process, built in
           </h2>
           <p class="mt-4 text-base leading-relaxed text-surface-400 sm:text-lg">
-            Every feature is planned publicly. See what we've shipped,
-            what we're building, and where the product is headed.
+            Our proprietary full-cycle methodology — thirty defined steps from first call to
+            cash collected — is being integrated directly into the platform. Every live job will
+            show exactly where it sits, what's next, and what's at risk.
+            New recruiters ramp in weeks, not quarters.
           </p>
         </div>
 
-        <!-- Mini timeline preview -->
-        <div class="mt-16 overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] p-8 sm:p-10">
-          <!-- Timeline stages -->
-          <div class="flex items-center justify-between gap-4">
-            <!-- Shipped -->
-            <div class="flex flex-1 flex-col items-center gap-3 text-center">
-              <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-success-400/10 ring-1 ring-inset ring-success-400/20">
-                <Check class="h-5 w-5 text-success-400" :stroke-width="2.5" />
-              </div>
-              <div>
-                <div class="text-2xl font-bold text-white">9</div>
-                <div class="text-[13px] font-medium text-success-400">Shipped</div>
-              </div>
-              <p class="hidden text-xs leading-relaxed text-surface-500 sm:block">
-                Foundation, Auth, Jobs, Candidates, Pipeline, Documents, Job Board, Forms, Landing
-              </p>
+        <!-- 5 phases -->
+        <div class="mt-16 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <!-- Phase 1 -->
+          <div class="stagger-child rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-bold tracking-widest text-brand-400 uppercase">Phase 1 · Steps 1–6</span>
             </div>
-
-            <!-- Connector -->
-            <div class="hidden h-px flex-1 bg-gradient-to-r from-success-400/40 to-brand-400/40 sm:block" />
-
-            <!-- Building -->
-            <div class="flex flex-1 flex-col items-center gap-3 text-center">
-              <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-400/10 ring-1 ring-inset ring-brand-400/20">
-                <Hammer class="h-5 w-5 text-brand-400" :stroke-width="2" />
-              </div>
-              <div>
-                <div class="text-2xl font-bold text-white">1</div>
-                <div class="text-[13px] font-medium text-brand-400">Building</div>
-              </div>
-              <p class="hidden text-xs leading-relaxed text-surface-500 sm:block">
-                Recruiter Dashboard with live stats
-              </p>
-            </div>
-
-            <!-- Connector -->
-            <div class="hidden h-px flex-1 bg-gradient-to-r from-brand-400/40 to-purple-400/40 sm:block" />
-
-            <!-- Vision -->
-            <div class="flex flex-1 flex-col items-center gap-3 text-center">
-              <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-400/10 ring-1 ring-inset ring-purple-400/20">
-                <Telescope class="h-5 w-5 text-purple-400" :stroke-width="2" />
-              </div>
-              <div>
-                <div class="text-2xl font-bold text-white">5</div>
-                <div class="text-[13px] font-medium text-purple-400">The Vision</div>
-              </div>
-              <p class="hidden text-xs leading-relaxed text-surface-500 sm:block">
-                AI Ranking, Resume Parsing, Collaboration, Comms, Hardening
-              </p>
-            </div>
+            <h3 class="mt-2 text-[15px] font-semibold text-white">Intake &amp; Sourcing</h3>
+            <p class="mt-1 text-[12px] leading-relaxed text-surface-500">Win the brief properly and build a search that can actually deliver.</p>
+            <ul class="mt-4 space-y-1.5 text-[11px] text-surface-400">
+              <li class="flex gap-2"><span class="text-brand-400/60">01</span> Complete job order</li>
+              <li class="flex gap-2"><span class="text-brand-400/60">02</span> Recruiting plan</li>
+              <li class="flex gap-2"><span class="text-brand-400/60">03</span> File search</li>
+              <li class="flex gap-2"><span class="text-brand-400/60">04</span> Name gathering</li>
+              <li class="flex gap-2"><span class="text-brand-400/60">05</span> Candidate contact / cold sourcing call</li>
+              <li class="flex gap-2"><span class="text-brand-400/60">06</span> Candidate profile</li>
+            </ul>
           </div>
 
-          <!-- CTA -->
-          <div class="mt-10 flex justify-center">
-            <NuxtLink
-              :to="$localePath('/roadmap')"
-              class="group inline-flex items-center gap-2.5 rounded-lg bg-white px-6 py-3 text-sm font-semibold text-[#09090b] shadow-[0_0_20px_rgba(255,255,255,0.1)] transition hover:bg-white/90 hover:shadow-[0_0_30px_rgba(255,255,255,0.15)]"
-            >
-              <Map class="h-4 w-4" />
-              Explore the Full Roadmap
-              <ArrowRight class="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
-            </NuxtLink>
+          <!-- Phase 2 -->
+          <div class="stagger-child rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-bold tracking-widest text-accent-400 uppercase">Phase 2 · Steps 7–12</span>
+            </div>
+            <h3 class="mt-2 text-[15px] font-semibold text-white">Introduction &amp; Initial Selection</h3>
+            <p class="mt-1 text-[12px] leading-relaxed text-surface-500">Present only candidates worth your client's time — both sides fully prepped.</p>
+            <ul class="mt-4 space-y-1.5 text-[11px] text-surface-400">
+              <li class="flex gap-2"><span class="text-accent-400/60">07</span> Candidate presentation to employer</li>
+              <li class="flex gap-2"><span class="text-accent-400/60">08</span> First interview setup</li>
+              <li class="flex gap-2"><span class="text-accent-400/60">09</span> First interview candidate prep</li>
+              <li class="flex gap-2"><span class="text-accent-400/60">10</span> Employer interview prep</li>
+              <li class="flex gap-2"><span class="text-accent-400/60">11</span> Candidate debrief</li>
+              <li class="flex gap-2"><span class="text-accent-400/60">12</span> Employer debrief</li>
+            </ul>
+          </div>
+
+          <!-- Phase 3 -->
+          <div class="stagger-child rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-bold tracking-widest text-warning-400 uppercase">Phase 3 · Steps 13–19</span>
+            </div>
+            <h3 class="mt-2 text-[15px] font-semibold text-white">Deep Evaluation</h3>
+            <p class="mt-1 text-[12px] leading-relaxed text-surface-500">Test intent as hard as credentials — trial closes, references and honest debriefs.</p>
+            <ul class="mt-4 space-y-1.5 text-[11px] text-surface-400">
+              <li class="flex gap-2"><span class="text-warning-400/60">13</span> Second interview setup</li>
+              <li class="flex gap-2"><span class="text-warning-400/60">14</span> Reference check</li>
+              <li class="flex gap-2"><span class="text-warning-400/60">15</span> Second interview candidate prep / trial close</li>
+              <li class="flex gap-2"><span class="text-warning-400/60">16</span> Second interview employer prep / trial close</li>
+              <li class="flex gap-2"><span class="text-warning-400/60">17</span> Confirm second interview</li>
+              <li class="flex gap-2"><span class="text-warning-400/60">18</span> Candidate debrief / closing</li>
+              <li class="flex gap-2"><span class="text-warning-400/60">19</span> Employer debrief / hiring intent</li>
+            </ul>
+          </div>
+
+          <!-- Phase 4 -->
+          <div class="stagger-child rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-bold tracking-widest text-success-400 uppercase">Phase 4 · Steps 20–26</span>
+            </div>
+            <h3 class="mt-2 text-[15px] font-semibold text-white">Offer &amp; Onboarding</h3>
+            <p class="mt-1 text-[12px] leading-relaxed text-surface-500">Control the most dangerous stage: offers, resignations and counter-offers.</p>
+            <ul class="mt-4 space-y-1.5 text-[11px] text-surface-400">
+              <li class="flex gap-2"><span class="text-success-400/60">20</span> Closing / negotiating</li>
+              <li class="flex gap-2"><span class="text-success-400/60">21</span> Offer / acceptance / start date</li>
+              <li class="flex gap-2"><span class="text-success-400/60">22</span> Resignation prep</li>
+              <li class="flex gap-2"><span class="text-success-400/60">23</span> Counter-offer prep</li>
+              <li class="flex gap-2"><span class="text-success-400/60">24</span> Relocation prep if applicable</li>
+              <li class="flex gap-2"><span class="text-success-400/60">25</span> Client pre-start follow-up</li>
+              <li class="flex gap-2"><span class="text-success-400/60">26</span> Candidate pre-start follow-up</li>
+            </ul>
+          </div>
+
+          <!-- Phase 5 -->
+          <div class="stagger-child rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-bold tracking-widest text-purple-400 uppercase">Phase 5 · Steps 27–30</span>
+            </div>
+            <h3 class="mt-2 text-[15px] font-semibold text-white">Administration &amp; Retention</h3>
+            <p class="mt-1 text-[12px] leading-relaxed text-surface-500">Protect the fee: confirmations, invoicing, day-one care, collection.</p>
+            <ul class="mt-4 space-y-1.5 text-[11px] text-surface-400">
+              <li class="flex gap-2"><span class="text-purple-400/60">27</span> Start-date confirmation</li>
+              <li class="flex gap-2"><span class="text-purple-400/60">28</span> Invoicing / billing</li>
+              <li class="flex gap-2"><span class="text-purple-400/60">29</span> Day-one post-placement follow-up</li>
+              <li class="flex gap-2"><span class="text-purple-400/60">30</span> Collection / payment secured</li>
+            </ul>
+          </div>
+
+          <!-- Closing card -->
+          <div class="stagger-child flex flex-col justify-center rounded-2xl border border-brand-500/[0.15] bg-brand-500/[0.04] p-6">
+            <p class="text-[15px] font-semibold leading-relaxed text-white">
+              Thirty steps. No gaps.
+            </p>
+            <p class="mt-2 text-[13px] leading-relaxed text-surface-400">
+              From first call to fee collected — the same process, the same standards, on every
+              single placement. You'll be the first to know when it goes live.
+            </p>
           </div>
         </div>
       </div>
@@ -1289,17 +1307,17 @@ const ctaRef = useScrollFade()
       <div class="relative mx-auto max-w-3xl px-6 text-center">
         <div class="mb-8 flex justify-center">
           <img
-            src="/eagle-mascot-logo-128.png"
-            alt="Reqcore mascot"
+            src="/myrecruiter-icon-128.png"
+            alt="MyRecruiter logo"
             class="h-20 w-20 object-contain drop-shadow-[0_0_40px_rgba(59,130,246,0.5)]"
           />
         </div>
         <h2 class="text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
-          Ready to own your hiring pipeline?
+          Ready to work your desk?
         </h2>
         <p class="mx-auto mt-5 max-w-lg text-base leading-relaxed text-surface-400 sm:text-lg">
-          Deploy in minutes. No credit card required.
-          Your data never leaves your infrastructure.
+          Join the agency and get your own pipeline, your own candidates,
+          and a process that's already proven. Log in and take your first job order.
         </p>
         <div class="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <NuxtLink
@@ -1309,15 +1327,13 @@ const ctaRef = useScrollFade()
             Get started
             <ArrowRight class="h-3.5 w-3.5" />
           </NuxtLink>
-          <a
-            href="https://github.com/reqcore-inc/reqcore"
-            target="_blank"
-            rel="noopener noreferrer"
+          <NuxtLink
+            :to="$localePath('/auth/sign-in?live=1')"
             class="inline-flex items-center gap-2 rounded-lg border border-white/[0.1] bg-white/[0.03] px-5 py-2.5 text-sm font-semibold text-surface-300 transition hover:border-white/[0.2] hover:bg-white/[0.06] hover:text-white"
           >
-            <Github class="h-4 w-4" />
-            Star on GitHub
-          </a>
+            <Play class="h-4 w-4" />
+            Try the live demo
+          </NuxtLink>
         </div>
       </div>
     </section>
@@ -1326,40 +1342,19 @@ const ctaRef = useScrollFade()
     <footer class="border-t border-white/[0.06] py-8">
       <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 sm:flex-row">
         <div class="flex items-center gap-2 text-[13px] text-surface-500">
-          <img src="/eagle-mascot-logo-128.png" alt="Reqcore mascot" class="h-5 w-5 object-contain" />
-          &copy; {{ new Date().getFullYear() }} Reqcore. Open source under AGPL-3.0.
+          <img src="/myrecruiter-icon-128.png" alt="MyRecruiter logo" class="h-5 w-5 object-contain" />
+          &copy; {{ new Date().getFullYear() }} MyRecruiter. The desk platform for perm recruiters who do it properly.
         </div>
         <div class="flex gap-6 text-[13px] text-surface-500">
-          <NuxtLink :to="$localePath('/roadmap')" class="transition hover:text-white">
-            Roadmap
+          <a href="#coming-soon" class="transition hover:text-white">
+            The 30 Steps
+          </a>
+          <NuxtLink :to="$localePath('/jobs')" class="transition hover:text-white">
+            Open Positions
           </NuxtLink>
-          <NuxtLink to="/blog" class="transition hover:text-white">
-            Blog
+          <NuxtLink :to="$localePath('/auth/sign-in')" class="transition hover:text-white">
+            Sign in
           </NuxtLink>
-          <a
-            href="https://github.com/reqcore-inc/reqcore"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="transition hover:text-white"
-          >
-            GitHub
-          </a>
-          <a
-            href="https://github.com/reqcore-inc/reqcore/blob/main/README.md"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="transition hover:text-white"
-          >
-            Docs
-          </a>
-          <a
-            href="https://github.com/reqcore-inc/reqcore/blob/main/LICENSE"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="transition hover:text-white"
-          >
-            License
-          </a>
         </div>
       </div>
     </footer>

@@ -6,8 +6,8 @@ const isBlogRoute = computed(() => /^\/blog(?:\/|$)/.test(route.path))
 
 <template>
   <div class="layout-default">
-    <div v-if="!isBlogRoute" class="fixed right-3 top-3 z-[60]">
-      <LanguageSwitcher />
+    <div v-if="!isBlogRoute" class="fixed left-3 bottom-3 z-[60]">
+      <LanguageSwitcher open-up />
     </div>
     <slot />
   </div>

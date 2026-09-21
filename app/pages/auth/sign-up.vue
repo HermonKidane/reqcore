@@ -5,8 +5,8 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'Sign Up — Reqcore',
-  description: 'Create your Reqcore account',
+  title: 'Sign Up — MyRecruiter',
+  description: 'Create your MyRecruiter account',
   robots: 'noindex, nofollow',
 })
 

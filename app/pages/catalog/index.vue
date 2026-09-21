@@ -17,14 +17,14 @@ import {
 useSeoMeta({
   title: 'Feature Catalog — Everything We\'re Building',
   description:
-    'Browse Reqcore\'s complete feature catalog. See what\'s shipped, in progress, and planned — with competitor comparisons and open discussion.',
-  ogTitle: 'Reqcore Feature Catalog',
+    'Browse MyRecruiter\'s complete feature catalog. See what\'s shipped, in progress, and planned — with competitor comparisons and open discussion.',
+  ogTitle: 'MyRecruiter Feature Catalog',
   ogDescription:
     'Transparent product roadmap with detailed feature descriptions, competitor comparisons, and community discussion.',
   ogType: 'website',
   ogImage: '/og-image.png',
   twitterCard: 'summary_large_image',
-  twitterTitle: 'Reqcore Feature Catalog',
+  twitterTitle: 'MyRecruiter Feature Catalog',
   twitterDescription:
     'Browse the complete ATS feature catalog — shipped, building, and planned.',
 })
@@ -221,7 +221,7 @@ const stats = computed(() => {
       <div class="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
         <NuxtLink :to="$localePath('/')" class="flex items-center gap-2.5 text-[15px] font-semibold tracking-tight text-white">
           <span class="flex h-7 w-7 items-center justify-center rounded-md bg-brand-500 text-xs font-black text-white">A</span>
-          Reqcore
+          MyRecruiter
         </NuxtLink>
         <div class="flex items-center gap-2">
           <NuxtLink
@@ -287,7 +287,7 @@ const stats = computed(() => {
           Everything We're Building
         </h1>
         <p class="mt-3 text-[15px] leading-relaxed text-white/50 max-w-2xl mx-auto">
-          A transparent, hierarchical view of every feature in Reqcore — shipped, in progress, and planned.
+          A transparent, hierarchical view of every feature in MyRecruiter — shipped, in progress, and planned.
           Click any feature to see its full description, competitor comparison, and join the discussion.
         </p>
 

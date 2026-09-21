@@ -17,8 +17,8 @@ const { candidate, status: fetchStatus, error, refresh, updateCandidate, deleteC
 useSeoMeta({
   title: computed(() =>
     candidate.value
-      ? `${candidate.value.firstName} ${candidate.value.lastName} — Reqcore`
-      : 'Candidate — Reqcore',
+      ? `${candidate.value.firstName} ${candidate.value.lastName} — MyRecruiter`
+      : 'Candidate — MyRecruiter',
   ),
 })
 
