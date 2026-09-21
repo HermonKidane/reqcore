@@ -70,11 +70,18 @@ export const candidate = pgTable('candidate', {
   lastName: text('last_name').notNull(),
   email: text('email').notNull(),
   phone: text('phone'),
+  // ── LinkedIn / source metadata ──
+  linkedinUrl: text('linkedin_url'),
+  company: text('company'),
+  position: text('position'),
+  source: text('source').default('manual'),
+  connectedOn: timestamp('connected_on'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (t) => ([
   index('candidate_organization_id_idx').on(t.organizationId),
   uniqueIndex('candidate_org_email_idx').on(t.organizationId, t.email),
+  index('candidate_linkedin_url_idx').on(t.linkedinUrl),
 ]))
 
 /**
@@ -422,9 +429,10 @@ export const candidateImportRow = pgTable('candidate_import_row', {
     lastName?: string
     displayName?: string
     phone?: string
-    gender?: string
-    dateOfBirth?: string
-    quickNotes?: string
+    linkedinUrl?: string
+    company?: string
+    position?: string
+    connectedOn?: string
   }>(),
 
   status: importRowStatusEnum('status').notNull().default('ready'),

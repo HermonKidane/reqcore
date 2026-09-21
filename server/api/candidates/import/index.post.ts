@@ -298,6 +298,10 @@ function extractNormalizedData(rawData: Record<string, string>) {
   const fullName = get('Full Name', 'FullName', 'full_name', 'Name')
   const displayName = get('Display Name', 'DisplayName', 'display_name')
   const phone = get('Phone', 'phone', 'Phone Number', 'Mobile', 'Telephone')
+  const linkedinUrl = get('URL', 'url', 'LinkedIn', 'LinkedIn URL', 'Profile URL', 'linkedin_url')
+  const company = get('Company', 'company', 'Current Company', 'Organization', 'Employer')
+  const position = get('Position', 'position', 'Title', 'Job Title', 'Headline', 'Role')
+  const connectedOn = get('Connected On', 'connected_on', 'Connected', 'Date Connected')
 
   return {
     email,
@@ -305,6 +309,10 @@ function extractNormalizedData(rawData: Record<string, string>) {
     lastName,
     displayName: displayName || fullName,
     phone,
+    linkedinUrl,
+    company,
+    position,
+    connectedOn,
   }
 }
 
@@ -318,6 +326,10 @@ function suggestMapping(columns: string[]): Record<string, string> {
     lastName: ['last name', 'lastname', 'last_name', 'last', 'family name', 'surname'],
     displayName: ['display name', 'displayname', 'full name', 'fullname', 'name'],
     phone: ['phone', 'phone number', 'mobile', 'telephone'],
+    linkedinUrl: ['url', 'linkedin', 'linkedin url', 'profile url', 'linkedin_url'],
+    company: ['company', 'current company', 'organization', 'employer'],
+    position: ['position', 'title', 'job title', 'headline', 'role'],
+    connectedOn: ['connected on', 'connected', 'date connected'],
   }
 
   for (const [field, aliases] of Object.entries(fieldAliases)) {

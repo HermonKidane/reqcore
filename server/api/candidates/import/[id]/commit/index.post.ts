@@ -112,6 +112,9 @@ export default defineEventHandler(async (event) => {
                 firstName: nd.firstName || '',
                 lastName: nd.lastName || '',
                 phone: nd.phone || null,
+                linkedinUrl: nd.linkedinUrl || null,
+                company: nd.company || null,
+                position: nd.position || null,
                 updatedAt: new Date(),
               })
               .where(eq(candidate.id, existingId))
@@ -130,6 +133,10 @@ export default defineEventHandler(async (event) => {
             lastName,
             email: nd.email.trim().slice(0, MAX_FIELD_LENGTH),
             phone: nd.phone || null,
+            linkedinUrl: nd.linkedinUrl || null,
+            company: nd.company || null,
+            position: nd.position || null,
+            source: 'csv_import',
           }).returning({ id: candidate.id })
 
           if (!newCandidate) {
