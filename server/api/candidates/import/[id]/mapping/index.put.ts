@@ -7,7 +7,7 @@ const mappingSchema = z.object({
 })
 
 const VALID_TARGETS = new Set([
-  'email', 'firstName', 'lastName', 'displayName', 'phone', 'ignore', '',
+  'email', 'firstName', 'lastName', 'displayName', 'phone', 'gender', 'dateOfBirth', 'quickNotes', 'ignore', '',
 ])
 
 /**
@@ -199,6 +199,9 @@ function applyMapping(
   lastName?: string
   displayName?: string
   phone?: string
+  gender?: string
+  dateOfBirth?: string
+  quickNotes?: string
 } {
   const result: Record<string, string | undefined> = {}
 
@@ -222,5 +225,8 @@ function applyMapping(
     lastName: result.lastName,
     displayName: result.displayName,
     phone: result.phone,
+    gender: result.gender,
+    dateOfBirth: result.dateOfBirth,
+    quickNotes: result.quickNotes,
   }
 }
