@@ -192,29 +192,39 @@ export default defineEventHandler(async (event) => {
       return { created, updated, skipped: totalSkipped, applied }
     })
 
-    // Record activity (outside transaction — non-critical)
-    recordActivity({
-      organizationId: orgId,
-      actorId: userId,
-      action: 'created',
-      resourceType: 'candidate_import',
-      resourceId: importId,
-      metadata: {
-        filename: importRecord.originalFilename,
-        created: result.created,
-        updated: result.updated,
-        skipped: result.skipped,
-        applied: result.applied,
-        duplicatePolicy: body.duplicatePolicy,
-      },
-    })
+    // Everything below is post-commit and non-fatal.
+    // The import has been committed — failures here must NOT mark it as failed.
+    let finalRows: any[] = []
+    try {
+      finalRows = await db.query.candidateImportRow.findMany({
+        where: eq(candidateImportRow.importId, importId),
+        orderBy: (row, { asc }) => [asc(row.rowIndex)],
+        limit: 10,
+      })
+    } catch {
+      // Non-critical — return empty preview
+    }
 
-    // Get preview rows
-    const finalRows = await db.query.candidateImportRow.findMany({
-      where: eq(candidateImportRow.importId, importId),
-      orderBy: (row, { asc }) => [asc(row.rowIndex)],
-      limit: 10,
-    })
+    // Record activity (fire-and-forget, non-critical)
+    try {
+      recordActivity({
+        organizationId: orgId,
+        actorId: userId,
+        action: 'created',
+        resourceType: 'candidate_import',
+        resourceId: importId,
+        metadata: {
+          filename: importRecord.originalFilename,
+          created: result.created,
+          updated: result.updated,
+          skipped: result.skipped,
+          applied: result.applied,
+          duplicatePolicy: body.duplicatePolicy,
+        },
+      })
+    } catch {
+      // Non-critical
+    }
 
     return {
       result: {
@@ -232,7 +242,7 @@ export default defineEventHandler(async (event) => {
           duplicateInFile: importRecord.duplicateInFileRows,
           error: importRecord.errorRows,
         },
-        sampleRows: finalRows.map((r) => ({
+        sampleRows: finalRows.map((r: any) => ({
           id: r.id,
           rowIndex: r.rowIndex,
           rawData: r.rawData,

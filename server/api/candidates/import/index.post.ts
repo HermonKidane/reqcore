@@ -298,9 +298,6 @@ function extractNormalizedData(rawData: Record<string, string>) {
   const fullName = get('Full Name', 'FullName', 'full_name', 'Name')
   const displayName = get('Display Name', 'DisplayName', 'display_name')
   const phone = get('Phone', 'phone', 'Phone Number', 'Mobile', 'Telephone')
-  const gender = get('Gender', 'gender')
-  const dateOfBirth = get('Date of Birth', 'DOB', 'Birthday', 'DateOfBirth')
-  const quickNotes = get('Notes', 'notes', 'Quick Notes', 'Comments')
 
   return {
     email,
@@ -308,9 +305,6 @@ function extractNormalizedData(rawData: Record<string, string>) {
     lastName,
     displayName: displayName || fullName,
     phone,
-    gender,
-    dateOfBirth,
-    quickNotes,
   }
 }
 
@@ -324,9 +318,6 @@ function suggestMapping(columns: string[]): Record<string, string> {
     lastName: ['last name', 'lastname', 'last_name', 'last', 'family name', 'surname'],
     displayName: ['display name', 'displayname', 'full name', 'fullname', 'name'],
     phone: ['phone', 'phone number', 'mobile', 'telephone'],
-    gender: ['gender'],
-    dateOfBirth: ['date of birth', 'dob', 'birthday'],
-    quickNotes: ['notes', 'quick notes', 'comments'],
   }
 
   for (const [field, aliases] of Object.entries(fieldAliases)) {

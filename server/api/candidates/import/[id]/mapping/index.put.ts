@@ -7,7 +7,7 @@ const mappingSchema = z.object({
 })
 
 const VALID_TARGETS = new Set([
-  'email', 'firstName', 'lastName', 'displayName', 'phone', 'gender', 'dateOfBirth', 'quickNotes', 'ignore', '',
+  'email', 'firstName', 'lastName', 'displayName', 'phone', 'ignore', '',
 ])
 
 /**
@@ -75,28 +75,28 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // Atomic transition: uploaded → mapped
-  const [claimed] = await db.update(candidateImport)
-    .set({
-      mapping: body.mapping,
-      status: 'mapped',
-      updatedAt: new Date(),
-    })
-    .where(and(
-      eq(candidateImport.id, importId),
-      inArray(candidateImport.status, ['uploaded', 'mapped']),
-    ))
-    .returning({ id: candidateImport.id })
-
-  if (!claimed) {
-    throw createError({
-      statusCode: 409,
-      statusMessage: 'Import status changed concurrently. Please refresh and try again.',
-    })
-  }
-
-  // Re-normalize rows and update stats in a transaction
+  // All operations in a single transaction: atomic status transition + row normalization + stats
   const stats = await db.transaction(async (tx) => {
+    // Atomic transition: uploaded → mapped (inside transaction)
+    const [claimed] = await tx.update(candidateImport)
+      .set({
+        mapping: body.mapping,
+        status: 'mapped',
+        updatedAt: new Date(),
+      })
+      .where(and(
+        eq(candidateImport.id, importId),
+        inArray(candidateImport.status, ['uploaded', 'mapped']),
+      ))
+      .returning({ id: candidateImport.id })
+
+    if (!claimed) {
+      throw createError({
+        statusCode: 409,
+        statusMessage: 'Import status changed concurrently. Please refresh and try again.',
+      })
+    }
+
     const rows = await tx.query.candidateImportRow.findMany({
       where: eq(candidateImportRow.importId, importId),
       orderBy: (row, { asc }) => [asc(row.rowIndex)],
@@ -199,9 +199,6 @@ function applyMapping(
   lastName?: string
   displayName?: string
   phone?: string
-  gender?: string
-  dateOfBirth?: string
-  quickNotes?: string
 } {
   const result: Record<string, string | undefined> = {}
 
@@ -225,8 +222,5 @@ function applyMapping(
     lastName: result.lastName,
     displayName: result.displayName,
     phone: result.phone,
-    gender: result.gender,
-    dateOfBirth: result.dateOfBirth,
-    quickNotes: result.quickNotes,
   }
 }
