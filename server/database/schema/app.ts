@@ -323,3 +323,136 @@ export const joinRequestRelations = relations(joinRequest, ({ one }) => ({
   organization: one(organization, { fields: [joinRequest.organizationId], references: [organization.id] }),
   reviewedBy: one(user, { fields: [joinRequest.reviewedById], references: [user.id] }),
 }))
+
+// ─────────────────────────────────────────────
+// CSV Candidate Import
+// ─────────────────────────────────────────────
+
+export const importStatusEnum = pgEnum('import_status', [
+  'uploaded',
+  'mapped',
+  'processing',
+  'committed',
+  'failed',
+  'cancelled',
+])
+
+export const importRowStatusEnum = pgEnum('import_row_status', [
+  'ready',
+  'duplicate_existing',
+  'duplicate_in_file',
+  'error',
+  'committed',
+  'skipped',
+])
+
+export const duplicatePolicyEnum = pgEnum('duplicate_policy', ['skip', 'update'])
+
+/**
+ * Tracks a CSV candidate import job.
+ * Lifecycle: uploaded → mapped → processing → committed | failed | cancelled
+ */
+export const candidateImport = pgTable('candidate_import', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  organizationId: text('organization_id').notNull().references(() => organization.id, { onDelete: 'cascade' }),
+  createdById: text('created_by_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+
+  // Target job (nullable — import to pool or specific job)
+  jobId: text('job_id').references(() => job.id, { onDelete: 'set null' }),
+
+  // File info
+  originalFilename: text('original_filename').notNull(),
+  fileSizeBytes: integer('file_size_bytes'),
+
+  // CSV columns from header row
+  columns: text('columns').array().notNull(),
+
+  // Field mapping: { "Column Name": "email" | "ignore" | "prop:id" | "__new_property__" }
+  mapping: jsonb('mapping').$type<Record<string, string>>(),
+
+  // New properties to create during mapping
+  newProperties: jsonb('new_properties').$type<Array<{ column: string; name: string; type: string }>>(),
+
+  // Stats
+  status: importStatusEnum('status').notNull().default('uploaded'),
+  totalRows: integer('total_rows').notNull().default(0),
+  readyRows: integer('ready_rows').notNull().default(0),
+  duplicateRows: integer('duplicate_rows').notNull().default(0),
+  duplicateInFileRows: integer('duplicate_in_file_rows').notNull().default(0),
+  errorRows: integer('error_rows').notNull().default(0),
+
+  // Results (set after commit)
+  createdCount: integer('created_count'),
+  updatedCount: integer('updated_count'),
+  skippedCount: integer('skipped_count'),
+  appliedCount: integer('applied_count'),
+  duplicatePolicy: duplicatePolicyEnum('duplicate_policy'),
+  committedAt: timestamp('committed_at'),
+  committedById: text('committed_by_id').references(() => user.id),
+
+  // Error details
+  errorMessage: text('error_message'),
+
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (t) => ([
+  index('candidate_import_organization_id_idx').on(t.organizationId),
+  index('candidate_import_org_created_idx').on(t.organizationId, t.createdAt),
+  index('candidate_import_org_status_idx').on(t.organizationId, t.status),
+  index('candidate_import_org_job_idx').on(t.organizationId, t.jobId),
+]))
+
+/**
+ * Individual CSV rows for preview, validation, and commit.
+ */
+export const candidateImportRow = pgTable('candidate_import_row', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  organizationId: text('organization_id').notNull().references(() => organization.id, { onDelete: 'cascade' }),
+  importId: text('import_id').notNull().references(() => candidateImport.id, { onDelete: 'cascade' }),
+
+  rowIndex: integer('row_index').notNull(),
+
+  // Raw CSV data (preserved for audit/debug)
+  rawData: jsonb('raw_data').$type<Record<string, string>>().notNull(),
+
+  // Normalized data after mapping
+  normalizedData: jsonb('normalized_data').$type<{
+    email?: string
+    firstName?: string
+    lastName?: string
+    displayName?: string
+    phone?: string
+    gender?: string
+    dateOfBirth?: string
+    quickNotes?: string
+  }>(),
+
+  status: importRowStatusEnum('status').notNull().default('ready'),
+  errorMessage: text('error_message'),
+
+  // Set after commit
+  candidateId: text('candidate_id').references(() => candidate.id, { onDelete: 'set null' }),
+
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (t) => ([
+  uniqueIndex('candidate_import_row_import_row_idx').on(t.importId, t.rowIndex),
+  index('candidate_import_row_org_import_idx').on(t.organizationId, t.importId),
+  index('candidate_import_row_import_status_idx').on(t.importId, t.status),
+  index('candidate_import_row_candidate_id_idx').on(t.candidateId),
+]))
+
+// Relations
+export const candidateImportRelations = relations(candidateImport, ({ one, many }) => ({
+  organization: one(organization, { fields: [candidateImport.organizationId], references: [organization.id] }),
+  createdBy: one(user, { fields: [candidateImport.createdById], references: [user.id] }),
+  committedBy: one(user, { fields: [candidateImport.committedById], references: [user.id] }),
+  job: one(job, { fields: [candidateImport.jobId], references: [job.id] }),
+  rows: many(candidateImportRow),
+}))
+
+export const candidateImportRowRelations = relations(candidateImportRow, ({ one }) => ({
+  organization: one(organization, { fields: [candidateImportRow.organizationId], references: [organization.id] }),
+  import: one(candidateImport, { fields: [candidateImportRow.importId], references: [candidateImport.id] }),
+  candidate: one(candidate, { fields: [candidateImportRow.candidateId], references: [candidate.id] }),
+}))
