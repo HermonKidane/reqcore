@@ -19,7 +19,7 @@
     <footer class="border-t border-surface-200 dark:border-surface-800 mt-12">
       <div class="mx-auto max-w-3xl px-4 sm:px-6 py-6">
         <p class="text-xs text-surface-400 text-center">
-          Powered by <NuxtLink :to="$localePath('/')" class="underline hover:text-surface-600 dark:hover:text-surface-300">MyRecruiter</NuxtLink>
+          Powered by <NuxtLink :to="$localePath('/')" class="underline hover:text-surface-600 dark:hover:text-surface-300">MyRecruiter</NuxtLink> · <a href="https://github.com/HermonKidane/reqcore" target="_blank" rel="noopener" class="underline hover:text-surface-600 dark:hover:text-surface-300">Source</a>
         </p>
       </div>
     </footer>
