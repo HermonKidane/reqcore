@@ -2,7 +2,7 @@ import { eq, and } from 'drizzle-orm'
 import { candidateImport, candidateImportRow, candidate, job } from '../../../database/schema'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
-const MAX_ROWS = 5000
+const MAX_ROWS = 20000
 const MAX_COLUMNS = 100
 const MAX_FIELD_LENGTH = 2000
 
