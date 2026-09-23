@@ -291,6 +291,11 @@ function formatResponseValue(value: unknown): string {
         </div>
       </div>
 
+      <!-- 30-Step Recruitment Process -->
+      <div class="mt-4 mb-4">
+        <WorkflowProgressPanel :application-id="applicationId" />
+      </div>
+
       <!-- Notes -->
       <div class="mt-4 rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5 mb-4">
         <div class="flex items-center justify-between mb-3">
