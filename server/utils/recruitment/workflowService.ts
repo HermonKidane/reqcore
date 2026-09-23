@@ -1,4 +1,4 @@
-import { eq, and, asc, sql } from 'drizzle-orm'
+import { eq, and, asc, desc, sql } from 'drizzle-orm'
 import {
   recruitmentProcessTemplate,
   recruitmentStepTemplate,
@@ -114,6 +114,18 @@ export async function ensureApplicationWorkflow(
     await ensureStepInstances(orgId, existing.id, existing.templateId)
     return existing.id
   }
+
+  // No active workflow: if a terminal workflow (completed/cancelled)
+  // exists, return it as-is. Reopening must be an explicit future
+  // operation — never a side effect of a GET (would reset progress).
+  const terminal = await db.query.recruitmentWorkflow.findFirst({
+    where: and(
+      eq(recruitmentWorkflow.organizationId, orgId),
+      eq(recruitmentWorkflow.applicationId, app.id),
+    ),
+    orderBy: desc(recruitmentWorkflow.startedAt),
+  })
+  if (terminal) return terminal.id
 
   const templateId = await ensureDefaultProcessTemplate(orgId)
 

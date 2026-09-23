@@ -58,23 +58,10 @@ async function main() {
     })
 
     if (existing) {
-      console.log(`⏭  ${org.name}: default template already exists (v${existing.version}) — skipping`)
-      continue
-    }
-
-    await db.transaction(async (tx) => {
-      const [tpl] = await tx.insert(schema.recruitmentProcessTemplate).values({
-        organizationId: org.id,
-        name: CANONICAL_PROCESS_NAME,
-        version: CANONICAL_PROCESS_VERSION,
-        isDefault: true,
-      }).returning({ id: schema.recruitmentProcessTemplate.id })
-
-      if (!tpl) throw new Error(`Failed to create template for org ${org.name}`)
-
-      await tx.insert(schema.recruitmentStepTemplate).values(
-        CANONICAL_STEPS.map(s => ({
-          templateId: tpl.id,
+      // Self-heal: backfill any missing step templates (idempotent).
+      await db.insert(schema.recruitmentStepTemplate)
+        .values(CANONICAL_STEPS.map(s => ({
+          templateId: existing.id,
           stepNumber: s.stepNumber,
           phase: s.phase,
           key: s.key,
@@ -83,9 +70,42 @@ async function main() {
           requiredFields: s.requiredFields,
           completionRules: s.completionRules,
           displayOrder: s.stepNumber,
-        })),
-      )
+        })))
+        .onConflictDoNothing()
+      console.log(`⏭  ${org.name}: default template already exists (v${existing.version}) — steps verified`)
+      continue
+    }
+
+    await db.insert(schema.recruitmentProcessTemplate)
+      .values({
+        organizationId: org.id,
+        name: CANONICAL_PROCESS_NAME,
+        version: CANONICAL_PROCESS_VERSION,
+        isDefault: true,
+      })
+      .onConflictDoNothing()
+
+    const tpl = await db.query.recruitmentProcessTemplate.findFirst({
+      where: and(
+        eq(schema.recruitmentProcessTemplate.organizationId, org.id),
+        eq(schema.recruitmentProcessTemplate.isDefault, true),
+      ),
     })
+    if (!tpl) throw new Error(`Failed to create template for org ${org.name}`)
+
+    await db.insert(schema.recruitmentStepTemplate)
+      .values(CANONICAL_STEPS.map(s => ({
+        templateId: tpl.id,
+        stepNumber: s.stepNumber,
+        phase: s.phase,
+        key: s.key,
+        name: s.name,
+        description: s.description,
+        requiredFields: s.requiredFields,
+        completionRules: s.completionRules,
+        displayOrder: s.stepNumber,
+      })))
+      .onConflictDoNothing()
 
     console.log(`✅ ${org.name}: seeded "${CANONICAL_PROCESS_NAME}" v${CANONICAL_PROCESS_VERSION} (${CANONICAL_STEPS.length} steps)`)
   }
