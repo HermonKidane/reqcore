@@ -242,7 +242,7 @@ async function withRetry<T>(find: () => Promise<T | undefined>, attempts = 4): P
 export async function completeWorkflowIfDone(workflowId: string): Promise<boolean> {
   const result = await db.execute<{ id: string }>(sql`
     UPDATE recruitment_workflow
-    SET status = 'completed', completed_at = ${new Date()}
+    SET status = 'completed', completed_at = ${new Date().toISOString()}
     WHERE id = ${workflowId}
       AND status = 'active'
       AND EXISTS (SELECT 1 FROM recruitment_step_instance WHERE workflow_id = ${workflowId})

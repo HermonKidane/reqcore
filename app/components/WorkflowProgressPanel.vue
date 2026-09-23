@@ -65,19 +65,34 @@ function formatDate(value: string | null): string {
 // ─────────────────────────────────────────────
 
 const busyId = ref<string | null>(null)
+const isMutating = ref(false)
 const actionError = ref('')
 
-async function run(instanceId: string, body: Record<string, unknown>) {
+/** Run a state-machine action. Returns true on success, false on failure. */
+async function run(instanceId: string, body: Record<string, unknown>): Promise<boolean> {
+  if (isMutating.value) return false
+  isMutating.value = true
   busyId.value = instanceId
   actionError.value = ''
   try {
     await updateStep(instanceId, body)
+    // Keep open history fresh after the mutation
+    if (showEvents.value && eventsInstanceId.value === instanceId) {
+      const seq = ++eventsRequestSeq
+      fetchStepEvents(instanceId)
+        .then(r => { if (seq === eventsRequestSeq) events.value = r })
+        .catch(() => {})
+    }
+    return true
   }
   catch (err: any) {
-    if (handlePreviewReadOnlyError(err)) return
-    actionError.value = err.data?.statusMessage ?? err.message ?? 'Action failed'
+    if (!handlePreviewReadOnlyError(err)) {
+      actionError.value = err.data?.statusMessage ?? err.message ?? 'Action failed'
+    }
+    return false
   }
   finally {
+    isMutating.value = false
     busyId.value = null
   }
 }
@@ -128,8 +143,9 @@ async function submitComplete(instance: WorkflowInstance) {
   for (const [key, value] of Object.entries(completeFields.value)) {
     if (value.trim() !== '') completionData[key] = value.trim()
   }
-  await run(instance.id, { action: 'complete', completionData })
-  if (!actionError.value) formMode.value = ''
+  if (await run(instance.id, { action: 'complete', completionData })) {
+    formMode.value = ''
+  }
 }
 
 async function submitBlock(instance: WorkflowInstance) {
@@ -137,8 +153,7 @@ async function submitBlock(instance: WorkflowInstance) {
     actionError.value = 'A blocker reason is required'
     return
   }
-  await run(instance.id, { action: 'block', reason: blockReason.value.trim() })
-  if (!actionError.value) {
+  if (await run(instance.id, { action: 'block', reason: blockReason.value.trim() })) {
     formMode.value = ''
     blockReason.value = ''
   }
@@ -161,26 +176,30 @@ async function submitDue(instance: WorkflowInstance) {
 const showEvents = ref(false)
 const events = ref<StepEvent[]>([])
 const eventsLoading = ref(false)
+const eventsInstanceId = ref<string | null>(null)
+/** Monotonic token — stale async responses are discarded */
+let eventsRequestSeq = 0
 
 async function toggleEvents(instance: WorkflowInstance) {
   if (showEvents.value && eventsInstanceId.value === instance.id) {
     showEvents.value = false
     return
   }
+  const seq = ++eventsRequestSeq
   eventsInstanceId.value = instance.id
   showEvents.value = true
   eventsLoading.value = true
   try {
-    events.value = await fetchStepEvents(instance.id)
+    const result = await fetchStepEvents(instance.id)
+    if (seq === eventsRequestSeq) events.value = result // discard stale response
   }
   catch {
-    events.value = []
+    if (seq === eventsRequestSeq) events.value = []
   }
   finally {
-    eventsLoading.value = false
+    if (seq === eventsRequestSeq) eventsLoading.value = false
   }
 }
-const eventsInstanceId = ref<string | null>(null)
 
 function eventSummary(event: StepEvent): string {
   const p = event.payload ?? {}

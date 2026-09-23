@@ -19,10 +19,12 @@ import { completeWorkflowIfDone } from '../../utils/recruitment/workflowService'
  *   update   patch dueAt / assignedToId / riskLevel / completionData (non-terminal)
  *
  * Race-safe: transitions use conditional UPDATE ... WHERE status IN (from)
- * — concurrent mutations fail with 409 instead of clobbering.
- * Atomic: state change + immutable event are committed together.
- * Completing directly from blocked is intentional (blocker resolved in
- * one action — the event trail records the fromStatus).
+ * — concurrent mutations fail with 409 instead of clobbering. Merge-based
+ * actions (complete/update) take SELECT ... FOR UPDATE first so the
+ * read-modify-write of completionData is serialized. State change +
+ * immutable event are committed atomically. Completing directly from
+ * blocked is intentional (blocker resolved in one action — the event
+ * trail records the fromStatus).
  */
 export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { workflow: ['update'] })
@@ -45,17 +47,16 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Not found' })
   }
 
-  // A cancelled workflow is immutable — no step mutations
-  if (instance.workflow.status === 'cancelled') {
-    throw createError({ statusCode: 409, statusMessage: 'Workflow is cancelled' })
-  }
-
+  // Fast pre-checks (re-verified inside the transaction)
   const TERMINAL: RecruitmentStepStatus[] = ['completed', 'skipped']
   if (TERMINAL.includes(instance.status)) {
     throw createError({
       statusCode: 409,
       statusMessage: `Step is already ${instance.status} and cannot be changed`,
     })
+  }
+  if (instance.workflow.status === 'cancelled') {
+    throw createError({ statusCode: 409, statusMessage: 'Workflow is cancelled' })
   }
 
   // Validate assignee belongs to this org (FK alone can't check tenancy)
@@ -83,99 +84,128 @@ export default defineEventHandler(async (event) => {
     return false
   }
 
-  let eventType: typeof recruitmentStepEvent.$inferInsert.eventType
-  let eventPayload: Record<string, unknown> = {}
-  let toStatus: RecruitmentStepStatus = instance.status
-  let apply: (tx: Parameters<Parameters<typeof db.transaction>[0]>[0]) => Promise<boolean>
+  const result = await db.transaction(async (tx) => {
+    // Merge-based actions: lock the row and re-read mutable fields so
+    // completionData merges never use stale data.
+    let currentCompletionData = instance.completionData ?? {}
+    let currentStatus = instance.status
 
-  switch (body.action) {
-    case 'start': {
-      eventType = 'started'
-      toStatus = 'in_progress'
-      apply = async tx => transition(tx, id, ['pending', 'blocked'], { status: 'in_progress', startedAt: instance.startedAt ?? now })
-      break
-    }
-
-    case 'complete': {
-      const merged = { ...(instance.completionData ?? {}), ...body.completionData }
-      const missing = (instance.stepTemplate.requiredFields ?? []).filter(f => isEmptyValue(merged[f]))
-      if (missing.length > 0) {
-        throw createError({
-          statusCode: 422,
-          statusMessage: `Missing required fields: ${missing.join(', ')}`,
-        })
-      }
-      eventType = 'completed'
-      toStatus = 'completed'
-      eventPayload = { completionData: merged }
-      apply = async tx => transition(tx, id, ['pending', 'in_progress', 'blocked'], {
-        status: 'completed',
-        completedAt: now,
-        completionData: merged,
-        blockedReason: null,
+    if (body.action === 'complete' || body.action === 'update') {
+      const [locked] = await tx.select({
+        completionData: recruitmentStepInstance.completionData,
+        status: recruitmentStepInstance.status,
       })
-      break
+        .from(recruitmentStepInstance)
+        .where(eq(recruitmentStepInstance.id, id))
+        .for('update')
+
+      if (!locked) return { ok: false as const }
+      currentCompletionData = locked.completionData ?? {}
+      currentStatus = locked.status
+      if (TERMINAL.includes(currentStatus)) return { ok: false as const }
     }
 
-    case 'block': {
-      eventType = 'blocked'
-      toStatus = 'blocked'
-      eventPayload = { reason: body.reason }
-      apply = async tx => transition(tx, id, ['pending', 'in_progress'], { status: 'blocked', blockedReason: body.reason })
-      break
-    }
+    let eventType: typeof recruitmentStepEvent.$inferInsert.eventType
+    let eventPayload: Record<string, unknown> = {}
+    let toStatus: RecruitmentStepStatus = currentStatus
+    let set: Partial<typeof recruitmentStepInstance.$inferInsert> = {}
 
-    case 'unblock': {
-      eventType = 'unblocked'
-      toStatus = 'pending'
-      apply = async tx => transition(tx, id, ['blocked'], { status: 'pending', blockedReason: null })
-      break
-    }
+    switch (body.action) {
+      case 'start':
+        eventType = 'started'
+        toStatus = 'in_progress'
+        set = { status: 'in_progress', startedAt: instance.startedAt ?? now, blockedReason: null }
+        break
 
-    case 'skip': {
-      eventType = 'skipped'
-      toStatus = 'skipped'
-      eventPayload = body.reason ? { reason: body.reason } : {}
-      apply = async tx => transition(tx, id, ['pending', 'in_progress', 'blocked'], { status: 'skipped', completedAt: now })
-      break
-    }
-
-    case 'update': {
-      const set: Partial<typeof recruitmentStepInstance.$inferInsert> = {}
-      const changed: string[] = []
-      if (body.dueAt !== undefined) { set.dueAt = body.dueAt; changed.push('dueAt') }
-      if (body.assignedToId !== undefined) { set.assignedToId = body.assignedToId; changed.push('assignedToId') }
-      if (body.riskLevel !== undefined) { set.riskLevel = body.riskLevel; changed.push('riskLevel') }
-      if (body.completionData) {
-        set.completionData = { ...(instance.completionData ?? {}), ...body.completionData }
-        changed.push('completionData')
+      case 'complete': {
+        const merged = { ...currentCompletionData, ...body.completionData }
+        const missing = (instance.stepTemplate.requiredFields ?? []).filter(f => isEmptyValue(merged[f]))
+        if (missing.length > 0) {
+          throw createError({
+            statusCode: 422,
+            statusMessage: `Missing required fields: ${missing.join(', ')}`,
+          })
+        }
+        eventType = 'completed'
+        toStatus = 'completed'
+        eventPayload = { completionData: merged }
+        set = { status: 'completed', completedAt: now, completionData: merged, blockedReason: null }
+        break
       }
-      if (changed.length === 0) {
-        throw createError({ statusCode: 422, statusMessage: 'Nothing to update' })
-      }
-      eventType = 'updated'
-      eventPayload = { changed }
-      apply = async tx => transition(tx, id, ['pending', 'in_progress', 'blocked'], set)
-      break
-    }
-  }
 
-  // Atomic: conditional state transition + immutable event in one transaction
-  const applied = await db.transaction(async (tx) => {
-    const ok = await apply(tx)
-    if (!ok) return false
+      case 'block':
+        eventType = 'blocked'
+        toStatus = 'blocked'
+        eventPayload = { reason: body.reason }
+        set = { status: 'blocked', blockedReason: body.reason }
+        break
+
+      case 'unblock':
+        eventType = 'unblocked'
+        toStatus = 'pending'
+        set = { status: 'pending', blockedReason: null }
+        break
+
+      case 'skip':
+        eventType = 'skipped'
+        toStatus = 'skipped'
+        eventPayload = body.reason ? { reason: body.reason } : {}
+        set = { status: 'skipped', completedAt: now, blockedReason: null }
+        break
+
+      case 'update': {
+        const changed: string[] = []
+        if (body.dueAt !== undefined) { set.dueAt = body.dueAt; changed.push('dueAt') }
+        if (body.assignedToId !== undefined) { set.assignedToId = body.assignedToId; changed.push('assignedToId') }
+        if (body.riskLevel !== undefined) { set.riskLevel = body.riskLevel; changed.push('riskLevel') }
+        if (body.completionData) {
+          set.completionData = { ...currentCompletionData, ...body.completionData }
+          changed.push('completionData')
+        }
+        if (changed.length === 0) {
+          throw createError({ statusCode: 422, statusMessage: 'Nothing to update' })
+        }
+        eventType = 'updated'
+        eventPayload = { changed }
+        break
+      }
+    }
+
+    // Conditional transition (status unchanged for 'update' — still safe:
+    // the FOR UPDATE lock above serializes merge-based updates)
+    const allowedFrom: Record<typeof recruitmentStepEvent.$inferInsert.eventType, RecruitmentStepStatus[]> = {
+      created: [],
+      started: ['pending', 'blocked'],
+      completed: ['pending', 'in_progress', 'blocked'],
+      blocked: ['pending', 'in_progress'],
+      unblocked: ['blocked'],
+      updated: ['pending', 'in_progress', 'blocked'],
+      skipped: ['pending', 'in_progress', 'blocked'],
+      note: [],
+    }
+    const [updated] = await tx.update(recruitmentStepInstance)
+      .set({ ...set, updatedAt: now })
+      .where(and(
+        eq(recruitmentStepInstance.id, id),
+        inArray(recruitmentStepInstance.status, allowedFrom[eventType]),
+      ))
+      .returning({ id: recruitmentStepInstance.id })
+
+    if (!updated) return { ok: false as const }
+
     await tx.insert(recruitmentStepEvent).values({
       organizationId: orgId,
       stepInstanceId: id,
       actorId: userId,
       eventType,
-      payload: { fromStatus: instance.status, toStatus, ...eventPayload },
+      payload: { fromStatus: currentStatus, toStatus, ...eventPayload },
       source: 'user',
     })
-    return true
+
+    return { ok: true as const, eventType }
   })
 
-  if (!applied) {
+  if (!result.ok) {
     throw createError({ statusCode: 409, statusMessage: 'Step status changed concurrently — refresh and retry' })
   }
 
@@ -185,11 +215,11 @@ export default defineEventHandler(async (event) => {
     action: 'updated',
     resourceType: 'step_instance',
     resourceId: id,
-    metadata: { step: instance.stepTemplate.name, event: eventType, applicationId: instance.workflow.applicationId },
+    metadata: { step: instance.stepTemplate.name, event: result.eventType, applicationId: instance.workflow.applicationId },
   })
 
   // completed AND skipped are both terminal for workflow convergence
-  if (eventType === 'completed' || eventType === 'skipped') {
+  if (result.eventType === 'completed' || result.eventType === 'skipped') {
     await completeWorkflowIfDone(instance.workflow.id)
   }
 
@@ -203,23 +233,3 @@ export default defineEventHandler(async (event) => {
 
   return fresh
 })
-
-/**
- * Conditional transition helper — lives outside the handler so the
- * switch table above stays readable.
- */
-async function transition(
-  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
-  id: string,
-  from: RecruitmentStepStatus[],
-  set: Partial<typeof recruitmentStepInstance.$inferInsert>,
-) {
-  const [updated] = await tx.update(recruitmentStepInstance)
-    .set({ ...set, updatedAt: new Date() })
-    .where(and(
-      eq(recruitmentStepInstance.id, id),
-      inArray(recruitmentStepInstance.status, from),
-    ))
-    .returning({ id: recruitmentStepInstance.id })
-  return updated !== undefined
-}
