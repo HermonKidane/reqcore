@@ -34,6 +34,8 @@ const atsStatements = {
   document: ['create', 'read', 'delete'],
   comment: ['create', 'read', 'update', 'delete'],
   activityLog: ['read'],
+  workflow: ['read', 'update'],
+  aiRun: ['read', 'create', 'update'],
 } as const
 
 // ─── Merged statement (Better Auth defaults + ATS resources) ───────
@@ -61,6 +63,8 @@ export const owner = ac.newRole({
   document: ['create', 'read', 'delete'],
   comment: ['create', 'read', 'update', 'delete'],
   activityLog: ['read'],
+  workflow: ['read', 'update'],
+  aiRun: ['read', 'create', 'update'],
 })
 
 export const admin = ac.newRole({
@@ -73,6 +77,8 @@ export const admin = ac.newRole({
   document: ['create', 'read', 'delete'],
   comment: ['create', 'read', 'update', 'delete'],
   activityLog: ['read'],
+  workflow: ['read', 'update'],
+  aiRun: ['read', 'create', 'update'],
 })
 
 export const member = ac.newRole({
@@ -85,4 +91,6 @@ export const member = ac.newRole({
   document: ['create', 'read'],
   comment: ['create', 'read', 'delete'],
   activityLog: ['read'],
+  workflow: ['read', 'update'],
+  aiRun: ['read', 'create'],
 })
