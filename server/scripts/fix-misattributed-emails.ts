@@ -134,7 +134,7 @@ async function main() {
       }
       else {
         const sorted = remaining.map(r => r.email).sort(cmp)
-        const work = sorted.filter(e => !FREE_PROVIDER_DOMAINS_V1.has(domainOf(e.email)))
+        const work = sorted.filter(e => !FREE_PROVIDER_DOMAINS_V1.has(domainOf(e)))
         const newPrimary = (work.length > 0 ? work : sorted)[0]
         // Promote the chosen EXISTING row in place (no insert — avoids the
         // org-wide normalized unique collision), then sync the cache.
