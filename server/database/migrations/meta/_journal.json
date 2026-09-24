@@ -78,6 +78,27 @@
       "when": 1790174529804,
       "tag": "0010_thirty-step-workflow",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1790212430363,
+      "tag": "0011_0011-candidate-email",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1790212448955,
+      "tag": "0012_0012-client-company",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1790212619764,
+      "tag": "0013_0013-person-role",
+      "breakpoints": true
     }
   ]
 }

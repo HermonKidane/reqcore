@@ -8,8 +8,10 @@ import {
   pgEnum,
   index,
   uniqueIndex,
+  foreignKey,
+  check,
 } from 'drizzle-orm/pg-core'
-import { relations } from 'drizzle-orm'
+import { relations, sql } from 'drizzle-orm'
 import { organization, user } from './auth'
 
 // ─────────────────────────────────────────────
@@ -22,6 +24,11 @@ export const applicationStatusEnum = pgEnum('application_status', [
   'new', 'screening', 'interview', 'offer', 'hired', 'rejected',
 ])
 export const documentTypeEnum = pgEnum('document_type', ['resume', 'cover_letter', 'other'])
+/**
+ * Fluid person roles WITH simultaneity + history. 'candidate' is deliberately
+ * ABSENT — candidacy stays derived from `application` rows, never a role.
+ */
+export const personRoleValueEnum = pgEnum('person_role_value', ['prospect', 'connection', 'client_contact'])
 export const questionTypeEnum = pgEnum('question_type', [
   'short_text', 'long_text', 'single_select', 'multi_select',
   'number', 'date', 'url', 'checkbox', 'file_upload',
@@ -58,17 +65,24 @@ export const job = pgTable('job', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (t) => ([
   index('job_organization_id_idx').on(t.organizationId),
+  // Composite unique backing the tenant-scoped FK from job_client_contact
+  uniqueIndex('job_org_id_unique').on(t.organizationId, t.id),
 ]))
 
 /**
  * Candidates (applicants) belonging to a specific tenant.
+ * NOTE: `candidate` is the PERSON spine of this schema — `person_role`,
+ * `candidate_email` and `job_client_contact` all reference it.
+ * `email` is a nullable denormalized cache of the primary candidate_email row
+ * (NULL iff the person has no primary email). Never write it directly outside
+ * the email-mutation code path.
  */
 export const candidate = pgTable('candidate', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   organizationId: text('organization_id').notNull().references(() => organization.id, { onDelete: 'cascade' }),
   firstName: text('first_name').notNull(),
   lastName: text('last_name').notNull(),
-  email: text('email').notNull(),
+  email: text('email'),
   phone: text('phone'),
   // ── LinkedIn / source metadata ──
   linkedinUrl: text('linkedin_url'),
@@ -82,6 +96,149 @@ export const candidate = pgTable('candidate', {
   index('candidate_organization_id_idx').on(t.organizationId),
   uniqueIndex('candidate_org_email_idx').on(t.organizationId, t.email),
   index('candidate_linkedin_url_idx').on(t.linkedinUrl),
+  // Composite unique backing the tenant-scoped FKs from candidate_email / person_role / job_client_contact
+  uniqueIndex('candidate_org_id_unique').on(t.organizationId, t.id),
+]))
+
+/**
+ * Import batches — GDPR accountability record (purpose, lawful basis, retention review).
+ * One row per import run; candidate_email.source_detail.batch references this id.
+ */
+export const importBatch = pgTable('import_batch', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  organizationId: text('organization_id').notNull().references(() => organization.id, { onDelete: 'cascade' }),
+  batchKey: text('batch_key').notNull(),
+  purpose: text('purpose').notNull(),
+  lawfulBasis: text('lawful_basis').notNull(),
+  sourceFile: text('source_file').notNull(),
+  stats: jsonb('stats').$type<Record<string, unknown>>(),
+  retentionReviewAt: timestamp('retention_review_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (t) => ([
+  index('import_batch_organization_id_idx').on(t.organizationId),
+  uniqueIndex('import_batch_org_batch_key_idx').on(t.organizationId, t.batchKey),
+]))
+
+/**
+ * Multi-email store for a person. Uniqueness is org-wide on the NORMALIZED
+ * (lower+btrim) email. At most one primary per candidate (partial unique index).
+ * `source_detail` is immutable write-once provenance for GDPR audit.
+ */
+export const candidateEmail = pgTable('candidate_email', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  organizationId: text('organization_id').notNull().references(() => organization.id, { onDelete: 'cascade' }),
+  candidateId: text('candidate_id').notNull(),
+  email: text('email').notNull(),
+  normalizedEmail: text('normalized_email').notNull(),
+  label: text('label'),
+  isPrimary: boolean('is_primary').notNull().default(false),
+  source: text('source').notNull().default('manual'),
+  sourceDetail: jsonb('source_detail').$type<Record<string, unknown>>(),
+  optOutAt: timestamp('opt_out_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (t) => ([
+  index('candidate_email_organization_id_idx').on(t.organizationId),
+  index('candidate_email_candidate_id_idx').on(t.candidateId),
+  uniqueIndex('candidate_email_org_normalized_idx').on(t.organizationId, t.normalizedEmail),
+  uniqueIndex('candidate_email_one_primary').on(t.candidateId).where(sql`is_primary`),
+  check('candidate_email_normalized_nonempty', sql`normalized_email <> ''`),
+  // Tenant-scoped FK: candidate (organization_id, id)
+  foreignKey({
+    columns: [t.organizationId, t.candidateId],
+    foreignColumns: [candidate.organizationId, candidate.id],
+    name: 'candidate_email_candidate_fk',
+  }).onDelete('cascade'),
+]))
+
+/**
+ * Minimal client company. Deliberately small — no logo/address/industry yet.
+ * `candidate.company` text remains a legacy display cache, never joined here.
+ */
+export const clientCompany = pgTable('client_company', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  organizationId: text('organization_id').notNull().references(() => organization.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  normalizedName: text('normalized_name').notNull(),
+  website: text('website'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (t) => ([
+  index('client_company_organization_id_idx').on(t.organizationId),
+  uniqueIndex('client_company_org_normalized_name_idx').on(t.organizationId, t.normalizedName),
+  check('client_company_normalized_nonempty', sql`normalized_name <> ''`),
+  // Composite unique backing the tenant-scoped FK from person_role
+  uniqueIndex('client_company_org_id_unique').on(t.organizationId, t.id),
+]))
+
+/**
+ * Fluid roles held by a person (the `candidate` row). History via ended_at —
+ * rows are never deleted via the API; ending a role sets ended_at, restarting
+ * creates a NEW row. companyId is required iff role = client_contact.
+ */
+export const personRole = pgTable('person_role', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  organizationId: text('organization_id').notNull().references(() => organization.id, { onDelete: 'cascade' }),
+  candidateId: text('candidate_id').notNull(),
+  role: personRoleValueEnum('role').notNull(),
+  clientCompanyId: text('client_company_id'),
+  startedAt: timestamp('started_at').notNull().defaultNow(),
+  endedAt: timestamp('ended_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (t) => ([
+  index('person_role_organization_id_idx').on(t.organizationId),
+  index('person_role_candidate_id_idx').on(t.candidateId),
+  index('person_role_active_idx').on(t.candidateId).where(sql`ended_at IS NULL`),
+  check('person_role_company_iff_client_contact', sql`("role" = 'client_contact') = ("client_company_id" IS NOT NULL)`),
+  // Same semantics as NULLS NOT DISTINCT, expressed as two partial uniques
+  // (drizzle-kit 0.31.9's bundled pg-core predates the nullsNotDistinct API).
+  uniqueIndex('person_role_active_unique_company').on(t.candidateId, t.role, t.clientCompanyId).where(sql`ended_at IS NULL AND client_company_id IS NOT NULL`),
+  uniqueIndex('person_role_active_unique_nocompany').on(t.candidateId, t.role).where(sql`ended_at IS NULL AND client_company_id IS NULL`),
+  // Tenant-scoped FKs
+  foreignKey({
+    columns: [t.organizationId, t.candidateId],
+    foreignColumns: [candidate.organizationId, candidate.id],
+    name: 'person_role_candidate_fk',
+  }).onDelete('cascade'),
+  foreignKey({
+    columns: [t.organizationId, t.clientCompanyId],
+    foreignColumns: [clientCompany.organizationId, clientCompany.id],
+    name: 'person_role_client_company_fk',
+  }).onDelete('restrict'),
+]))
+
+/**
+ * Job ↔ client-contact links (Hermon decision 2026-09-24: MANY contacts per
+ * job, at most one flagged primary). candidate must hold an ACTIVE
+ * client_contact role at link time (app-enforced); if the role later ends the
+ * link row stays as history.
+ */
+export const jobClientContact = pgTable('job_client_contact', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  organizationId: text('organization_id').notNull().references(() => organization.id, { onDelete: 'cascade' }),
+  jobId: text('job_id').notNull(),
+  candidateId: text('candidate_id').notNull(),
+  label: text('label'),
+  isPrimary: boolean('is_primary').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (t) => ([
+  index('job_client_contact_organization_id_idx').on(t.organizationId),
+  index('job_client_contact_job_id_idx').on(t.jobId),
+  uniqueIndex('job_client_contact_job_candidate_idx').on(t.jobId, t.candidateId),
+  uniqueIndex('job_client_contact_one_primary').on(t.jobId).where(sql`is_primary`),
+  // Tenant-scoped FKs
+  foreignKey({
+    columns: [t.organizationId, t.jobId],
+    foreignColumns: [job.organizationId, job.id],
+    name: 'job_client_contact_job_fk',
+  }).onDelete('cascade'),
+  foreignKey({
+    columns: [t.organizationId, t.candidateId],
+    foreignColumns: [candidate.organizationId, candidate.id],
+    name: 'job_client_contact_candidate_fk',
+  }).onDelete('cascade'),
 ]))
 
 /**
@@ -285,6 +442,35 @@ export const candidateRelations = relations(candidate, ({ one, many }) => ({
   organization: one(organization, { fields: [candidate.organizationId], references: [organization.id] }),
   applications: many(application),
   documents: many(document),
+  emails: many(candidateEmail),
+  roles: many(personRole),
+  jobContactLinks: many(jobClientContact),
+}))
+
+export const candidateEmailRelations = relations(candidateEmail, ({ one }) => ({
+  organization: one(organization, { fields: [candidateEmail.organizationId], references: [organization.id] }),
+  candidate: one(candidate, { fields: [candidateEmail.candidateId], references: [candidate.id] }),
+}))
+
+export const importBatchRelations = relations(importBatch, ({ one }) => ({
+  organization: one(organization, { fields: [importBatch.organizationId], references: [organization.id] }),
+}))
+
+export const clientCompanyRelations = relations(clientCompany, ({ one, many }) => ({
+  organization: one(organization, { fields: [clientCompany.organizationId], references: [organization.id] }),
+  roles: many(personRole),
+}))
+
+export const personRoleRelations = relations(personRole, ({ one }) => ({
+  organization: one(organization, { fields: [personRole.organizationId], references: [organization.id] }),
+  candidate: one(candidate, { fields: [personRole.candidateId], references: [candidate.id] }),
+  clientCompany: one(clientCompany, { fields: [personRole.clientCompanyId], references: [clientCompany.id] }),
+}))
+
+export const jobClientContactRelations = relations(jobClientContact, ({ one }) => ({
+  organization: one(organization, { fields: [jobClientContact.organizationId], references: [organization.id] }),
+  job: one(job, { fields: [jobClientContact.jobId], references: [job.id] }),
+  candidate: one(candidate, { fields: [jobClientContact.candidateId], references: [candidate.id] }),
 }))
 
 export const applicationRelations = relations(application, ({ one, many }) => ({
