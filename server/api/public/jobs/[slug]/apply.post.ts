@@ -1,4 +1,4 @@
-import { eq, and, asc } from 'drizzle-orm'
+import { eq, and, asc, sql } from 'drizzle-orm'
 import { fileTypeFromBuffer } from 'file-type'
 import { job, candidate, application, jobQuestion, questionResponse, document, organization } from '../../../../database/schema'
 import { publicApplicationSchema, publicJobSlugSchema } from '../../../../utils/schemas/publicApplication'
@@ -275,74 +275,101 @@ export default defineEventHandler(async (event) => {
   // 5. Upsert candidate — deduplicate by email within this org
   // ─────────────────────────────────────────────
 
-  let existingCandidate = await db.query.candidate.findFirst({
-    where: and(
-      eq(candidate.organizationId, orgId),
-      eq(candidate.email, email.toLowerCase()),
-    ),
-    columns: { id: true, firstName: true, lastName: true, phone: true },
-  })
+  let candidateId = ''
+  let newApplicationId = ''
 
-  let candidateId: string
+  try {
+    await db.transaction(async (tx) => {
+      // Dedupe via candidate_email (org-wide normalized), not the cache column
+      const existingId = await findCandidateIdByEmail(tx, orgId, email)
 
-  if (existingCandidate) {
-    const updates: Record<string, unknown> = { updatedAt: new Date() }
-    if (!existingCandidate.firstName) updates.firstName = firstName
-    if (!existingCandidate.lastName) updates.lastName = lastName
-    if (!existingCandidate.phone && phone) updates.phone = phone
+      if (existingId) {
+        // Lock the row — serializes concurrent applications from the same person
+        await tx.execute(sql`SELECT id FROM candidate WHERE id = ${existingId} FOR UPDATE`)
 
-    const [updated] = await db.update(candidate)
-      .set(updates)
-      .where(eq(candidate.id, existingCandidate.id))
-      .returning({ id: candidate.id })
+        const existingCandidate = await tx.query.candidate.findFirst({
+          where: eq(candidate.id, existingId),
+          columns: { id: true, firstName: true, lastName: true, phone: true },
+        })
 
-    candidateId = updated!.id
-  } else {
-    const [created] = await db.insert(candidate).values({
-      organizationId: orgId,
-      firstName,
-      lastName,
-      email: email.toLowerCase(),
-      phone,
-    }).returning({ id: candidate.id })
+        const updates: Record<string, unknown> = { updatedAt: new Date() }
+        if (existingCandidate && !existingCandidate.firstName) updates.firstName = firstName
+        if (existingCandidate && !existingCandidate.lastName) updates.lastName = lastName
+        if (existingCandidate && !existingCandidate.phone && phone) updates.phone = phone
 
-    candidateId = created!.id
-  }
+        await tx.update(candidate)
+          .set(updates)
+          .where(eq(candidate.id, existingId))
 
-  // ─────────────────────────────────────────────
-  // 6. Check for duplicate application
-  // ─────────────────────────────────────────────
+        candidateId = existingId
+      } else {
+        // Cache starts NULL; the helper is the ONLY writer of candidate.email
+        const [created] = await tx.insert(candidate).values({
+          organizationId: orgId,
+          firstName,
+          lastName,
+          email: null,
+          phone,
+        }).returning({ id: candidate.id })
 
-  const existingApplication = await db.query.application.findFirst({
-    where: and(
-      eq(application.organizationId, orgId),
-      eq(application.candidateId, candidateId),
-      eq(application.jobId, jobId),
-    ),
-    columns: { id: true },
-  })
+        if (!created) {
+          throw createError({ statusCode: 500, statusMessage: 'Failed to create candidate' })
+        }
 
-  if (existingApplication) {
-    throw createError({
-      statusCode: 409,
-      statusMessage: 'You have already applied to this position',
+        // Primary email row + cache sync, same transaction (single code path)
+        await insertPrimaryEmail(tx, orgId, created.id, email, { source: 'application' })
+
+        candidateId = created.id
+      }
+
+      // Duplicate-application check + insert in the same transaction —
+      // concurrent submissions get a clean 409, never a 500.
+      const existingApplication = await tx.query.application.findFirst({
+        where: and(
+          eq(application.organizationId, orgId),
+          eq(application.candidateId, candidateId),
+          eq(application.jobId, jobId),
+        ),
+        columns: { id: true },
+      })
+
+      if (existingApplication) {
+        throw createError({
+          statusCode: 409,
+          statusMessage: 'You have already applied to this position',
+        })
+      }
+
+      const [newApplication] = await tx.insert(application).values({
+        organizationId: orgId,
+        candidateId,
+        jobId,
+        status: 'new',
+        coverLetterText: coverLetterText || null,
+      }).returning({ id: application.id })
+
+      newApplicationId = newApplication!.id
     })
   }
+  catch (err) {
+    // Lost race: another submission created the same email/application concurrently
+    if (isUniqueViolation(err)) {
+      throw createError({
+        statusCode: 409,
+        statusMessage: 'You have already applied to this position',
+      })
+    }
+    throw err
+  }
 
   // ─────────────────────────────────────────────
-  // 7. Create application
+  // 6. Application already created inside the candidate transaction above
   // ─────────────────────────────────────────────
 
-  const [newApplication] = await db.insert(application).values({
-    organizationId: orgId,
-    candidateId,
-    jobId,
-    status: 'new',
-    coverLetterText: coverLetterText || null,
-  }).returning({ id: application.id })
+  const newApplication = { id: newApplicationId }
 
   // ─────────────────────────────────────────────
-  // 8. Store question responses
+  // 7. Store question responses
   // ─────────────────────────────────────────────
 
   if (validResponses.length > 0) {
@@ -357,7 +384,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // ─────────────────────────────────────────────
-  // 9. Upload files to S3 and create document records
+  // 8. Upload files to S3 and create document records
   // ─────────────────────────────────────────────
 
   // Enforce per-candidate document limit (same as authenticated upload)
@@ -434,7 +461,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // ─────────────────────────────────────────────
-  // 10. Upload built-in resume file
+  // 9. Upload built-in resume file
   // ─────────────────────────────────────────────
 
   if (resumeUpload) {

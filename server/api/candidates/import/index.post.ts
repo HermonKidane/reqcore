@@ -1,5 +1,5 @@
-import { eq, and } from 'drizzle-orm'
-import { candidateImport, candidateImportRow, candidate, job } from '../../../database/schema'
+import { eq, and, sql } from 'drizzle-orm'
+import { candidateImport, candidateImportRow, job } from '../../../database/schema'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const MAX_ROWS = 20000
@@ -103,12 +103,16 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 500, statusMessage: 'Failed to create import record' })
     }
 
-    // Get existing candidate emails for duplicate detection
-    const existingCandidates = await tx.query.candidate.findMany({
-      where: eq(candidate.organizationId, orgId),
-      columns: { email: true },
-    })
-    const existingEmails = new Set(existingCandidates.map((c) => c.email.toLowerCase().trim()))
+    // Get existing candidate emails for duplicate detection.
+    // Source of truth is candidate_email (org-wide normalized) — candidate.email
+    // is a nullable cache and must not be read directly.
+    const existingEmailRows = await tx.execute<{ ne: string }>(sql`
+      SELECT ce.normalized_email AS ne
+      FROM candidate c
+      JOIN candidate_email ce ON ce.candidate_id = c.id
+      WHERE c.organization_id = ${orgId}
+    `)
+    const existingEmails = new Set(existingEmailRows.map(r => r.ne))
 
     // O(n) duplicate detection using a Set
     const seenInFile = new Set<string>()

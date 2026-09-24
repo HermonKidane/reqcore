@@ -1,0 +1,1 @@
+ALTER TABLE "import_batch" ALTER COLUMN "retention_review_at" SET DATA TYPE date;

@@ -10,6 +10,7 @@ import {
   uniqueIndex,
   foreignKey,
   check,
+  date,
 } from 'drizzle-orm/pg-core'
 import { relations, sql } from 'drizzle-orm'
 import { organization, user } from './auth'
@@ -112,7 +113,7 @@ export const importBatch = pgTable('import_batch', {
   lawfulBasis: text('lawful_basis').notNull(),
   sourceFile: text('source_file').notNull(),
   stats: jsonb('stats').$type<Record<string, unknown>>(),
-  retentionReviewAt: timestamp('retention_review_at'),
+  retentionReviewAt: date('retention_review_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 }, (t) => ([
   index('import_batch_organization_id_idx').on(t.organizationId),
@@ -436,6 +437,7 @@ export const jobRelations = relations(job, ({ one, many }) => ({
   organization: one(organization, { fields: [job.organizationId], references: [organization.id] }),
   applications: many(application),
   questions: many(jobQuestion),
+  clientContactLinks: many(jobClientContact),
 }))
 
 export const candidateRelations = relations(candidate, ({ one, many }) => ({

@@ -1,5 +1,5 @@
-import { eq, and, inArray } from 'drizzle-orm'
-import { candidateImport, candidateImportRow, candidate } from '../../../../../database/schema'
+import { eq, and, inArray, sql } from 'drizzle-orm'
+import { candidateImport, candidateImportRow } from '../../../../../database/schema'
 import { z } from 'zod'
 
 const mappingSchema = z.object({
@@ -102,12 +102,16 @@ export default defineEventHandler(async (event) => {
       orderBy: (row, { asc }) => [asc(row.rowIndex)],
     })
 
-    // Get existing candidate emails for duplicate detection
-    const existingCandidates = await tx.query.candidate.findMany({
-      where: eq(candidate.organizationId, orgId),
-      columns: { email: true },
-    })
-    const existingEmails = new Set(existingCandidates.map((c) => c.email.toLowerCase().trim()))
+    // Get existing candidate emails for duplicate detection.
+    // Source of truth is candidate_email (org-wide normalized) — candidate.email
+    // is a nullable cache and must not be read directly.
+    const existingEmailRows = await tx.execute<{ ne: string }>(sql`
+      SELECT ce.normalized_email AS ne
+      FROM candidate c
+      JOIN candidate_email ce ON ce.candidate_id = c.id
+      WHERE c.organization_id = ${orgId}
+    `)
+    const existingEmails = new Set(existingEmailRows.map(r => r.ne))
 
     const seenInFile = new Set<string>()
 

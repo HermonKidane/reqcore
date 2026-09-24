@@ -18,7 +18,7 @@
 
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { hashPassword } from 'better-auth/crypto'
 import * as schema from '../database/schema'
 
@@ -527,15 +527,33 @@ async function seed() {
     candidateIds.push(candidateId)
     const createdDaysAgo = 5 + Math.floor(Math.random() * 20)
 
-    await db.insert(schema.candidate).values({
-      id: candidateId,
-      organizationId: orgId,
-      firstName: candidateData.firstName,
-      lastName: candidateData.lastName,
-      email: candidateData.email,
-      phone: candidateData.phone,
-      createdAt: daysAgo(createdDaysAgo),
-      updatedAt: daysAgo(Math.floor(createdDaysAgo / 2)),
+    await db.transaction(async (tx) => {
+      // Cache starts NULL; email row is the source of truth.
+      // NOTE: raw SQL instead of utils/candidateEmail helper because the seed
+      // needs custom created_at timestamps the helper doesn't accept.
+      await tx.insert(schema.candidate).values({
+        id: candidateId,
+        organizationId: orgId,
+        firstName: candidateData.firstName,
+        lastName: candidateData.lastName,
+        email: null,
+        phone: candidateData.phone,
+        createdAt: daysAgo(createdDaysAgo),
+        updatedAt: daysAgo(Math.floor(createdDaysAgo / 2)),
+      })
+
+      await tx.execute(sql`
+        INSERT INTO candidate_email
+          (id, organization_id, candidate_id, email, normalized_email, is_primary, source, created_at, updated_at)
+        VALUES
+          (${id()}, ${orgId}, ${candidateId}, ${candidateData.email}, lower(btrim(${candidateData.email})), true, 'manual', now(), now())
+      `)
+
+      await tx.execute(sql`
+        UPDATE candidate SET email = (
+          SELECT email FROM candidate_email WHERE candidate_id = ${candidateId} AND is_primary = true
+        ) WHERE id = ${candidateId}
+      `)
     })
   }
 

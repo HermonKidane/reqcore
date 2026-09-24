@@ -1,4 +1,4 @@
-import { eq, and, inArray } from 'drizzle-orm'
+import { eq, and, inArray, sql } from 'drizzle-orm'
 import { candidateImport, candidateImportRow, candidate, application } from '../../../../../database/schema'
 import { z } from 'zod'
 
@@ -75,14 +75,15 @@ export default defineEventHandler(async (event) => {
       let skipped = 0
       let applied = 0
 
-      // Build email → candidateId map for duplicate detection
-      const existingCandidates = await tx.query.candidate.findMany({
-        where: eq(candidate.organizationId, orgId),
-        columns: { id: true, email: true },
-      })
-      const candidateByEmail = new Map(
-        existingCandidates.map((c) => [c.email.toLowerCase().trim(), c.id]),
-      )
+      // Build email → candidateId map for duplicate detection.
+      // Source of truth is candidate_email (org-wide normalized), not the cache.
+      const existingEmails = await tx.execute<{ ne: string; id: string }>(sql`
+        SELECT ce.normalized_email AS ne, c.id
+        FROM candidate c
+        JOIN candidate_email ce ON ce.candidate_id = c.id
+        WHERE c.organization_id = ${orgId}
+      `)
+      const candidateByEmail = new Map(existingEmails.map(r => [r.ne, r.id]))
 
       for (const row of rowsToProcess) {
         const nd = row.normalizedData
@@ -95,7 +96,17 @@ export default defineEventHandler(async (event) => {
         }
 
         const email = nd.email.toLowerCase().trim()
-        const existingId = candidateByEmail.get(email)
+        let existingId = candidateByEmail.get(email)
+
+        // Re-check at insert time to shrink the race window against
+        // concurrent imports/API writes (map was built at tx start).
+        if (!existingId) {
+          const racedOwner = await findCandidateIdByEmail(tx, orgId, nd.email)
+          if (racedOwner) {
+            existingId = racedOwner
+            candidateByEmail.set(email, racedOwner)
+          }
+        }
         let candidateId: string
 
         if (existingId) {
@@ -106,6 +117,9 @@ export default defineEventHandler(async (event) => {
             skipped++
             continue
           } else {
+            // Lock the row before mutating (serializes concurrent imports)
+            await tx.execute(sql`SELECT id FROM candidate WHERE id = ${existingId} FOR UPDATE`)
+
             // Update existing candidate — only overwrite non-empty fields to prevent data loss
             const updatePayload: Record<string, any> = {
               updatedAt: new Date(),
@@ -127,7 +141,7 @@ export default defineEventHandler(async (event) => {
             updated++
           }
         } else {
-          // Create new candidate
+          // Create new candidate (cache starts NULL; helper syncs it)
           const nameParts = (nd.displayName || '').split(' ')
           const firstName = nd.firstName || nameParts[0] || ''
           const lastName = nd.lastName || nameParts.slice(1).join(' ') || ''
@@ -136,7 +150,7 @@ export default defineEventHandler(async (event) => {
             organizationId: orgId,
             firstName,
             lastName,
-            email: nd.email.trim().slice(0, MAX_FIELD_LENGTH),
+            email: null,
             phone: nd.phone || null,
             linkedinUrl: nd.linkedinUrl || null,
             company: nd.company || null,
@@ -155,6 +169,14 @@ export default defineEventHandler(async (event) => {
 
           candidateId = newCandidate.id
           candidateByEmail.set(email, candidateId)
+
+          // Primary email row + cache sync, same tx (single code path).
+          // A residual 23505 here aborts the tx loudly — by design: the
+          // import rolls back atomically and can be retried.
+          await insertPrimaryEmail(tx, orgId, candidateId, nd.email.trim().slice(0, MAX_FIELD_LENGTH), {
+            source: 'import',
+            sourceDetail: { batch: importId, matchedBy: 'csv_import' },
+          })
           created++
         }
 
