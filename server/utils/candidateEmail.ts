@@ -32,11 +32,18 @@ export function normalizeEmailJs(email: string): string {
 /**
  * True if the error is a Postgres unique-violation (SQLSTATE 23505) —
  * e.g. a lost race against candidate_email's org-wide unique index.
- * postgres-js exposes .code on the thrown error.
+ *
+ * drizzle-orm 0.45 wraps query errors in DrizzleQueryError (a plain Error
+ * with no .code); the original postgres-js error — which carries .code —
+ * sits at .cause. Walk the cause chain so both shapes match.
  */
 export function isUniqueViolation(err: unknown): boolean {
-  return typeof err === 'object' && err !== null
-    && (err as { code?: string }).code === '23505'
+  let current: unknown = err
+  for (let depth = 0; current && typeof current === 'object' && depth < 4; depth++) {
+    if ((current as { code?: unknown }).code === '23505') return true
+    current = (current as { cause?: unknown }).cause
+  }
+  return false
 }
 
 /**
