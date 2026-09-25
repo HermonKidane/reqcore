@@ -3,16 +3,18 @@ import { createRateLimiter } from '../utils/rateLimit'
 const SAFE_METHODS = new Set(['GET', 'HEAD'])
 const SKIP_METHODS = new Set(['OPTIONS'])
 
-// Baseline global API limits (per IP)
+// Baseline global API limits (per IP) — env-tunable; production defaults
+// are intentionally tight. Sandboxes/CI running the full e2e suite from one
+// IP should raise them via env (see .env.example).
 const globalReadLimiter = createRateLimiter({
   windowMs: 60 * 1000,
-  maxRequests: 300,
+  maxRequests: env.RATE_LIMIT_GLOBAL_READ_MAX,
   message: 'Too many API requests. Please try again shortly.',
 })
 
 const globalWriteLimiter = createRateLimiter({
   windowMs: 60 * 1000,
-  maxRequests: 80,
+  maxRequests: env.RATE_LIMIT_GLOBAL_WRITE_MAX,
   message: 'Too many write requests. Please try again shortly.',
 })
 
@@ -20,13 +22,13 @@ const globalWriteLimiter = createRateLimiter({
 // starving the rest of the API traffic from the same IP.
 const authReadLimiter = createRateLimiter({
   windowMs: 5 * 60 * 1000,
-  maxRequests: 600,
+  maxRequests: env.RATE_LIMIT_AUTH_READ_MAX,
   message: 'Too many auth requests. Please try again shortly.',
 })
 
 const authWriteLimiter = createRateLimiter({
   windowMs: 5 * 60 * 1000,
-  maxRequests: 40,
+  maxRequests: env.RATE_LIMIT_AUTH_WRITE_MAX,
   message: 'Too many sign-in attempts. Please wait before trying again.',
 })
 

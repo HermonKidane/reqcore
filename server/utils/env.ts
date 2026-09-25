@@ -72,6 +72,23 @@ const envSchema = z
       (val) => (typeof val === 'string' && val.trim() === '' ? undefined : val),
       z.coerce.number().int().positive().optional().default(15 * 60 * 1000),
     ),
+    /** Global API middleware limits (per IP). Defaults are production-tight; raise only in sandbox/test. */
+    RATE_LIMIT_GLOBAL_READ_MAX: z.preprocess(
+      (val) => (typeof val === 'string' && val.trim() === '' ? undefined : val),
+      z.coerce.number().int().positive().optional().default(300),
+    ),
+    RATE_LIMIT_GLOBAL_WRITE_MAX: z.preprocess(
+      (val) => (typeof val === 'string' && val.trim() === '' ? undefined : val),
+      z.coerce.number().int().positive().optional().default(80),
+    ),
+    RATE_LIMIT_AUTH_READ_MAX: z.preprocess(
+      (val) => (typeof val === 'string' && val.trim() === '' ? undefined : val),
+      z.coerce.number().int().positive().optional().default(600),
+    ),
+    RATE_LIMIT_AUTH_WRITE_MAX: z.preprocess(
+      (val) => (typeof val === 'string' && val.trim() === '' ? undefined : val),
+      z.coerce.number().int().positive().optional().default(40),
+    ),
     /** Slug of the demo organization. When set, write operations are blocked for this org. */
     DEMO_ORG_SLUG: emptyToUndefined.optional(),
     /** Fine-grained GitHub PAT with Issues:write scope. When set (along with GITHUB_FEEDBACK_REPO), enables in-app feedback. */
