@@ -11,10 +11,10 @@ import {
   sanitizeFilename,
 } from '../../../../utils/schemas/document'
 
-/** Rate limit: max 5 applications per IP per 15 minutes */
+/** Rate limit: max N applications per IP per window (env-tunable; defaults 5 per 15 min) */
 const applyRateLimit = createRateLimiter({
-  windowMs: 15 * 60 * 1000,
-  maxRequests: 5,
+  windowMs: env.RATE_LIMIT_APPLY_WINDOW_MS,
+  maxRequests: env.RATE_LIMIT_APPLY_MAX_REQUESTS,
   message: 'Too many applications submitted. Please try again later.',
 })
 

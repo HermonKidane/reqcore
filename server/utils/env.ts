@@ -61,8 +61,17 @@ const envSchema = z
       (val) => (typeof val === 'string' && val.trim() === '' ? undefined : val === 'true' || val === undefined),
       z.boolean().default(true),
     ),
-    /** IP address of the trusted reverse proxy (e.g., Railway, Cloudflare). When set, X-Forwarded-For is trusted for rate limiting. */
+    /** IP address of the trusted reverse proxy (e.g., Railway, Cloudflare). When set, X-Forwarded-For is trusted for rate limiting. The proxy MUST overwrite (not append to) X-Forwarded-For, otherwise clients can spoof the first IP. */
     TRUSTED_PROXY_IP: z.string().min(1).optional(),
+    /** Public apply rate limit — max applications per client IP per window. Raise only in sandbox/test environments. */
+    RATE_LIMIT_APPLY_MAX_REQUESTS: z.preprocess(
+      (val) => (typeof val === 'string' && val.trim() === '' ? undefined : val),
+      z.coerce.number().int().positive().optional().default(5),
+    ),
+    RATE_LIMIT_APPLY_WINDOW_MS: z.preprocess(
+      (val) => (typeof val === 'string' && val.trim() === '' ? undefined : val),
+      z.coerce.number().int().positive().optional().default(15 * 60 * 1000),
+    ),
     /** Slug of the demo organization. When set, write operations are blocked for this org. */
     DEMO_ORG_SLUG: emptyToUndefined.optional(),
     /** Fine-grained GitHub PAT with Issues:write scope. When set (along with GITHUB_FEEDBACK_REPO), enables in-app feedback. */
