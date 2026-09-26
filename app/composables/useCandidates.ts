@@ -7,11 +7,17 @@ import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
  */
 export function useCandidates(options?: {
   search?: Ref<string | undefined> | string
+  /** Filter by ACTIVE person role ('candidate' is application-derived, never a role) */
+  role?: Ref<string | undefined> | string
+  /** Filter by client company (active client_contact roles at that company) */
+  companyId?: Ref<string | undefined> | string
 }) {
   const { handlePreviewReadOnlyError } = usePreviewReadOnly()
 
   const query = computed(() => ({
     ...(toValue(options?.search) && { search: toValue(options?.search) }),
+    ...(toValue(options?.role) && { role: toValue(options?.role) }),
+    ...(toValue(options?.companyId) && { companyId: toValue(options?.companyId) }),
   }))
 
   const { data, status: fetchStatus, error, refresh } = useFetch('/api/candidates', {

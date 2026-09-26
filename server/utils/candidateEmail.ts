@@ -47,6 +47,20 @@ export function isUniqueViolation(err: unknown): boolean {
 }
 
 /**
+ * True if the error is a Postgres foreign-key violation (SQLSTATE 23503) —
+ * e.g. client_company delete blocked by person_role's ON DELETE RESTRICT.
+ * Same cause-chain walk as isUniqueViolation (drizzle 0.45 wrapping).
+ */
+export function isFkViolation(err: unknown): boolean {
+  let current: unknown = err
+  for (let depth = 0; current && typeof current === 'object' && depth < 4; depth++) {
+    if ((current as { code?: unknown }).code === '23503') return true
+    current = (current as { cause?: unknown }).cause
+  }
+  return false
+}
+
+/**
  * Find the candidate (if any) who owns this email — via candidate_email,
  * normalized, org-scoped. Returns candidate id or null.
  */

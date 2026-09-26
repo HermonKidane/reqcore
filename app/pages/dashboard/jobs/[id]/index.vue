@@ -741,6 +741,9 @@ function closeDocPreview() {
         </div>
       </div>
 
+      <!-- CLIENT CONTACTS (collapsible card, job-scoped) -->
+      <JobClientContacts :job-id="jobId" />
+
       <!-- ═══════════════════════════════════════ -->
       <!-- THREE-PANEL LAYOUT                       -->
       <!-- ═══════════════════════════════════════ -->

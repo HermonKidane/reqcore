@@ -3,7 +3,7 @@ import {
   Briefcase, Plus, Bell,
   Kanban, FileText, LogOut, Table2,
   Sun, Moon, MessageSquarePlus, Settings,
-  ChevronDown, Menu, X, Users, ChevronLeft,
+  ChevronDown, Menu, X, Users, ChevronLeft, Building2,
   LayoutDashboard,
 } from 'lucide-vue-next'
 
@@ -103,6 +103,7 @@ const jobTabs = computed(() => {
 const mainNav = [
   { label: 'Jobs', to: '/dashboard', icon: Briefcase, exact: true },
   { label: 'Candidates', to: '/dashboard/candidates', icon: Users, exact: false },
+  { label: 'Companies', to: '/dashboard/companies', icon: Building2, exact: false },
   { label: 'Applications', to: '/dashboard/applications', icon: FileText, exact: false },
   { label: 'Settings', to: '/dashboard/settings', icon: Settings, exact: false },
 ]

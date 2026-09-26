@@ -26,7 +26,36 @@ useSeoMeta({
 // Tabs
 // ─────────────────────────────────────────────
 
-const activeTab = ref<'applications' | 'documents'>('applications')
+const activeTab = ref<'applications' | 'roles' | 'documents'>('applications')
+
+// ─────────────────────────────────────────────
+// Stacked active-role chips — NEVER a single status badge.
+// 'Candidate' is application-derived; the rest are ACTIVE person_roles.
+// ─────────────────────────────────────────────
+
+const roleLabels: Record<string, string> = {
+  prospect: 'Prospect',
+  connection: 'Connection',
+  client_contact: 'Client contact',
+}
+
+const activeRoleChips = computed(() => {
+  const roles = (candidate.value as any)?.roles ?? []
+  return roles.filter((r: any) => r.endedAt === null)
+})
+
+function roleChipClasses(role: string): string {
+  switch (role) {
+    case 'connection':
+      return 'bg-info-50 text-info-700 dark:bg-info-950 dark:text-info-400'
+    case 'prospect':
+      return 'bg-warning-50 text-warning-700 dark:bg-warning-950 dark:text-warning-400'
+    case 'client_contact':
+      return 'bg-success-50 text-success-700 dark:bg-success-950 dark:text-success-400'
+    default:
+      return 'bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-400'
+  }
+}
 
 // ─────────────────────────────────────────────
 // Edit mode
@@ -292,6 +321,24 @@ function formatFileSize(bytes: number | null | undefined): string {
             <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-50 truncate mb-1">
               {{ candidate.firstName }} {{ candidate.lastName }}
             </h1>
+            <!-- Stacked active-role chips (never a single status badge) -->
+            <div v-if="(candidate.applications?.length ?? 0) > 0 || activeRoleChips.length > 0" class="flex flex-wrap items-center gap-1.5 mb-2">
+              <span
+                v-if="(candidate.applications?.length ?? 0) > 0"
+                class="inline-flex items-center rounded-full bg-brand-50 dark:bg-brand-950 px-2.5 py-1 text-xs font-medium text-brand-700 dark:text-brand-400"
+                title="Application-derived — not a role"
+              >
+                Candidate
+              </span>
+              <span
+                v-for="r in activeRoleChips"
+                :key="r.id"
+                class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium"
+                :class="roleChipClasses(r.role)"
+              >
+                {{ roleLabels[r.role] ?? r.role }}<template v-if="r.clientCompany?.name"> · {{ r.clientCompany.name }}</template>
+              </span>
+            </div>
             <div class="flex items-center gap-4 text-sm text-surface-500">
               <span class="inline-flex items-center gap-1">
                 <Mail class="size-3.5" />
@@ -371,6 +418,15 @@ function formatFileSize(bytes: number | null | undefined): string {
             </button>
             <button
               class="cursor-pointer px-3 py-2 text-sm font-medium transition-colors border-b-2 -mb-px"
+              :class="activeTab === 'roles'
+                ? 'border-brand-600 text-brand-600'
+                : 'border-transparent text-surface-500 hover:text-surface-700 hover:border-surface-300 dark:hover:text-surface-300'"
+              @click="activeTab = 'roles'"
+            >
+              Roles ({{ (candidate.roles ?? []).filter((r: any) => r.endedAt === null).length }})
+            </button>
+            <button
+              class="cursor-pointer px-3 py-2 text-sm font-medium transition-colors border-b-2 -mb-px"
               :class="activeTab === 'documents'
                 ? 'border-brand-600 text-brand-600'
                 : 'border-transparent text-surface-500 hover:text-surface-700 hover:border-surface-300 dark:hover:text-surface-300'"
@@ -379,6 +435,11 @@ function formatFileSize(bytes: number | null | undefined): string {
               Documents ({{ candidate.documents?.length ?? 0 }})
             </button>
           </div>
+        </div>
+
+        <!-- Roles tab -->
+        <div v-if="activeTab === 'roles'">
+          <PersonRolesPanel :candidate-id="candidateId" @changed="refresh()" />
         </div>
 
         <!-- Applications tab -->

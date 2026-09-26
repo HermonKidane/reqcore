@@ -22,8 +22,20 @@ watch(searchInput, (val) => {
   }, 300)
 })
 
+// Person-model filters: ACTIVE role + client company
+const roleFilter = ref<string | undefined>(undefined)
+const companyFilter = ref<string | undefined>(undefined)
+
+watch(roleFilter, (val) => {
+  if (val !== 'client_contact') companyFilter.value = undefined
+})
+
+const { companies: filterCompanies } = useClientCompanies()
+
 const { candidates, total, fetchStatus, error, refresh } = useCandidates({
   search: debouncedSearch,
+  role: roleFilter,
+  companyId: companyFilter,
 })
 </script>
 
@@ -46,15 +58,34 @@ const { candidates, total, fetchStatus, error, refresh } = useCandidates({
       </NuxtLink>
     </div>
 
-    <!-- Search -->
-    <div class="relative mb-6">
-      <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-surface-400" />
-      <input
-        v-model="searchInput"
-        type="text"
-        placeholder="Search by name or email…"
-        class="w-full rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 pl-10 pr-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-      />
+    <!-- Search + role filters -->
+    <div class="flex flex-wrap items-center gap-2 mb-6">
+      <div class="relative flex-1 min-w-48">
+        <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-surface-400" />
+        <input
+          v-model="searchInput"
+          type="text"
+          placeholder="Search by name or email…"
+          class="w-full rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 pl-10 pr-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+        />
+      </div>
+      <select
+        v-model="roleFilter"
+        class="rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 px-3 py-2 text-sm text-surface-700 dark:text-surface-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
+      >
+        <option :value="undefined">All roles</option>
+        <option value="connection">Connections</option>
+        <option value="prospect">Prospects</option>
+        <option value="client_contact">Client contacts</option>
+      </select>
+      <select
+        v-if="roleFilter === 'client_contact'"
+        v-model="companyFilter"
+        class="rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 px-3 py-2 text-sm text-surface-700 dark:text-surface-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
+      >
+        <option :value="undefined">All companies</option>
+        <option v-for="c in filterCompanies" :key="c.id" :value="c.id">{{ c.name }}</option>
+      </select>
     </div>
 
     <!-- Loading state -->
