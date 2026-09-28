@@ -1,4 +1,10 @@
 # Sandbox override — names/ports/volumes isolated from prod
+# Explicit project name = hardening: without it the project name derives from
+# the directory, so renaming the dir (or running from a copy) would silently
+# share a project namespace with prod. Value matches the current dir-derived
+# name, so this is a no-op for the existing deployment (no recreation).
+name: reqcore-sandbox
+
 services:
   db:
     container_name: reqcore_sandbox_db

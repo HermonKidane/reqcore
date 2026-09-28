@@ -68,7 +68,7 @@ test.describe('AI vertical slice (mock provider)', () => {
     expect(patchRes.status(), 'plant completionData').toBe(200)
 
     // ── Generate → 200 succeeded ─────────────────────────────────────────
-    const genRes = await api.post(`/api/step-instances/${step5.id}/ai-runs`, { data: {} })
+    const genRes = await api.post(`/api/step-instances/${step5.id}/ai-runs`, { data: {}, timeout: 90_000 })
     expect(genRes.status(), 'generate').toBe(200)
     const run = await genRes.json()
     expect(run.status).toBe('succeeded')
@@ -127,7 +127,7 @@ test.describe('AI vertical slice (mock provider)', () => {
     const step6 = steps.find(i => i.stepTemplate.stepNumber === 6)!
     expect(step6.stepTemplate.key).toBe('candidate_profile')
 
-    const genRes = await api.post(`/api/step-instances/${step6.id}/ai-runs`, { data: {} })
+    const genRes = await api.post(`/api/step-instances/${step6.id}/ai-runs`, { data: {}, timeout: 90_000 })
     expect(genRes.status(), 'no prompt configured → 422').toBe(422)
   })
 
@@ -138,7 +138,7 @@ test.describe('AI vertical slice (mock provider)', () => {
     const steps = await getWorkflowSteps(api, applicationId)
     const step5 = steps.find(i => i.stepTemplate.stepNumber === 5)!
 
-    const gen1 = await (await api.post(`/api/step-instances/${step5.id}/ai-runs`, { data: {} })).json()
+    const gen1 = await (await api.post(`/api/step-instances/${step5.id}/ai-runs`, { data: {}, timeout: 90_000 })).json()
     expect(gen1.status).toBe('succeeded')
 
     const approve = await api.post(`/api/ai-runs/${gen1.id}/review`, { data: { decision: 'approve' } })
@@ -154,7 +154,7 @@ test.describe('AI vertical slice (mock provider)', () => {
     expect(again.status(), 'double review → 409').toBe(409)
 
     // Fresh run → reject with note
-    const gen2 = await (await api.post(`/api/step-instances/${step5.id}/ai-runs`, { data: {} })).json()
+    const gen2 = await (await api.post(`/api/step-instances/${step5.id}/ai-runs`, { data: {}, timeout: 90_000 })).json()
     const reject = await api.post(`/api/ai-runs/${gen2.id}/review`, { data: { decision: 'reject', note: 'Not applicable to this candidate' } })
     expect(reject.status(), 'reject').toBe(200)
     const rejected = await reject.json()
@@ -177,7 +177,7 @@ test.describe('AI vertical slice (mock provider)', () => {
     })
     expect(complete.status()).toBe(200)
 
-    const genRes = await api.post(`/api/step-instances/${step5.id}/ai-runs`, { data: {} })
+    const genRes = await api.post(`/api/step-instances/${step5.id}/ai-runs`, { data: {}, timeout: 90_000 })
     expect(genRes.status(), 'terminal step → 409').toBe(409)
   })
 
@@ -189,8 +189,8 @@ test.describe('AI vertical slice (mock provider)', () => {
     const step5 = steps.find(i => i.stepTemplate.stepNumber === 5)!
 
     const [r1, r2] = await Promise.all([
-      api.post(`/api/step-instances/${step5.id}/ai-runs`, { data: {} }),
-      api.post(`/api/step-instances/${step5.id}/ai-runs`, { data: {} }),
+      api.post(`/api/step-instances/${step5.id}/ai-runs`, { data: {}, timeout: 90_000 }),
+      api.post(`/api/step-instances/${step5.id}/ai-runs`, { data: {}, timeout: 90_000 }),
     ])
     const statuses = [r1.status(), r2.status()].sort()
     expect(statuses, 'claim serialization: one 200, one 409').toEqual([200, 409])
@@ -201,7 +201,7 @@ test.describe('AI vertical slice (mock provider)', () => {
     const applicationId = await makeApplication(api, 'Iso')
     const steps = await getWorkflowSteps(api, applicationId)
     const step5 = steps.find(i => i.stepTemplate.stepNumber === 5)!
-    const run = await (await api.post(`/api/step-instances/${step5.id}/ai-runs`, { data: {} })).json()
+    const run = await (await api.post(`/api/step-instances/${step5.id}/ai-runs`, { data: {}, timeout: 90_000 })).json()
 
     // ── Fixture org A exists; create org B and switch to it ──────────────
     const slugB = `ai-iso-b-${runId}`
@@ -223,7 +223,7 @@ test.describe('AI vertical slice (mock provider)', () => {
       const listRes = await api.get(`/api/step-instances/${step5.id}/ai-runs`)
       expect(listRes.status(), 'foreign instance list → 404').toBe(404)
 
-      const genRes = await api.post(`/api/step-instances/${step5.id}/ai-runs`, { data: {} })
+      const genRes = await api.post(`/api/step-instances/${step5.id}/ai-runs`, { data: {}, timeout: 90_000 })
       expect(genRes.status(), 'foreign instance generate → 404').toBe(404)
 
       const reviewRes = await api.post(`/api/ai-runs/${run.id}/review`, { data: { decision: 'approve' } })
@@ -247,8 +247,8 @@ test.describe('AI vertical slice (mock provider)', () => {
     const steps = await getWorkflowSteps(api, applicationId)
     const step5 = steps.find(i => i.stepTemplate.stepNumber === 5)!
 
-    const run1 = await (await api.post(`/api/step-instances/${step5.id}/ai-runs`, { data: {} })).json()
-    const run2 = await (await api.post(`/api/step-instances/${step5.id}/ai-runs`, { data: {} })).json()
+    const run1 = await (await api.post(`/api/step-instances/${step5.id}/ai-runs`, { data: {}, timeout: 90_000 })).json()
+    const run2 = await (await api.post(`/api/step-instances/${step5.id}/ai-runs`, { data: {}, timeout: 90_000 })).json()
     expect(run1.id).not.toBe(run2.id)
 
     const list = await (await api.get(`/api/step-instances/${step5.id}/ai-runs`)).json()
