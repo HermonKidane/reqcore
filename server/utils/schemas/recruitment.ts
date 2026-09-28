@@ -49,3 +49,16 @@ export const updateStepInstanceSchema = z.discriminatedUnion('action', [
 ])
 
 export type UpdateStepInstanceInput = z.infer<typeof updateStepInstanceSchema>
+
+// ─────────────────────────────────────────────
+// AI runs (design-ai-slice.md §5)
+// ─────────────────────────────────────────────
+
+/** POST /api/step-instances/:id/ai-runs — body is intentionally empty (§5) */
+export const generateAiRunSchema = z.record(z.string(), z.unknown())
+
+/** POST /api/ai-runs/:id/review */
+export const reviewAiRunSchema = z.object({
+  decision: z.enum(['approve', 'reject']),
+  note: z.string().max(2000).optional(),
+})

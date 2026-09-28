@@ -228,10 +228,19 @@ export const aiRun = pgTable('ai_run', {
   requestedById: text('requested_by_id').references(() => user.id, { onDelete: 'set null' }),
   provider: text('provider').notNull(),
   model: text('model').notNull(),
+  // Full prompt configuration used for the run (design-ai-slice.md §5
+  // implementation contract). TS-only $type widening — PG jsonb is untyped,
+  // no migration.
   promptSnapshot: jsonb('prompt_snapshot').$type<{
+    templateId: string
+    name: string
+    version: number
     systemPrompt: string
     userPromptTemplate: string
-    renderedUserPrompt?: string
+    renderedUserPrompt: string
+    inputSchema: Record<string, unknown> | null
+    outputSchema: Record<string, unknown> | null
+    safetyNotes: string | null
   }>().notNull(),
   inputSnapshot: jsonb('input_snapshot').$type<Record<string, unknown>>().notNull(),
   output: jsonb('output').$type<Record<string, unknown>>(),

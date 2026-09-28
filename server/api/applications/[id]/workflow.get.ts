@@ -64,6 +64,7 @@ export default defineEventHandler(async (event) => {
           name: true,
           description: true,
           requiredFields: true,
+          completionRules: true,
         },
       },
       assignedTo: { columns: { id: true, name: true, email: true } },

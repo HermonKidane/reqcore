@@ -465,6 +465,9 @@ function eventSummary(event: StepEvent): string {
                   </div>
                 </dl>
 
+                <!-- AI assist (steps flagged completionRules.aiAssist) -->
+                <AiAssistCard :instance="instance" :workflow-active="workflowData.workflow.status === 'active'" />
+
                 <!-- Event trail -->
                 <div v-if="showEvents && eventsInstanceId === instance.id" class="border-t border-surface-100 dark:border-surface-800 pt-2">
                   <p v-if="eventsLoading" class="text-xs text-surface-400">Loading history…</p>

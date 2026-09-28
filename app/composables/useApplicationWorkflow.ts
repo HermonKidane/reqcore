@@ -8,6 +8,26 @@ export interface WorkflowStepTemplate {
   name: string
   description: string | null
   requiredFields: string[]
+  completionRules: Record<string, unknown> | null
+}
+
+/** AI run row as returned by the ai-runs endpoints */
+export interface AiRun {
+  id: string
+  status: 'pending' | 'running' | 'succeeded' | 'failed' | 'approved' | 'rejected'
+  provider: string
+  model: string
+  output: { text: string, parsed?: unknown } | null
+  error: string | null
+  reviewNote: string | null
+  reviewedAt: string | null
+  createdAt: string
+  completedAt: string | null
+  promptTemplate: { name: string, version: number } | null
+  promptSnapshot: {
+    safetyNotes: string | null
+    [key: string]: unknown
+  } | null
 }
 
 export interface WorkflowInstance {
@@ -83,5 +103,31 @@ export function useApplicationWorkflow(id: MaybeRefOrGetter<string>) {
     return res.events
   }
 
-  return { workflowData: data, status, error, refresh, updateStep, fetchStepEvents }
+  /** Generate an AI assist run for a step instance (returns the run row). */
+  async function generateAiRun(instanceId: string): Promise<AiRun> {
+    return $fetch<AiRun>(`/api/step-instances/${instanceId}/ai-runs`, {
+      method: 'POST',
+      body: {},
+      headers: useRequestHeaders(['cookie']),
+    })
+  }
+
+  /** List AI runs for a step instance (newest first). */
+  async function fetchAiRuns(instanceId: string): Promise<AiRun[]> {
+    const res = await $fetch<{ runs: AiRun[] }>(`/api/step-instances/${instanceId}/ai-runs`, {
+      headers: useRequestHeaders(['cookie']),
+    })
+    return res.runs
+  }
+
+  /** Approve/reject a succeeded AI run (one-shot; does not touch step data). */
+  async function reviewAiRun(runId: string, decision: 'approve' | 'reject', note?: string): Promise<AiRun> {
+    return $fetch<AiRun>(`/api/ai-runs/${runId}/review`, {
+      method: 'POST',
+      body: { decision, note },
+      headers: useRequestHeaders(['cookie']),
+    })
+  }
+
+  return { workflowData: data, status, error, refresh, updateStep, fetchStepEvents, generateAiRun, fetchAiRuns, reviewAiRun }
 }
