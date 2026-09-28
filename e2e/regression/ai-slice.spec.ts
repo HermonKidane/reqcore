@@ -72,14 +72,20 @@ test.describe('AI vertical slice (mock provider)', () => {
     expect(genRes.status(), 'generate').toBe(200)
     const run = await genRes.json()
     expect(run.status).toBe('succeeded')
-    expect(run.provider).toBe('mock')
+    expect(['mock', 'openai-compat']).toContain(run.provider)
+    expect(run.model).toBeTruthy()
     expect(run.output?.text).toBeTruthy()
 
-    // New step-5 output shape (prompt-templates §0.2): the mock canned
-    // output uses pitchScript/packageBullets/objectionRehearsal.
-    expect(run.output.parsed).toHaveProperty('pitchScript')
-    expect(run.output.parsed).toHaveProperty('packageBullets')
-    expect(run.output.parsed).toHaveProperty('objectionRehearsal')
+    // New step-5 output shape (prompt-templates §0.2): the MOCK canned output
+    // uses pitchScript/packageBullets/objectionRehearsal. With a real
+    // provider the content is model-generated — assert the strict shape
+    // only in mock mode (CI determinism); provider-independent assertions
+    // below run in both modes.
+    if (run.provider === 'mock') {
+      expect(run.output.parsed).toHaveProperty('pitchScript')
+      expect(run.output.parsed).toHaveProperty('packageBullets')
+      expect(run.output.parsed).toHaveProperty('objectionRehearsal')
+    }
 
     // ── PII gate (§7 test 1) ─────────────────────────────────────────────
     const snapshot = JSON.stringify(run.inputSnapshot)

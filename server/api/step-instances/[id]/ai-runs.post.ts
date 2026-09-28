@@ -47,15 +47,19 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 409, statusMessage: 'Workflow is cancelled' })
   }
 
+  // Env config: read process.env directly — the Docker image bakes
+  // runtimeConfig defaults at BUILD time, so env_file-injected values only
+  // reach the app through process.env at runtime (same pattern as db.ts).
+  // The nuxt.config runtimeConfig entries remain as build-time fallbacks.
   const runtimeConfig = useRuntimeConfig(event) as unknown as AiRuntimeConfig
   return generateAiRun({
     orgId,
     userId,
     instance,
     config: {
-      aiBaseUrl: runtimeConfig.aiBaseUrl,
-      aiApiKey: runtimeConfig.aiApiKey,
-      aiModel: runtimeConfig.aiModel,
+      aiBaseUrl: process.env.AI_BASE_URL || runtimeConfig.aiBaseUrl,
+      aiApiKey: process.env.AI_API_KEY || runtimeConfig.aiApiKey,
+      aiModel: process.env.AI_MODEL || runtimeConfig.aiModel,
     },
   })
 })
