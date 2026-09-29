@@ -84,6 +84,11 @@ export default defineEventHandler(async (event) => {
     return false
   }
 
+  /** Human labels, never raw keys (matches the client's readableKey). */
+  function readableKey(key: string): string {
+    return key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+  }
+
   const result = await db.transaction(async (tx) => {
     // Merge-based actions: lock the row and re-read mutable fields so
     // completionData merges never use stale data.
@@ -123,7 +128,7 @@ export default defineEventHandler(async (event) => {
         if (missing.length > 0) {
           throw createError({
             statusCode: 422,
-            statusMessage: `Missing required fields: ${missing.join(', ')}`,
+            statusMessage: `To complete this step, record: ${missing.map(readableKey).join(', ')}.`,
           })
         }
         eventType = 'completed'
@@ -206,7 +211,7 @@ export default defineEventHandler(async (event) => {
   })
 
   if (!result.ok) {
-    throw createError({ statusCode: 409, statusMessage: 'Step status changed concurrently — refresh and retry' })
+    throw createError({ statusCode: 409, statusMessage: 'Someone else updated this step while you were working. Refresh to see their change, then try again.' })
   }
 
   recordActivity({

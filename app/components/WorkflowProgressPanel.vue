@@ -150,7 +150,7 @@ async function submitComplete(instance: WorkflowInstance) {
 
 async function submitBlock(instance: WorkflowInstance) {
   if (!blockReason.value.trim()) {
-    actionError.value = 'A blocker reason is required'
+    actionError.value = 'Add what\'s holding this up. It goes on the step\'s history for whoever picks it up next.'
     return
   }
   if (await run(instance.id, { action: 'block', reason: blockReason.value.trim() })) {
@@ -228,7 +228,7 @@ function eventSummary(event: StepEvent): string {
       Loading workflow…
     </div>
     <div v-else-if="error" class="rounded-lg border border-danger-200 bg-danger-50 p-3 text-sm text-danger-700">
-      Failed to load workflow.
+      Couldn't load the 30 steps. Nothing has been lost. Refresh to try again.
     </div>
 
     <template v-else-if="workflowData">
@@ -395,7 +395,7 @@ function eventSummary(event: StepEvent): string {
                     >
                   </div>
                   <p v-if="instance.stepTemplate.requiredFields.length === 0" class="text-xs text-surface-400">
-                    No required fields for this step.
+                    Nothing to record for this step. Mark it complete when it's done.
                   </p>
                   <div class="flex gap-2 pt-1">
                     <button
@@ -417,11 +417,12 @@ function eventSummary(event: StepEvent): string {
                 <!-- Block form -->
                 <div v-if="formMode === 'block'" class="space-y-2 rounded-lg border border-danger-200 p-3">
                   <label class="mb-0.5 block text-xs font-medium text-surface-500 dark:text-surface-400">
-                    Blocker reason <span class="text-danger-500">*</span>
+                    What's holding this up? <span class="text-danger-500">*</span>
                   </label>
                   <textarea
                     v-model="blockReason"
                     rows="2"
+                    placeholder="e.g. Client hasn't confirmed second-interview slots"
                     class="w-full rounded-lg border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-800 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                   />
                   <div class="flex gap-2 pt-1">
@@ -430,7 +431,7 @@ function eventSummary(event: StepEvent): string {
                       class="cursor-pointer rounded-lg bg-danger-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-danger-700 disabled:opacity-50"
                       @click="submitBlock(instance)"
                     >
-                      Block Step
+                      Mark as blocked
                     </button>
                     <button
                       class="cursor-pointer rounded-lg border border-surface-300 dark:border-surface-600 px-3 py-1.5 text-xs font-medium text-surface-600 dark:text-surface-300"

@@ -36,7 +36,7 @@ const history = computed(() => runs.value.slice(0, 5))
 const runStatusMeta: Record<string, { label: string, badge: string }> = {
   pending: { label: 'Pending', badge: 'bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-400' },
   running: { label: 'Running', badge: 'bg-info-50 text-info-700 dark:bg-info-950 dark:text-info-400' },
-  succeeded: { label: 'Awaiting review', badge: 'bg-warning-50 text-warning-700 dark:bg-warning-950 dark:text-warning-400' },
+  succeeded: { label: 'Awaiting your review', badge: 'bg-warning-50 text-warning-700 dark:bg-warning-950 dark:text-warning-400' },
   failed: { label: 'Failed', badge: 'bg-danger-50 text-danger-700 dark:bg-danger-950 dark:text-danger-400' },
   approved: { label: 'Approved', badge: 'bg-success-50 text-success-700 dark:bg-success-950 dark:text-success-400' },
   rejected: { label: 'Rejected', badge: 'bg-danger-50 text-danger-700 dark:bg-danger-950 dark:text-danger-400' },
@@ -71,7 +71,7 @@ async function generate() {
   }
   catch (err: any) {
     if (!handlePreviewReadOnlyError(err)) {
-      error.value = err.data?.statusMessage ?? err.message ?? 'AI generation failed'
+      error.value = err.data?.statusMessage ?? err.message ?? 'Draft not generated. Nothing was sent or saved. Try again, or complete the step without it.'
     }
     // 409 = a concurrent run exists — pick it up silently (panel convention)
     if (err?.data?.statusCode === 409) await refreshRuns()
@@ -196,6 +196,9 @@ onMounted(() => {
             Reject
           </button>
         </div>
+        <p class="text-[11px] text-surface-500 dark:text-surface-400">
+          Approving marks this draft as reviewed. Nothing is sent, and nothing is saved to the record. Copy in what you want to keep.
+        </p>
       </template>
 
       <p v-if="latest.reviewNote" class="text-[11px] text-surface-500 dark:text-surface-400">
