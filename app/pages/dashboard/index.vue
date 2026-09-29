@@ -109,6 +109,7 @@ const isEmpty = computed(() => jobs.value.length === 0)
       </div>
       <NuxtLink
         :to="$localePath('/dashboard/jobs/new')"
+        data-tour="jobs-new-job"
         class="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 transition-colors no-underline"
       >
         <Plus class="size-4" />
@@ -169,7 +170,7 @@ const isEmpty = computed(() => jobs.value.length === 0)
     <!-- ─── Jobs content ─── -->
     <template v-else>
       <!-- ─── Needs attention section ─── -->
-      <div v-if="jobsNeedingAttention.length > 0" class="mb-8">
+      <div v-if="jobsNeedingAttention.length > 0" data-tour="jobs-needs-attention" class="mb-8">
         <div class="flex items-center gap-2 mb-3 px-1">
           <Bell class="size-4 text-warning-500" />
           <h2 class="text-sm font-semibold text-surface-900 dark:text-surface-100">

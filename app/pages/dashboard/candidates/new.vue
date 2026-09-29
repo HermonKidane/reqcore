@@ -96,7 +96,7 @@ async function handleSubmit() {
       {{ submitError }}
     </div>
 
-    <form class="space-y-5" @submit.prevent="handleSubmit">
+    <form class="space-y-5" data-tour="candidate-form" @submit.prevent="handleSubmit">
       <!-- First Name -->
       <div>
         <label for="firstName" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">

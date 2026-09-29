@@ -51,6 +51,7 @@ const { candidates, total, fetchStatus, error, refresh } = useCandidates({
       </div>
       <NuxtLink
         :to="$localePath('/dashboard/candidates/new')"
+        data-tour="candidates-add"
         class="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 transition-colors"
       >
         <Plus class="size-4" />
@@ -59,12 +60,13 @@ const { candidates, total, fetchStatus, error, refresh } = useCandidates({
     </div>
 
     <!-- Search + role filters -->
-    <div class="flex flex-wrap items-center gap-2 mb-6">
+    <div data-tour="candidates-filters" class="flex flex-wrap items-center gap-2 mb-6">
       <div class="relative flex-1 min-w-48">
         <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-surface-400" />
         <input
           v-model="searchInput"
           type="text"
+          data-tour="candidates-search"
           placeholder="Search by name or email…"
           class="w-full rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 pl-10 pr-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
         />
@@ -128,7 +130,7 @@ const { candidates, total, fetchStatus, error, refresh } = useCandidates({
     </div>
 
     <!-- Candidate list -->
-    <div v-else class="space-y-2">
+    <div v-else data-tour="candidates-list" class="space-y-2">
       <NuxtLink
         v-for="c in candidates"
         :key="c.id"

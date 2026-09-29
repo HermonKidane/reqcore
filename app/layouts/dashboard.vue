@@ -37,5 +37,6 @@ const isDemo = computed(() => {
       </div>
       <slot />
     </main>
+    <TourLauncher />
   </div>
 </template>

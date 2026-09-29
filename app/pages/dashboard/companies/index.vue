@@ -102,6 +102,7 @@ async function handleDelete(id: string) {
         </p>
       </div>
       <button
+        data-tour="companies-add"
         class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 transition-colors"
         @click="showCreateForm = !showCreateForm"
       >
@@ -169,6 +170,7 @@ async function handleDelete(id: string) {
       <input
         v-model="searchInput"
         type="text"
+        data-tour="companies-search"
         placeholder="Search companies…"
         class="w-full rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 pl-10 pr-3 py-2 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
       />
@@ -206,7 +208,7 @@ async function handleDelete(id: string) {
     </div>
 
     <!-- Company list -->
-    <div v-else class="space-y-2">
+    <div v-else data-tour="companies-list" class="space-y-2">
       <div
         v-for="c in companies"
         :key="c.id"

@@ -213,7 +213,7 @@ function eventSummary(event: StepEvent): string {
 </script>
 
 <template>
-  <div class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5">
+  <div data-tour="workflow-panel" class="rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5">
     <div class="flex items-center justify-between mb-3">
       <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-200">
         30-Step Process
@@ -261,7 +261,7 @@ function eventSummary(event: StepEvent): string {
       </p>
 
       <!-- Phases -->
-      <div class="space-y-3">
+      <div data-tour="workflow-phases" class="space-y-3">
         <details
           v-for="phase in phases"
           :key="phase.name"

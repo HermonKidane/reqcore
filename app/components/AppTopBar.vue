@@ -148,11 +148,12 @@ onUnmounted(() => document.removeEventListener('click', onClickOutsideUser))
           </NuxtLink>
 
           <!-- Desktop nav links -->
-          <nav class="hidden md:flex items-center gap-0.5">
+          <nav data-tour="nav-main" class="hidden md:flex items-center gap-0.5">
             <NuxtLink
               v-for="item in mainNav"
               :key="item.to"
               :to="$localePath(item.to)"
+              :data-tour="item.to === '/dashboard/settings' ? 'nav-settings' : undefined"
               class="relative flex items-center gap-2 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all duration-200 no-underline"
               :class="isActiveRoute(item.to, item.exact)
                 ? 'text-brand-700 dark:text-brand-300 bg-brand-50/80 dark:bg-brand-950/40'
@@ -169,6 +170,7 @@ onUnmounted(() => document.removeEventListener('click', onClickOutsideUser))
           <!-- New Job button (desktop) -->
           <NuxtLink
             :to="$localePath('/dashboard/jobs/new')"
+            data-tour="nav-new-job"
             class="hidden sm:inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3.5 py-1.5 text-[13px] font-semibold text-white shadow-sm shadow-brand-600/20 hover:bg-brand-700 hover:shadow-md hover:shadow-brand-600/25 active:bg-brand-800 transition-all duration-200 no-underline"
           >
             <Plus class="size-3.5" />
