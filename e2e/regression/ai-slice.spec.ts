@@ -1,4 +1,7 @@
+import { createHash } from 'node:crypto'
 import { test, expect } from '../fixtures'
+import { findToneViolations, countSpokenWords } from '../helpers/tone'
+import { DEFAULT_AI_PROMPTS, R2R_AI_PROMPTS } from '../../shared/recruitment/ai-prompts'
 
 /**
  * AI vertical slice regression (design-ai-slice.md §7) — mock provider,
@@ -107,6 +110,27 @@ test.describe('AI vertical slice (mock provider)', () => {
     expect(run.promptSnapshot.inputSchema?.properties?.jobOrderContext).toBeTruthy()
     expect(run.promptSnapshot.outputSchema?.required).toContain('pitchScript')
     expect(run.promptSnapshot.safetyNotes).toContain('ADVISORY')
+
+    // ── v2 platform prompt: neutral (no R2R terms) — deterministic in ────
+    // both provider modes (promptSnapshot is seeded data, not model output)
+    expect(run.promptSnapshot.systemPrompt).not.toMatch(/Recruit2Recruit|\bR2R\b|rec-to-rec/i)
+    expect(run.promptTemplate.version).toBe(2)
+
+    // ── Tone net (reviews 2026-09-29): hard gate in mock mode (the mock ──
+    // is the only deterministic output); real-provider runs annotate so a
+    // non-deterministic model can't flake the suite (fable finding 12).
+    const violations = findToneViolations(run.output.parsed, run.inputSnapshot)
+    if (run.provider === 'mock') {
+      expect(violations, `tone violations: ${JSON.stringify(violations)}`).toEqual([])
+      // Spoken-word recount: the cap (≤95) is enforced by counting rules,
+      // not by trusting the model's own figure (review finding 9/14).
+      const recount = countSpokenWords(run.output.parsed.pitchScript.script)
+      expect(recount).toBeLessThanOrEqual(95)
+      expect(Math.abs(recount - run.output.parsed.pitchScript.spokenWordCount)).toBeLessThanOrEqual(5)
+    }
+    else if (violations.length > 0) {
+      test.info().annotations.push({ type: 'tone-net', description: JSON.stringify(violations) })
+    }
 
     // ── activity_log: fire-and-forget → eventual-consistency polling ─────
     await expect.poll(async () => {
@@ -255,7 +279,102 @@ test.describe('AI vertical slice (mock provider)', () => {
     expect(list.runs.length).toBeGreaterThanOrEqual(2)
     expect(list.runs[0].id).toBe(run2.id)
     expect(list.runs[1].id).toBe(run1.id)
-    expect(list.runs[0].promptTemplate.name).toContain('1st pitch prep')
-    expect(list.runs[0].promptTemplate.version).toBe(1)
+    expect(list.runs[0].promptTemplate.name).toContain('First-approach call prep')
+    expect(list.runs[0].promptTemplate.version).toBe(2)
+  })
+
+  test('8. generate on steps 11 and 20: mock shape + tone net (no vacuous pass)', async ({ authenticatedPage }) => {
+    const api = authenticatedPage.request
+    const applicationId = await makeApplication(api, 'Steps1120')
+
+    const steps = await getWorkflowSteps(api, applicationId)
+    const step11 = steps.find(i => i.stepTemplate.stepNumber === 11)!
+    expect(step11.stepTemplate.key).toBe('candidate_debrief')
+    const step20 = steps.find(i => i.stepTemplate.stepNumber === 20)!
+    expect(step20.stepTemplate.key).toBe('closing_negotiating')
+
+    const gen11 = await api.post(`/api/step-instances/${step11.id}/ai-runs`, { data: {}, timeout: 90_000 })
+    expect(gen11.status(), 'step 11 generate').toBe(200)
+    const run11 = await gen11.json()
+    expect(run11.status).toBe('succeeded')
+    expect(run11.promptTemplate.version).toBe(2)
+    expect(run11.promptSnapshot.systemPrompt).not.toMatch(/Recruit2Recruit|\bR2R\b|rec-to-rec/i)
+
+    const gen20 = await api.post(`/api/step-instances/${step20.id}/ai-runs`, { data: {}, timeout: 90_000 })
+    expect(gen20.status(), 'step 20 generate').toBe(200)
+    const run20 = await gen20.json()
+    expect(run20.status).toBe('succeeded')
+    expect(run20.promptTemplate.version).toBe(2)
+    expect(run20.promptSnapshot.systemPrompt).not.toMatch(/Recruit2Recruit|\bR2R\b|rec-to-rec/i)
+
+    if (run11.provider === 'mock') {
+      // Shape (mock determinism) — also guards the tone net against
+      // scanning empty objects and passing vacuously (fable finding 9).
+      expect(run11.output.parsed).toHaveProperty('summary')
+      expect(run11.output.parsed).toHaveProperty('interestLevel')
+      expect(run11.output.parsed.concerns.length).toBeGreaterThan(0)
+      expect(run11.output.parsed).toHaveProperty('nextActions')
+      expect(run20.output.parsed).toHaveProperty('candidatePosition')
+      expect(run20.output.parsed).toHaveProperty('counterScenarioPlan')
+      expect(run20.output.parsed.counterScenarioPlan.doNotShare.length).toBeGreaterThan(0)
+      expect(run20.output.parsed.riskFlags.length).toBeGreaterThan(0)
+
+      const v11 = findToneViolations(run11.output.parsed, run11.inputSnapshot)
+      expect(v11, `step-11 tone violations: ${JSON.stringify(v11)}`).toEqual([])
+      const v20 = findToneViolations(run20.output.parsed, run20.inputSnapshot)
+      expect(v20, `step-20 tone violations: ${JSON.stringify(v20)}`).toEqual([])
+    }
+    else {
+      for (const [label, run] of [['step-11', run11], ['step-20', run20]] as const) {
+        const v = findToneViolations(run.output.parsed, run.inputSnapshot)
+        if (v.length > 0) test.info().annotations.push({ type: `tone-net-${label}`, description: JSON.stringify(v) })
+      }
+    }
+  })
+
+  test('9. prompt data integrity: v1 byte-frozen (hash-pinned), v2 neutral, R2R v2 derivation complete', async () => {
+    const pinned: Record<string, string> = {
+      'candidate_contact.systemPrompt': 'fac46afb22100371',
+      'candidate_contact.userPromptTemplate': 'bf66b888259306ee',
+      'candidate_contact.safetyNotes': '5dac63566dbb59e5',
+      'candidate_debrief.systemPrompt': '97a5aee090d7038a',
+      'candidate_debrief.userPromptTemplate': 'd540b74f0a79abff',
+      'candidate_debrief.safetyNotes': '339259384cf0efa4',
+      'closing_negotiating.systemPrompt': 'cc3cb344a3f999ad',
+      'closing_negotiating.userPromptTemplate': 'e6ba1c0a3db34eb5',
+      'closing_negotiating.safetyNotes': '4f33b2c57b596141',
+    }
+    for (const p of DEFAULT_AI_PROMPTS.filter(p => p.version === 1)) {
+      for (const f of ['systemPrompt', 'userPromptTemplate', 'safetyNotes'] as const) {
+        const h = createHash('sha256').update(p[f]).digest('hex').slice(0, 16)
+        expect(h, `${p.stepKey}.${f} changed — v1 is byte-frozen; add a v3 instead`).toBe(pinned[`${p.stepKey}.${f}`])
+      }
+    }
+
+    // Platform v2: neutral — no R2R-specific vocabulary anywhere
+    const R2R = /Recruit2Recruit|\bR2R\b|rec-to-rec/i
+    for (const p of DEFAULT_AI_PROMPTS.filter(p => p.version === 2)) {
+      expect(R2R.test(p.systemPrompt), `${p.stepKey} v2 systemPrompt`).toBe(false)
+      expect(R2R.test(p.userPromptTemplate), `${p.stepKey} v2 userPromptTemplate`).toBe(false)
+      expect(R2R.test(p.safetyNotes), `${p.stepKey} v2 safetyNotes`).toBe(false)
+    }
+
+    // R2R v2 = v1 + TCC edits + softened close (owner decision 2026-09-29)
+    const r2r5 = R2R_AI_PROMPTS.find(p => p.stepKey === 'candidate_contact' && p.version === 2)!
+    expect(r2r5.systemPrompt).toContain('WHY THESE RULES EXIST')
+    expect(r2r5.systemPrompt).toContain('saying no should be easy')
+    expect(r2r5.systemPrompt).toContain('\'Neither\' is an acceptable answer')
+    expect(r2r5.systemPrompt).not.toContain('which may I pencil in')
+    expect(r2r5.systemPrompt).not.toContain('enticing')
+    expect(r2r5.systemPrompt).toContain('Write only field content')
+
+    const r2r20 = R2R_AI_PROMPTS.find(p => p.stepKey === 'closing_negotiating' && p.version === 2)!
+    expect(r2r20.systemPrompt).toContain('manage both sides')
+    expect(r2r20.systemPrompt).not.toContain('Negotiate for the candidate within')
+
+    // Resolver contract: any org row beats any platform row, any version —
+    // which is exactly why R2R needed its own v2 rows (review finding 13).
+    expect(R2R_AI_PROMPTS.filter(p => p.version === 1)).toHaveLength(3)
+    expect(R2R_AI_PROMPTS.filter(p => p.version === 2)).toHaveLength(3)
   })
 })
