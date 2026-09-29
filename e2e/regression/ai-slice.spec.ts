@@ -116,6 +116,14 @@ test.describe('AI vertical slice (mock provider)', () => {
     expect(run.promptSnapshot.systemPrompt).not.toMatch(/Recruit2Recruit|\bR2R\b|rec-to-rec/i)
     expect(run.promptTemplate.version).toBe(2)
 
+    // ── Output structure: asserted in BOTH provider modes so a real- ─────
+    // provider run whose JSON.parse failed (code fences, prose wrapper)
+    // can never pass vacuously (review finding 5).
+    expect(run.output.parsed, 'parsed output present').toBeTruthy()
+    expect(run.output.parsed).toHaveProperty('pitchScript')
+    expect(run.output.parsed).toHaveProperty('packageBullets')
+    expect(run.output.parsed).toHaveProperty('objectionRehearsal')
+
     // ── Tone net (reviews 2026-09-29): hard gate in mock mode (the mock ──
     // is the only deterministic output); real-provider runs annotate so a
     // non-deterministic model can't flake the suite (fable finding 12).
@@ -307,17 +315,21 @@ test.describe('AI vertical slice (mock provider)', () => {
     expect(run20.promptTemplate.version).toBe(2)
     expect(run20.promptSnapshot.systemPrompt).not.toMatch(/Recruit2Recruit|\bR2R\b|rec-to-rec/i)
 
+    // ── Output structure in BOTH modes (no vacuous pass on parse failure) ──
+    expect(run11.output.parsed, 'step-11 parsed output present').toBeTruthy()
+    expect(run11.output.parsed).toHaveProperty('summary')
+    expect(run11.output.parsed).toHaveProperty('interestLevel')
+    expect(run11.output.parsed).toHaveProperty('concerns')
+    expect(run11.output.parsed).toHaveProperty('nextActions')
+    expect(run20.output.parsed, 'step-20 parsed output present').toBeTruthy()
+    expect(run20.output.parsed).toHaveProperty('candidatePosition')
+    expect(run20.output.parsed).toHaveProperty('counterScenarioPlan')
+
     if (run11.provider === 'mock') {
       // Shape (mock determinism) — also guards the tone net against
       // scanning empty objects and passing vacuously (fable finding 9).
-      expect(run11.output.parsed).toHaveProperty('summary')
-      expect(run11.output.parsed).toHaveProperty('interestLevel')
-      expect(run11.output.parsed.concerns.length).toBeGreaterThan(0)
-      expect(run11.output.parsed).toHaveProperty('nextActions')
-      expect(run20.output.parsed).toHaveProperty('candidatePosition')
-      expect(run20.output.parsed).toHaveProperty('counterScenarioPlan')
-      expect(run20.output.parsed.counterScenarioPlan.doNotShare.length).toBeGreaterThan(0)
-      expect(run20.output.parsed.riskFlags.length).toBeGreaterThan(0)
+      expect(run11.output.parsed.riskFlags ?? []).toBeDefined()
+      expect(run20.output.parsed.counterScenarioPlan.doNotShare).toBeDefined()
 
       const v11 = findToneViolations(run11.output.parsed, run11.inputSnapshot)
       expect(v11, `step-11 tone violations: ${JSON.stringify(v11)}`).toEqual([])
@@ -332,7 +344,7 @@ test.describe('AI vertical slice (mock provider)', () => {
     }
   })
 
-  test('9. prompt data integrity: v1 byte-frozen (hash-pinned), v2 neutral, R2R v2 derivation complete', async () => {
+  test('9. prompt data integrity: v1 byte-frozen (hash-pinned), v2 pinned + neutral, R2R v2 derivation complete, tone net live', async () => {
     const pinned: Record<string, string> = {
       'candidate_contact.systemPrompt': 'fac46afb22100371',
       'candidate_contact.userPromptTemplate': 'bf66b888259306ee',
@@ -351,6 +363,27 @@ test.describe('AI vertical slice (mock provider)', () => {
       }
     }
 
+    // v2 system prompts are hash-pinned too: TCC_PREAMBLE/EDIT2/OUTPUT_GUARD
+    // are shared with the R2R derivation, so an edit to any of them would
+    // silently change v2 rows under the same version number (critique
+    // finding 3). A content change must come with a new pin AND a v3.
+    const v2Pinned: Record<string, string> = {
+      'platform:candidate_contact': '429953bf1be1f591',
+      'platform:candidate_debrief': 'c6e255f381caa4bc',
+      'platform:closing_negotiating': '89c6ef19d834bc1a',
+      'r2r:candidate_contact': 'ab7f225b3056bab4',
+      'r2r:candidate_debrief': '2c753d6d208288c8',
+      'r2r:closing_negotiating': '81a97e873ee05e75',
+    }
+    for (const p of DEFAULT_AI_PROMPTS.filter(p => p.version === 2)) {
+      const h = createHash('sha256').update(p.systemPrompt).digest('hex').slice(0, 16)
+      expect(h, `platform v2 ${p.stepKey} changed`).toBe(v2Pinned[`platform:${p.stepKey}`])
+    }
+    for (const p of R2R_AI_PROMPTS.filter(p => p.version === 2)) {
+      const h = createHash('sha256').update(p.systemPrompt).digest('hex').slice(0, 16)
+      expect(h, `r2r v2 ${p.stepKey} changed`).toBe(v2Pinned[`r2r:${p.stepKey}`])
+    }
+
     // Platform v2: neutral — no R2R-specific vocabulary anywhere
     const R2R = /Recruit2Recruit|\bR2R\b|rec-to-rec/i
     for (const p of DEFAULT_AI_PROMPTS.filter(p => p.version === 2)) {
@@ -359,22 +392,60 @@ test.describe('AI vertical slice (mock provider)', () => {
       expect(R2R.test(p.safetyNotes), `${p.stepKey} v2 safetyNotes`).toBe(false)
     }
 
-    // R2R v2 = v1 + TCC edits + softened close (owner decision 2026-09-29)
+    // R2R v2 = v1 + TCC edits + softened close + OUTPUT FIELDS
+    // (owner decisions 2026-09-29; critique findings 1/2). Every anchored
+    // replace is checked so a future no-op replace is caught.
     const r2r5 = R2R_AI_PROMPTS.find(p => p.stepKey === 'candidate_contact' && p.version === 2)!
     expect(r2r5.systemPrompt).toContain('WHY THESE RULES EXIST')
     expect(r2r5.systemPrompt).toContain('saying no should be easy')
     expect(r2r5.systemPrompt).toContain('\'Neither\' is an acceptable answer')
     expect(r2r5.systemPrompt).not.toContain('which may I pencil in')
+    expect(r2r5.systemPrompt).not.toContain('Binary two-slot close')
     expect(r2r5.systemPrompt).not.toContain('enticing')
+    expect(r2r5.systemPrompt).not.toContain('swap-seats')
     expect(r2r5.systemPrompt).toContain('Write only field content')
+    expect(r2r5.systemPrompt).toContain('required content, not commentary')
+    expect(r2r5.systemPrompt).toContain('OUTPUT FIELDS')
+    expect(r2r5.systemPrompt).toContain('count each [CONFIRM: …] as 3 words')
+    expect(r2r5.systemPrompt).not.toMatch(/WHY THESE RULES EXIST[\s\S]*?never override one\.\n\nYou never contact anyone/)
+    expect(r2r5.systemPrompt.indexOf('WHY THESE RULES EXIST')).toBeGreaterThan(r2r5.systemPrompt.indexOf('everything you write.'))
+    expect(r2r5.systemPrompt.indexOf('GROUND RULES')).toBeGreaterThan(r2r5.systemPrompt.indexOf('never override one.'))
+
+    const r2r11 = R2R_AI_PROMPTS.find(p => p.stepKey === 'candidate_debrief' && p.version === 2)!
+    expect(r2r11.systemPrompt).toContain('WHY THESE RULES EXIST')
+    expect(r2r11.systemPrompt).toContain('honest \'unknown\' is worth more')
+    expect(r2r11.systemPrompt).toContain('Write only field content')
+    expect(r2r11.systemPrompt).toContain('OUTPUT FIELDS')
+    expect(r2r11.systemPrompt.indexOf('GROUND RULES')).toBeGreaterThan(r2r11.systemPrompt.indexOf('never override one.'))
 
     const r2r20 = R2R_AI_PROMPTS.find(p => p.stepKey === 'closing_negotiating' && p.version === 2)!
+    expect(r2r20.systemPrompt).toContain('WHY THESE RULES EXIST')
+    expect(r2r20.systemPrompt).toContain('fails at counter-offer or in the first months')
+    expect(r2r20.systemPrompt).toContain('Write only field content')
+    expect(r2r20.systemPrompt).toContain('OUTPUT FIELDS')
     expect(r2r20.systemPrompt).toContain('manage both sides')
+    expect(r2r20.systemPrompt).toContain('With the client, anchor on what their budget buys now')
     expect(r2r20.systemPrompt).not.toContain('Negotiate for the candidate within')
+    expect(r2r20.systemPrompt).not.toContain('the client usually pays the fee')
+    expect(r2r20.systemPrompt.indexOf('GROUND RULES')).toBeGreaterThan(r2r20.systemPrompt.indexOf('never override one.'))
 
     // Resolver contract: any org row beats any platform row, any version —
     // which is exactly why R2R needed its own v2 rows (review finding 13).
     expect(R2R_AI_PROMPTS.filter(p => p.version === 1)).toHaveLength(3)
     expect(R2R_AI_PROMPTS.filter(p => p.version === 2)).toHaveLength(3)
+
+    // Tone-net self-check (critique finding 4): prove the net FIRES — a
+    // known-bad string is flagged, a "Relationship Manager" job title and
+    // a candidate-quoted "trust" are not.
+    const bad = findToneViolations({ note: 'This will build trust and strengthen our relationship. Great job!' }, {})
+    expect(bad.length).toBeGreaterThanOrEqual(2)
+    const good = findToneViolations(
+      { script: 'I work with Relationship Manager roles. The candidate said "I trust the team".' },
+      { notes: 'I trust the team', jobTitle: 'Relationship Manager' },
+    )
+    expect(good, JSON.stringify(good)).toEqual([])
+    // A quoted word must not launder a coined one in the same string.
+    const mixed = findToneViolations({ text: 'The candidate said "trust" — anyway, building trust is key.' }, { notes: 'trust' })
+    expect(mixed.length).toBeGreaterThan(0)
   })
 })

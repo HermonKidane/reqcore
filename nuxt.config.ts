@@ -89,7 +89,7 @@ export default defineNuxtConfig({
      *  AI_API_KEY unset → mock mode (safe default, no external calls). */
     aiBaseUrl: process.env.AI_BASE_URL || '',
     aiApiKey: process.env.AI_API_KEY || '',
-    aiModel: process.env.AI_MODEL || 'gemini-2.5-flash',
+    aiModel: process.env.AI_MODEL || 'gemini-3.8-flash',
     public: {
       /** When set, the dashboard shows a read-only demo banner for this org slug */
       demoOrgSlug: process.env.DEMO_ORG_SLUG || (isRailwayPreview ? 'reqcore-demo' : ''),

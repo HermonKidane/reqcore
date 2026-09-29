@@ -119,21 +119,21 @@ export function countSpokenWords(script: string): number {
   let confirms = 0
   for (const t of tokens) {
     if (t === '␟') { confirms += 1; continue }
-    if (/^\(.*\)$/.test(t)) continue // cue marker
-    if (/^[—–\-•]$/.test(t)) continue
+    if (/^\(.*\)\.?$/.test(t)) continue // cue marker
+    if (!/[\p{L}\p{N}]/u.test(t)) continue // punctuation residue
     words += 1
   }
   return words + confirms * 3
 }
 
-const MOCK_STEP5_SCRIPT = 'Hi [CONFIRM: first name], I understand you work in [CONFIRM: specialism]? (PAUSE) I work for [CONFIRM: firm description and location], recruiting in [CONFIRM: sector]. I\'m calling to arrange a short call, at a time that suits you, to outline a role. (PAUSE) Would tomorrow at 1pm or 6pm work, or is another time better?'
+const MOCK_STEP5_SCRIPT = 'Hi [CONFIRM: first name], I understand you work in [CONFIRM: specialism]? (PAUSE) Is this bad timing for you? (PAUSE) I work for [CONFIRM: firm description and location], recruiting in [CONFIRM: sector]. I\'m calling to arrange a short call, at a time that suits you, to outline a role. Would [CONFIRM: slot 1] or [CONFIRM: slot 2] work, or is another time better?'
 
 const MOCK_STEP5 = {
   pitchScript: {
     script: MOCK_STEP5_SCRIPT,
     spokenWordCount: countSpokenWords(MOCK_STEP5_SCRIPT),
-    estimatedSeconds: 32,
-    confirmBeforeUse: ['first name', 'specialism', 'firm description and location', 'sector', 'who leads the search', 'why them'],
+    estimatedSeconds: 35,
+    confirmBeforeUse: ['first name', 'specialism', 'firm description and location', 'sector', 'slot 1', 'slot 2'],
     doNotCallReason: null,
   },
   packageBullets: [] as unknown[],
@@ -145,7 +145,7 @@ const MOCK_STEP5 = {
       labels: ['Seems like now is a bad time to be called at work'],
       mirror: '…not interested?',
       afterPause: 'Listen for any specific reason — it becomes follow-up material.',
-      exitLine: 'No problem at all — thank you for your time. If it\'s easier, I can text first so you know who\'s calling. Either way, your preference will be respected.',
+      exitLine: 'No problem at all — thank you for your time. I can call at a quieter time, or send a text first — whichever you prefer. Either way, your preference will be respected.',
     },
     {
       objection: 'I\'m happy where I am',
@@ -154,7 +154,7 @@ const MOCK_STEP5 = {
       labels: ['Sounds like you\'re loyal to your current firm'],
       mirror: '…happy where you are?',
       afterPause: 'Note what specifically keeps them happy — a benchmark for the role on offer.',
-      exitLine: 'Fair enough — may I call at a quieter time, or would a text be better? Either way, your preference will be respected.',
+      exitLine: 'Fair enough — thank you. I can call at a quieter time, or text first — whichever suits you. Either way, your preference will be respected.',
     },
     {
       objection: 'I\'m too busy',
@@ -163,7 +163,7 @@ const MOCK_STEP5 = {
       labels: ['Looks like your schedule is full right now'],
       mirror: '…too busy?',
       afterPause: 'Get the best callback window and note it — call exactly when they said.',
-      exitLine: 'Understood. When is a better time today or tomorrow? Either way, your preference will be respected.',
+      exitLine: 'Understood — thank you. I can call back when you\'re less busy, or text first — whichever suits you. Either way, your preference will be respected.',
     },
     {
       objection: 'Who\'s the client?',
@@ -181,34 +181,25 @@ const MOCK_STEP5 = {
       labels: ['Seems like you want the headline before deciding anything'],
       mirror: '…what\'s this about?',
       afterPause: 'Note which detail catches their attention — lead with it on the next call.',
-      exitLine: 'In short: a role that fits your background. If the timing is wrong, tell me when suits and I\'ll call then — either way, your preference will be respected.',
+      exitLine: 'In short: a role I thought worth calling about. If the timing is wrong, tell me when suits and I\'ll call then — either way, your preference will be respected.',
     },
   ],
 }
 
 const MOCK_STEP11 = {
-  summary: 'The candidate attended the interview and the consultant noted the round went ahead as planned. Interest level is unknown — the notes contain no rating or clear words from the candidate on it; ask directly. Availability for the next round is unknown and should be confirmed.',
+  // Honest empty-notes output: nothing in the notes → nothing is stated.
+  summary: 'No debrief notes were provided. Interest level, concerns and competing processes are all unknown. Debrief the candidate and record their words before completing this step.',
   interestLevel: {
     rating: null,
     basis: 'unknown',
     candidateWords: null,
     rationale: 'The notes do not contain a rating or clear words from the candidate on interest level.',
   },
-  concerns: [
-    {
-      concern: 'Next-round availability not yet confirmed',
-      category: 'process_timing',
-      basis: 'inferred',
-      candidateWords: null,
-      clarifyingQuestion: 'When would you be available for the next round?',
-      jobOrderReference: null,
-      sensitive: false,
-    },
-  ],
+  concerns: [],
   competingProcesses: [],
   nextActions: [
     {
-      action: 'Confirm the candidate\'s availability for the next round and how the interview felt overall.',
+      action: 'Debrief the candidate and record their words before completing this step.',
       type: 'clarify_with_candidate',
       owner: 'consultant',
       due: null,
@@ -216,7 +207,7 @@ const MOCK_STEP11 = {
       fromNotes: null,
     },
   ],
-  flags: ['notes contained no candidate quotes'],
+  flags: ['no notes provided'],
 }
 
 const MOCK_STEP20 = {
@@ -229,8 +220,8 @@ const MOCK_STEP20 = {
     reasonsForMoving: [],
   },
   clientPosition: {
-    offerSoFar: [{ item: 'Offer not yet made', value: null, source: 'consultant_note', confidentialTo: null, words: null }],
-    rangeAndStretch: [{ item: 'Client range', value: '[CONFIRM: client range]', source: 'client_stated', confidentialTo: 'client', words: null }],
+    offerSoFar: [],
+    rangeAndStretch: [],
     approvers: [],
     flexibility: [],
     statedDeadlines: [],
@@ -255,7 +246,7 @@ const MOCK_STEP20 = {
     suggestedAskOrder: ['Confirm the candidate\'s priorities, then test each against the client\'s stated range.'],
     earningsIllustration: null,
     resignationPrep: null,
-    doNotShare: [{ item: 'Client range and stretch', confidentialTo: 'client' }],
+    doNotShare: [],
   },
 }
 

@@ -41,7 +41,9 @@ function walk(value: unknown, path: string, key: string | null, visit: (path: st
     return
   }
   if (Array.isArray(value)) {
-    value.forEach((item, i) => walk(item, `${path}[${i}]`, null, visit))
+    // Propagate the array's key so a deny-listed key of string arrays
+    // (e.g. candidateWords: string[]) still applies to its items.
+    value.forEach((item, i) => walk(item, `${path}[${i}]`, key, visit))
     return
   }
   if (value && typeof value === 'object') {
@@ -54,7 +56,9 @@ function walk(value: unknown, path: string, key: string | null, visit: (path: st
 /**
  * Every preachy/cheerful wording in the model's own text. A match is
  * exempt only when the exact matched text also appears in the input
- * snapshot (case-insensitive) — i.e. it was quoted, not coined.
+ * snapshot (case-insensitive) — i.e. it was quoted, not coined. Every
+ * occurrence is checked: one exempt quote does not launder a coined word
+ * elsewhere in the same string.
  */
 export function findToneViolations(output: unknown, inputSnapshot: unknown): ToneViolation[] {
   const inputText = JSON.stringify(inputSnapshot ?? {}).toLowerCase()
@@ -63,17 +67,15 @@ export function findToneViolations(output: unknown, inputSnapshot: unknown): Ton
   walk(output, '$', null, (path, key, text) => {
     if (key && QUOTE_KEYS.has(key)) return
 
-    const cheer = text.match(CHEER)
-    if (cheer) {
+    for (const cheer of text.matchAll(new RegExp(CHEER.source, 'gi'))) {
       if (!inputText.includes(cheer[0].toLowerCase())) {
         violations.push({ path, kind: 'cheer', match: cheer[0] })
       }
-      return
     }
-
-    const preach = text.match(META) ?? text.match(BARE)
-    if (preach && !inputText.includes(preach[0].toLowerCase())) {
-      violations.push({ path, kind: 'preach', match: preach[0] })
+    for (const preach of text.matchAll(new RegExp(`${META.source}|${BARE.source}`, 'gi'))) {
+      if (!inputText.includes(preach[0].toLowerCase())) {
+        violations.push({ path, kind: 'preach', match: preach[0] })
+      }
     }
   })
 
@@ -95,8 +97,8 @@ export function countSpokenWords(script: string): number {
   let confirms = 0
   for (const t of tokens) {
     if (t === '␟') { confirms += 1; continue }
-    if (/^\(.*\)$/.test(t)) continue // cue marker
-    if (/^[—–\-•]$/.test(t)) continue
+    if (/^\(.*\)\.?$/.test(t)) continue // cue marker
+    if (!/[\p{L}\p{N}]/u.test(t)) continue // punctuation residue
     words += 1
   }
   return words + confirms * 3

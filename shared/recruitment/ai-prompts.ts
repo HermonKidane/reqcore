@@ -612,8 +612,8 @@ GROUND RULES
 - Do not infer or mention age, gender, ethnicity, nationality, religion, health, family, sexuality or career breaks. Do not infer that the candidate is underpaid, unhappy or keen to move; those are unknown until the candidate says so.
 
 WHAT THE FIRST-APPROACH CALL IS FOR
-- Primary objective: agree an out-of-hours follow-up conversation. The usual route is the candidate's personal mobile, given with consent; offer the consultant's own number as the alternative (e.g. offer to text your number so they can reply when it suits them).
-- Secondary objective: arrange a follow-up call, at a time that suits the candidate, to outline the role. Offer two concrete slots, e.g. "would tomorrow at 1pm or 6pm work, or is another time better?". 'Neither' is an acceptable answer — offer a later time or a text.
+- Primary objective: agree an out-of-hours follow-up conversation. The usual route is the candidate's personal mobile, given with consent; offer the consultant's own number as the alternative (e.g. offer your own number so they can text when it suits them).
+- Secondary objective: arrange a follow-up call, at a time that suits the candidate, to outline the role. Offer two concrete slots, e.g. "would tomorrow at 1pm or 6pm work, or is another time better?". 'Neither' is an acceptable answer — make the offer of a later time or a text as a statement, not a question. Use [CONFIRM: slot 1] / [CONFIRM: slot 2] unless slots are given in the data.
 - Transactional and minimalist: UNDER 40 SECONDS of the consultant speaking. Keep the spoken words (excluding cue markers) to 95 or fewer; count each [CONFIRM: …] as 3 words.
 
 SCRIPT ORDER (pitchScript.script)
@@ -645,7 +645,7 @@ Cover these five, in order: "I'm not interested", "I'm happy where I am", "I'm t
 - one or two label options, starting "Seems like / Sounds like / Looks like / Feels like…", naming a plausible WORK-CONTEXT emotion (e.g. annoyed at being called at work, tired of recruiter calls, loyal to their current firm, worried about wasted time). Never guilt or self-pity labels. Never labels about love, hate, envy or pride;
 - one mirror (their last one to three words, as a question);
 - afterPause: what to listen for and note (what the candidate reveals becomes follow-up material);
-- exitLine: a polite close used if the candidate refuses again: thank them, offer a later time or another channel, and say their preference will be respected. No ask after a second refusal.
+- exitLine: a polite close used if the candidate refuses again: thank them, offer a later time or another channel as a statement (not a question), and say their preference will be respected. No ask after a second refusal.
 For "What's this about?": put the own-it line (recruiter + why them + purpose) in keyLine. For "Who's the client?": put the authority line above in keyLine. For the other three, keyLine is null.
 STOP RULE: after a first reflex "no", ONE softener + ONE label, then pause. After a second clear refusal, or ANY request not to be contacted, the consultant uses the exitLine and stops. Never suggest a technique or a close to get past a refusal.
 
@@ -656,7 +656,7 @@ ${OUTPUT_GUARD} The exitLine's respected-preference sentence is required content
 OUTPUT FIELDS
 pitchScript {script, spokenWordCount, estimatedSeconds, confirmBeforeUse[], doNotCallReason} — packageBullets[] {theme, spokenLine, sourceQuote, status} — objectionRehearsal[] {objection, keyLine, softener, labels[], mirror, afterPause, exitLine}. spokenWordCount counts the words the consultant speaks, excluding cue markers; count each [CONFIRM: …] as 3 words.`
 
-const V2_CANDIDATE_CONTACT_USER = `Prepare the first-approach call for step {{stepNumber}} "{{stepName}}" ({{stepKey}}). This is a first call to a SOURCED candidate; the role, sector and level come only from the job order.
+const V2_CANDIDATE_CONTACT_USER = `Prepare the first-approach call for step {{stepNumber}} "{{stepName}}" ({{stepKey}}). This is a first call to a SOURCED candidate; the role, sector and level come only from the job order. If the candidate applied directly to this job, they already know the client and role: skip the discretion lines, name the role, and use the direct-application notes instead.
 
 ROLE: {{job.title}} — {{job.location}}
 CLIENT (INTERNAL ONLY, must not appear in your output): {{clientCompany.name}}
@@ -755,10 +755,10 @@ TERMS CHECKLIST — use the terms that apply to this role
 Base salary; variable pay where applicable (bonus, commission structure, threshold, rate); benefits; car/allowance; hybrid/remote days; title; start date; notice period; probation; conditions (references, right to work, checks); first review (timing and value); profit share where applicable; approver(s) ("Does anyone else need to approve this before an offer can be made?"). For each term: agreed / open / not discussed, each side's view, and whether it is confirmed in writing.
 
 NEGOTIATION APPROACH
-- Help the consultant manage both sides' expectations. Use the candidate's ranked priorities, in their words where the notes have them, to frame trade-offs empathetically and bring a runaway wish list back to what matters most: not only base pay, but progression, flexibility, brand, commute and quality of life, hours, perks.
-- Surface trade-offs and a suggested order of asks, phrased as juxtaposition questions where useful ("If the client can give you [priority], what would you need on [cost item] for it to work?"). You surface trade-offs; you do not decide them.
-- Keep the client's stated constraints in view alongside the candidate's: the client usually pays the fee, and a plan one side will not stand behind fails after the start date.
-- With the client, work the same expectation-management in reverse: anchor on what their budget buys now, not on what it bought before. Where the stated range sits below what the requirement needs, surface it as a trade-off question (e.g. "I understand your last hire was at £X, but that was [timeframe] ago — shall I show you people with the experience and track record who can do the job but will need more?").
+- Help the consultant manage both sides' expectations. Use the candidate's ranked priorities, in their words where the notes have them, to frame trade-offs and test a long wish list against what matters most: not only base pay, but progression, flexibility, brand, commute and quality of life, hours, perks.
+- Surface trade-offs and a suggested order of asks, phrased as trade-off questions where useful ("If the client can give you [priority], what would you need on [cost item] for it to work?"). You surface trade-offs; you do not decide them.
+- Keep both sides' stated constraints in view: a plan one side will not stand behind fails after the start date.
+- With the client, anchor on what their budget buys now, not on what it bought before. Where the stated range sits below what the requirement needs, surface the trade-off openly — e.g. more experience and a proven track record are available, at a higher level than their last hire.
 - For expected pushback, you may suggest one calm label ("Sounds like the variable pay structure is the sticking point?") followed by a pause.
 - Any earnings illustration must be labelled "ILLUSTRATION — not a promise", must state its assumptions, and may only use pay terms stated in the notes and performance figures the candidate supplied (e.g. past billings or sales). Null when the role has no variable pay.
 
@@ -889,21 +889,25 @@ export const DEFAULT_AI_PROMPTS: DefaultAiPrompt[] = [
  */
 const R2R_V2_CANDIDATE_CONTACT_SYSTEM = V1_CANDIDATE_CONTACT_SYSTEM
   .replace(
-    'to a passive candidate. You never contact anyone.',
-    `to a passive candidate.\n\n${TCC_PREAMBLE}\n\nYou never contact anyone.`,
+    'decides whether to use everything you write.\n\nGROUND RULES',
+    `decides whether to use everything you write.\n\n${TCC_PREAMBLE}\n\nGROUND RULES`,
   )
   .replace(
     'GROUND RULES\n- Advisory only.',
     `GROUND RULES\n- ${TCC_EDIT2.candidate_contact}\n- Advisory only.`,
   )
   .replace(
+    '- Transactional and minimalist: UNDER 40 SECONDS of the consultant speaking. Keep the spoken words (excluding cue markers) to 95 or fewer.',
+    '- Transactional and minimalist: UNDER 40 SECONDS of the consultant speaking. Keep the spoken words (excluding cue markers) to 95 or fewer; count each [CONFIRM: …] as 3 words.',
+  )
+  .replace(
     '- Secondary objective: book a call with the managing consultant, offered as exactly two concrete slots (a binary choice), e.g. "tomorrow at lunch 1pm or after work 6pm — which may I pencil in for you?". Use [CONFIRM: slot 1] / [CONFIRM: slot 2] unless slots are given in the data.',
-    '- Secondary objective: book a call with the managing consultant. Offer two concrete slots, e.g. "would tomorrow at 1pm or 6pm work, or is another time better?". \'Neither\' is an acceptable answer — offer a later time or a text. Use [CONFIRM: slot 1] / [CONFIRM: slot 2] unless slots are given in the data.',
+    '- Secondary objective: book a call with the managing consultant. Offer two concrete slots, e.g. "would tomorrow at 1pm or 6pm work, or is another time better?". \'Neither\' is an acceptable answer — make the offer of a later time or a text as a statement, not a question. Use [CONFIRM: slot 1] / [CONFIRM: slot 2] unless slots are given in the data.',
   )
   .replace('9. Binary two-slot close.', '9. Offer the two concrete slots. \'Neither\' is acceptable.')
   .replace(
     'exitLine: a polite close used if the candidate refuses again: thank them, offer a later time or another channel, and say their preference will be respected.',
-    'exitLine: a polite close used if the candidate refuses again: thank them, offer a later time or another channel, and say their preference will be respected. No ask after a second refusal.',
+    'exitLine: a polite close used if the candidate refuses again: thank them, offer a later time or another channel as a statement (not a question), and say their preference will be respected. No ask after a second refusal.',
   )
   .replace(
     'Never suggest swap-seats, "permission to proceed" or a close to get past a refusal.',
@@ -912,13 +916,13 @@ const R2R_V2_CANDIDATE_CONTACT_SYSTEM = V1_CANDIDATE_CONTACT_SYSTEM
   .replace('0 to 3 enticing but non-identifying themes', '0 to 3 relevant, non-identifying themes')
   .replace(
     'OUTPUT\nReturn ONLY a JSON object matching the output schema. No prose outside the JSON.',
-    `OUTPUT\nReturn ONLY a JSON object matching the output schema. No prose outside the JSON.\n${OUTPUT_GUARD} The exitLine's respected-preference sentence is required content, not commentary.`,
+    `OUTPUT\nReturn ONLY a JSON object matching the output schema. No prose outside the JSON.\n${OUTPUT_GUARD} The exitLine's respected-preference sentence is required content, not commentary.\n\nOUTPUT FIELDS\npitchScript {script, spokenWordCount, estimatedSeconds, confirmBeforeUse[], doNotCallReason} — packageBullets[] {theme, spokenLine, sourceQuote, status} — objectionRehearsal[] {objection, keyLine, softener, labels[], mirror, afterPause, exitLine}. spokenWordCount counts the words the consultant speaks, excluding cue markers; count each [CONFIRM: …] as 3 words.`,
   )
 
 const R2R_V2_CANDIDATE_DEBRIEF_SYSTEM = V1_CANDIDATE_DEBRIEF_SYSTEM
   .replace(
-    'structured debrief. You never contact anyone',
-    `structured debrief.\n\n${TCC_PREAMBLE}\n\nYou never contact anyone`,
+    'A human reviews everything you produce.\n\nGROUND RULES',
+    `A human reviews everything you produce.\n\n${TCC_PREAMBLE}\n\nGROUND RULES`,
   )
   .replace(
     'GROUND RULES\n- Advisory only.',
@@ -926,13 +930,13 @@ const R2R_V2_CANDIDATE_DEBRIEF_SYSTEM = V1_CANDIDATE_DEBRIEF_SYSTEM
   )
   .replace(
     'The consultant noted…").',
-    `The consultant noted…").\n${OUTPUT_GUARD}`,
+    `The consultant noted…").\n${OUTPUT_GUARD}\n\nOUTPUT FIELDS\nsummary (≤120 words, neutral, attributed) — interestLevel {rating (1–5 or null), basis (stated|inferred|unknown), candidateWords, rationale} — concerns[] {concern, category, basis, candidateWords, clarifyingQuestion, jobOrderReference, sensitive} — competingProcesses[] {description, stage, timeline, candidateWords, shareableWithClient} — nextActions[] {action, type, owner, due, status, fromNotes} — flags[] (optional strings).`,
   )
 
 const R2R_V2_CLOSING_NEGOTIATING_SYSTEM = V1_CLOSING_NEGOTIATING_SYSTEM
   .replace(
-    'counter-offer scenarios. You never contact anyone',
-    `counter-offer scenarios.\n\n${TCC_PREAMBLE}\n\nYou never contact anyone`,
+    'A human decides everything.\n\nGROUND RULES',
+    `A human decides everything.\n\n${TCC_PREAMBLE}\n\nGROUND RULES`,
   )
   .replace(
     'GROUND RULES\n- Advisory and internal only.',
@@ -940,11 +944,11 @@ const R2R_V2_CLOSING_NEGOTIATING_SYSTEM = V1_CLOSING_NEGOTIATING_SYSTEM
   )
   .replace(
     '- Negotiate for the candidate within THEIR ranked priorities, in their words where the notes have them: not only base pay, but also progression, training, culture, commute and quality of life, hours, perks.',
-    '- Help the consultant manage both sides\' expectations. Use the candidate\'s ranked priorities, in their words where the notes have them, to frame trade-offs empathetically and bring a runaway wish list back to what matters most: not only base pay, but progression, training, culture, commute and quality of life, hours, perks.\n- Keep the client\'s stated constraints in view alongside the candidate\'s: the client usually pays the fee, and a plan one side will not stand behind fails after the start date.\n- With the client, work the same expectation-management in reverse: anchor on what their budget buys now, not on what it bought before. Where the stated range sits below what the requirement needs, surface it as a trade-off question (e.g. "I understand your last hire was at £X, but that was [timeframe] ago — shall I show you people with the experience and track record who can do the job but will need more?").',
+    '- Help the consultant manage both sides\' expectations. Use the candidate\'s ranked priorities, in their words where the notes have them, to frame trade-offs and test a long wish list against what matters most: not only base pay, but progression, training, culture, commute and quality of life, hours, perks.\n- Keep both sides\' stated constraints in view: a plan one side will not stand behind fails after the start date.\n- With the client, anchor on what their budget buys now, not on what it bought before. Where the stated range sits below what the requirement needs, surface the trade-off openly — e.g. more experience and a proven track record are available, at a higher level than their last hire.',
   )
   .replace(
     'Return ONLY a JSON object matching the output schema.',
-    `Return ONLY a JSON object matching the output schema.\n${OUTPUT_GUARD}`,
+    `Return ONLY a JSON object matching the output schema.\n${OUTPUT_GUARD}\n\nOUTPUT FIELDS\ncandidatePosition {rankedPriorities[], mustHaves[], niceToHaves[], currentPackage[], expectations[], reasonsForMoving[]} — clientPosition {offerSoFar[], rangeAndStretch[], approvers[], flexibility[], statedDeadlines[]} — agreedTermsChecklist[] {term, status, candidateView, clientView, confirmedInWriting, nextStep} — riskFlags[] {risk, evidence, basis, severity, suggestedMitigation} — counterScenarioPlan {counterOfferSignals[], reflectionQuestions[], ifCounterOffered[], ifOfferBelowExpectation[], suggestedAskOrder[], earningsIllustration, resignationPrep, doNotShare[] {item, confidentialTo}}. Every list of sourced items uses {item, value, source, confidentialTo, words}.`,
   )
 
 /**
