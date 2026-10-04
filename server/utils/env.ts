@@ -97,8 +97,8 @@ const envSchema = z
     GITHUB_FEEDBACK_REPO: emptyToUndefined.pipe(z.string().regex(/^[^/]+\/[^/]+$/, 'Must be in "owner/repo" format')).optional(),
     /** Resend API key for transactional emails (invitations, etc.). When not set, emails are logged to console. */
     RESEND_API_KEY: emptyToUndefined.pipe(z.string().min(1)).optional(),
-    /** Sender email address for Resend emails. Must be a verified domain in Resend. Defaults to "Reqcore <noreply@reqcore.com>". */
-    RESEND_FROM_EMAIL: emptyToUndefined.pipe(z.string().min(1)).optional().default('Reqcore <noreply@reqcore.com>'),
+    /** Sender email address for Resend emails. Must be a verified domain in Resend. Defaults to "MyRecruiter <noreply@myrecruiter.uk>". */
+    RESEND_FROM_EMAIL: emptyToUndefined.pipe(z.string().min(1)).optional().default('MyRecruiter <noreply@myrecruiter.uk>'),
   })
   .superRefine((data, ctx) => {
     const hasPreviewDomain = data.RAILWAY_PUBLIC_DOMAIN

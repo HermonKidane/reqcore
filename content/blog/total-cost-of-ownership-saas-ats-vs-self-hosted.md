@@ -2,7 +2,7 @@
 title: "Total Cost of Ownership: SaaS ATS vs Self-Hosted Open Source"
 description: "Compare the true 3-year cost of SaaS and self-hosted ATS platforms. Includes hidden cost checklist, breakeven analysis, and a TCO calculator framework."
 date: 2026-02-25
-author: "Reqcore Team"
+author: "MyRecruiter Team"
 image: "/og-image.png"
 tags: ["ats-cost", "tco", "saas-vs-self-hosted", "open-source-ats", "ats-pricing"]
 ---
@@ -28,7 +28,7 @@ The real cost of an ATS includes:
 - **Switching costs** — Data export limitations, retraining, and productivity loss during migration
 - **Opportunity cost** — Vendor lock-in that prevents you from adapting your hiring workflow
 
-A self-hosted open-source ATS like [Reqcore](/) eliminates subscription and per-seat fees entirely. The trade-off is that you manage infrastructure — but as we covered in our [self-hosted vs cloud ATS comparison](/blog/self-hosted-vs-cloud-ats), modern deployment platforms have made that trade-off far less daunting than it used to be. And as you will see below, that infrastructure cost is often a fraction of what SaaS vendors charge.
+A self-hosted open-source ATS like [MyRecruiter](/) eliminates subscription and per-seat fees entirely. The trade-off is that you manage infrastructure — but as we covered in our [self-hosted vs cloud ATS comparison](/blog/self-hosted-vs-cloud-ats), modern deployment platforms have made that trade-off far less daunting than it used to be. And as you will see below, that infrastructure cost is often a fraction of what SaaS vendors charge.
 
 ## The Hidden Cost Taxonomy
 
@@ -107,7 +107,7 @@ When you add these hidden costs, the effective annual spend for a 10-recruiter t
 
 A self-hosted open-source ATS eliminates subscription fees entirely. You pay only for infrastructure and the time to set it up.
 
-Here is what it actually costs to run [Reqcore](/) — an open-source ATS built with Nuxt 4, PostgreSQL, and MinIO — on different hosting options:
+Here is what it actually costs to run [MyRecruiter](/) — an open-source ATS built with Nuxt 4, PostgreSQL, and MinIO — on different hosting options:
 
 ### Option 1: Railway (Simplest)
 
@@ -120,7 +120,7 @@ Here is what it actually costs to run [Reqcore](/) — an open-source ATS built 
 | Custom domain | $1/mo (annual registration) |
 | **Total** | **~$6–10/month ($72–120/year)** |
 
-Setup time: Under 30 minutes. You link your GitHub repository, set environment variables, and deploy. No DevOps experience required. Railway's $5/month Hobby plan includes $5 of usage credits — a minimal Reqcore deployment typically uses $6–7 in resources, so expect a small overage.
+Setup time: Under 30 minutes. You link your GitHub repository, set environment variables, and deploy. No DevOps experience required. Railway's $5/month Hobby plan includes $5 of usage credits — a minimal MyRecruiter deployment typically uses $6–7 in resources, so expect a small overage.
 
 ### Option 2: VPS (Hetzner, DigitalOcean)
 
@@ -159,7 +159,7 @@ The following table compares total cost of ownership across three company sizes 
 
 ### Small Team (5 Recruiters)
 
-| Cost Category | SaaS ATS (Mid-Tier) | Reqcore on Railway | Reqcore on VPS |
+| Cost Category | SaaS ATS (Mid-Tier) | MyRecruiter on Railway | MyRecruiter on VPS |
 |---|---|---|---|
 | Year 1 subscription/infra | $4,500 | $120 | $240 |
 | Implementation | $2,000 | $0 | $0 |
@@ -170,7 +170,7 @@ The following table compares total cost of ownership across three company sizes 
 
 ### Mid-Size Team (25 Recruiters)
 
-| Cost Category | SaaS ATS (Mid-Tier) | Reqcore on Railway | Reqcore on VPS |
+| Cost Category | SaaS ATS (Mid-Tier) | MyRecruiter on Railway | MyRecruiter on VPS |
 |---|---|---|---|
 | Year 1 subscription/infra | $18,000 | $120 | $360 |
 | Implementation | $5,000 | $0 | $0 |
@@ -181,7 +181,7 @@ The following table compares total cost of ownership across three company sizes 
 
 ### Large Team (100 Recruiters)
 
-| Cost Category | SaaS ATS (Mid-Tier) | Reqcore on Railway | Reqcore on VPS |
+| Cost Category | SaaS ATS (Mid-Tier) | MyRecruiter on Railway | MyRecruiter on VPS |
 |---|---|---|---|
 | Year 1 subscription/infra | $60,000 | $240 | $600 |
 | Implementation | $10,000 | $0 | $0 |
@@ -280,7 +280,7 @@ Plug in your own numbers. In almost every scenario, self-hosted open source cost
 
 ### How much does an ATS cost per year?
 
-SaaS ATS platforms cost between $250 and $12,000 per year for small businesses, $3,000–$25,000 for mid-size companies, and $15,000–$125,000+ for enterprises. Self-hosted open-source alternatives like Reqcore cost $72–$360 per year in infrastructure, with no license or per-seat fees.
+SaaS ATS platforms cost between $250 and $12,000 per year for small businesses, $3,000–$25,000 for mid-size companies, and $15,000–$125,000+ for enterprises. Self-hosted open-source alternatives like MyRecruiter cost $72–$360 per year in infrastructure, with no license or per-seat fees.
 
 ### What are the hidden costs of an ATS?
 
@@ -288,15 +288,15 @@ The most commonly missed costs are implementation fees ($1,000–$10,000+), feat
 
 ### Is a self-hosted ATS cheaper than SaaS?
 
-Yes, in virtually every scenario. A self-hosted ATS like Reqcore costs $6–$30/month in infrastructure regardless of team size, while a SaaS ATS with 10 users costs $150–$1,650/month in subscriptions alone. The gap widens with every user you add because self-hosted has no per-seat fees.
+Yes, in virtually every scenario. A self-hosted ATS like MyRecruiter costs $6–$30/month in infrastructure regardless of team size, while a SaaS ATS with 10 users costs $150–$1,650/month in subscriptions alone. The gap widens with every user you add because self-hosted has no per-seat fees.
 
 ### What is the cheapest ATS for small businesses?
 
-For a commercial SaaS ATS, Manatal ($15/user/month) and JazzHR ($75/month flat) are among the most affordable. For the lowest possible cost, self-hosted open-source options like [Reqcore](/) or [OpenCATS](https://opencats.org/) run for $6–$10/month on Railway or a basic VPS. See our [best open-source ATS comparison](/blog/best-open-source-applicant-tracking-systems) for a full breakdown.
+For a commercial SaaS ATS, Manatal ($15/user/month) and JazzHR ($75/month flat) are among the most affordable. For the lowest possible cost, self-hosted open-source options like [MyRecruiter](/) or [OpenCATS](https://opencats.org/) run for $6–$10/month on Railway or a basic VPS. See our [best open-source ATS comparison](/blog/best-open-source-applicant-tracking-systems) for a full breakdown.
 
 ### Do I need DevOps experience to self-host an ATS?
 
-Not with modern deployment platforms. Reqcore deploys to Railway in under 30 minutes by linking a GitHub repository and setting environment variables. No SSH, no server management, no Docker knowledge required. For VPS deployment, basic familiarity with Docker Compose is helpful but not mandatory — the documentation walks through every step.
+Not with modern deployment platforms. MyRecruiter deploys to Railway in under 30 minutes by linking a GitHub repository and setting environment variables. No SSH, no server management, no Docker knowledge required. For VPS deployment, basic familiarity with Docker Compose is helpful but not mandatory — the documentation walks through every step.
 
 ### How do I calculate ATS ROI?
 
@@ -306,10 +306,10 @@ Divide the annual cost savings (SaaS cost minus self-hosted cost) by the self-ho
 
 ATS cost is not a subscription fee — it is a compounding obligation that grows with every recruiter, every add-on, and every contract renewal. SaaS platforms are convenient, but that convenience comes at a steep and escalating price.
 
-Self-hosted open-source ATS platforms like [Reqcore](/) offer the same core functionality — job posting, candidate pipelines, application tracking, team collaboration — at 90–99% lower cost. The trade-off is managing your own infrastructure, but modern PaaS platforms like Railway have reduced that burden to near zero.
+Self-hosted open-source ATS platforms like [MyRecruiter](/) offer the same core functionality — job posting, candidate pipelines, application tracking, team collaboration — at 90–99% lower cost. The trade-off is managing your own infrastructure, but modern PaaS platforms like Railway have reduced that burden to near zero.
 
 Before you sign your next ATS contract, run the numbers using the [TCO framework above](#tco-calculator-build-your-own-estimate). Compare the three-year total — not just the monthly price tag. Your budget will thank you.
 
 ---
 
-**Ready to see what a $6/month ATS looks like?** [Explore Reqcore](/) — open source, self-hosted, no per-seat fees. Or compare it against the competition in our [open-source ATS comparison](/blog/best-open-source-applicant-tracking-systems).
+**Ready to see what a $6/month ATS looks like?** [Explore MyRecruiter](/) — open source, self-hosted, no per-seat fees. Or compare it against the competition in our [open-source ATS comparison](/blog/best-open-source-applicant-tracking-systems).

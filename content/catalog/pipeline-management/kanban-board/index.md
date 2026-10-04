@@ -24,8 +24,8 @@ A visual drag-and-drop Kanban board for each job, showing candidates organized b
 
 ## Why it matters
 
-The pipeline board is where recruiters spend most of their time. It needs to be fast, visual, and not require page reloads. Reqcore's implementation updates the backend on drag and immediately reflects the change in the UI, so there's zero lag between action and feedback.
+The pipeline board is where recruiters spend most of their time. It needs to be fast, visual, and not require page reloads. MyRecruiter's implementation updates the backend on drag and immediately reflects the change in the UI, so there's zero lag between action and feedback.
 
 ## How it compares
 
-Most commercial ATS platforms have excellent Kanban boards. The gap in open-source is significant — OpenCATS has no pipeline view at all. Reqcore closes this gap with a modern implementation that matches the UX quality of Greenhouse or Lever.
+Most commercial ATS platforms have excellent Kanban boards. The gap in open-source is significant — OpenCATS has no pipeline view at all. MyRecruiter closes this gap with a modern implementation that matches the UX quality of Greenhouse or Lever.

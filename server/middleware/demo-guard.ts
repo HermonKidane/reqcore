@@ -17,7 +17,7 @@ import { isRailwayPreviewEnvironment } from '../utils/env'
 // the org is created after server startup.
 // ─────────────────────────────────────────────
 const demoOrgIds = new Map<string, string>()
-const DEFAULT_PREVIEW_DEMO_ORG_SLUG = 'reqcore-demo'
+const DEFAULT_PREVIEW_DEMO_ORG_SLUG = 'myrecruiter-demo'
 
 const PUBLIC_APPLY_PATH_REGEX = /^\/api\/public\/jobs\/([^/]+)\/apply\/?$/
 

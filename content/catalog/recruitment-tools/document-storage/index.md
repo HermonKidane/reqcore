@@ -26,7 +26,7 @@ Upload and manage candidate documents (resumes, cover letters, portfolios) via S
 
 ## Why it matters
 
-Resumes are the most sensitive data in an ATS. Unlike cloud platforms where your candidate documents live on someone else's servers, Reqcore stores them in your own MinIO instance. The server-proxy pattern means the client never gets a direct URL to the storage backend — all access goes through authenticated API routes.
+Resumes are the most sensitive data in an ATS. Unlike cloud platforms where your candidate documents live on someone else's servers, MyRecruiter stores them in your own MinIO instance. The server-proxy pattern means the client never gets a direct URL to the storage backend — all access goes through authenticated API routes.
 
 ## Security model
 

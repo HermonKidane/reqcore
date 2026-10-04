@@ -2,7 +2,7 @@
 title: "What Is an Open Source Applicant Tracking System?"
 description: "Learn what an open source ATS is, how it works, and whether it fits your hiring team. Covers features, licensing, cost, data ownership, and real examples."
 date: 2026-03-03
-author: "Reqcore Team"
+author: "MyRecruiter Team"
 image: "/og-image.png"
 tags: ["open-source-ats", "applicant-tracking-system", "self-hosted", "recruitment", "hiring", "ats"]
 ---
@@ -19,7 +19,7 @@ An applicant tracking system manages the hiring lifecycle from job requisition t
 
 1. **Job posting** — Create job listings and distribute them to career pages and job boards ([Indeed](https://www.indeed.com/), [LinkedIn](https://www.linkedin.com/), [Google for Jobs](https://jobs.google.com/)).
 2. **Application collection** — Accept candidate applications via web forms, email, or API integrations. Store resumes, cover letters, and custom field responses.
-3. **Pipeline management** — Track each candidate through configurable stages: applied → screened → interviewed → offered → hired (or rejected at any stage). When we built Reqcore's pipeline system, we learned that rigid 5-stage pipelines break immediately in practice — every team structures hiring differently. Configurable stages are not a nice-to-have, they are a core requirement.
+3. **Pipeline management** — Track each candidate through configurable stages: applied → screened → interviewed → offered → hired (or rejected at any stage). When we built MyRecruiter's pipeline system, we learned that rigid 5-stage pipelines break immediately in practice — every team structures hiring differently. Configurable stages are not a nice-to-have, they are a core requirement.
 4. **Collaboration** — Let recruiters, hiring managers, and interviewers share notes, schedule interviews, and score candidates within a single system.
 5. **Reporting** — Measure time-to-fill, source-of-hire, pipeline conversion rates, and other recruiting metrics that tell you where your process works and where it leaks.
 
@@ -40,7 +40,7 @@ Different licenses impose different rules on how you can use and modify the soft
 
 | License | Permissions | Conditions | ATS Examples |
 |---------|------------|------------|-------------|
-| **MIT** | Use, modify, distribute, commercial use | Include copyright notice | [Reqcore](/) |
+| **MIT** | Use, modify, distribute, commercial use | Include copyright notice | [MyRecruiter](/) |
 | **GPL v3** | Use, modify, distribute | Modified versions must also be GPL (copyleft) | Various community projects |
 | **MPL 2.0** | Use, modify, distribute | Modified files must stay MPL; can combine with proprietary code | OpenCATS |
 | **Apache 2.0** | Use, modify, distribute, patent grant | Include notice, state changes | Various HR tech projects |
@@ -48,7 +48,7 @@ Different licenses impose different rules on how you can use and modify the soft
 
 **Why this matters for your hiring team:** The license determines whether you can modify the ATS for internal needs without publishing your changes (MIT, Apache — yes; GPL, AGPL — depends). If you plan to customize heavily — adding proprietary scoring algorithms, internal HRIS integrations, or industry-specific workflows — choose a permissive license like MIT or Apache 2.0.
 
-When we chose MIT for [Reqcore](/), the reasoning was straightforward: organizations evaluating an ATS should not need a lawyer to determine if they can integrate it with their existing systems. MIT imposes the fewest restrictions while still protecting the original authors.
+When we chose MIT for [MyRecruiter](/), the reasoning was straightforward: organizations evaluating an ATS should not need a lawyer to determine if they can integrate it with their existing systems. MIT imposes the fewest restrictions while still protecting the original authors.
 
 ### "Open Source" vs "Free" — They Are Not the Same
 
@@ -57,7 +57,7 @@ A critical distinction that most ATS comparison articles ignore: "free" software
 - **Free (as in cost):** Many proprietary ATS platforms offer free tiers — BreezyHR, Zoho Recruit, and Freshteam all have $0 plans. But the source code is closed. You cannot inspect it, modify it, or self-host it. The vendor controls the product roadmap, your data, and the pricing of the features you will eventually need.
 - **Open source (as in freedom):** The software is yours to run, read, modify, and distribute. Even if you pay for managed hosting or commercial support, the core code remains accessible. You can fork the project and continue independently if the original maintainers disappear.
 
-Some software is both free and open source (Reqcore, OpenCATS). Some is free but not open source (BreezyHR free tier). Some is open source but not free to use at scale (open-core models with proprietary enterprise features). Understanding this spectrum prevents expensive vendor lock-in decisions disguised as "free trials."
+Some software is both free and open source (MyRecruiter, OpenCATS). Some is free but not open source (BreezyHR free tier). Some is open source but not free to use at scale (open-core models with proprietary enterprise features). Understanding this spectrum prevents expensive vendor lock-in decisions disguised as "free trials."
 
 ## Key Features of an Open Source ATS
 
@@ -79,7 +79,7 @@ Every production-ready open source ATS should provide these capabilities. If a p
 
 Beyond the essentials, newer open source ATS platforms add capabilities that were previously exclusive to enterprise SaaS:
 
-- **AI candidate scoring** — Match candidates against job requirements automatically. The critical difference in open source: the scoring logic is visible. In [Reqcore](/), AI matching produces a readable summary explaining *why* a candidate scored the way they did — a transparency obligation the [EU AI Act](https://artificialintelligenceact.eu/) imposes on high-risk AI systems, which includes employment decisions. Proprietary platforms hide this logic behind opaque algorithms.
+- **AI candidate scoring** — Match candidates against job requirements automatically. The critical difference in open source: the scoring logic is visible. In [MyRecruiter](/), AI matching produces a readable summary explaining *why* a candidate scored the way they did — a transparency obligation the [EU AI Act](https://artificialintelligenceact.eu/) imposes on high-risk AI systems, which includes employment decisions. Proprietary platforms hide this logic behind opaque algorithms.
 - **API access** — Programmatic access to jobs, candidates, and applications. Enables integrations with HRIS, payroll, background check tools, Slack, and calendar systems without waiting for the vendor to build a connector.
 - **Custom fields and workflows** — Adapt the system to your process, not the other way around. Add industry-specific fields (security clearance level, certification status, shift preferences) without requesting a feature from a vendor.
 - **Self-hosted document storage** — Resumes and attachments stored on infrastructure you control (MinIO, S3-compatible storage) rather than the vendor's cloud.
@@ -123,7 +123,7 @@ You need somewhere to run the software. Options range from $5/month to $50/month
 
 ### 2. Setup and Maintenance Time
 
-Initial deployment takes 1–8 hours depending on the platform and your team's experience. Modern Docker-based ATS platforms like [Reqcore](/) deploy with `docker compose up` — PostgreSQL, MinIO, and the application start in minutes.
+Initial deployment takes 1–8 hours depending on the platform and your team's experience. Modern Docker-based ATS platforms like [MyRecruiter](/) deploy with `docker compose up` — PostgreSQL, MinIO, and the application start in minutes.
 
 Ongoing maintenance averages 1–2 hours per month: applying updates, monitoring uptime, and running backups. On a managed platform, this drops to under 30 minutes per month.
 
@@ -158,11 +158,11 @@ For a detailed feature-by-feature comparison of specific platforms, see our [bes
 
 ## Examples of Open Source ATS Platforms
 
-### Reqcore
+### MyRecruiter
 
 **License:** MIT | **Stack:** Nuxt 4, PostgreSQL 16, Drizzle ORM, MinIO | **Deployment:** Docker Compose, Railway
 
-Reqcore is the ATS we built after evaluating every open source and commercial option on the market. The core differentiators: transparent AI candidate scoring (Glass Box principle — every score is explainable), zero per-seat pricing, and a modern TypeScript codebase. Deploys in minutes with `docker compose up`. MIT-licensed, meaning you can modify and integrate without restriction.
+MyRecruiter is the ATS we built after evaluating every open source and commercial option on the market. The core differentiators: transparent AI candidate scoring (Glass Box principle — every score is explainable), zero per-seat pricing, and a modern TypeScript codebase. Deploys in minutes with `docker compose up`. MIT-licensed, meaning you can modify and integrate without restriction.
 
 **Best for:** Teams that value data ownership, transparent AI, and a modern developer experience. [Try the live demo](/auth/sign-in) or see the [product roadmap](/roadmap).
 
@@ -172,7 +172,7 @@ Reqcore is the ATS we built after evaluating every open source and commercial op
 
 The longest-running open source ATS, maintained since the late 2000s. Handles basic candidate tracking, resume storage, and job management. The interface reflects its age — menu-heavy, full page reloads, no drag-and-drop pipeline. No AI features, no API, and deployment requires manual LAMP configuration.
 
-**Best for:** Agencies needing a free, functional system and comfortable with legacy PHP. The project is maintained on [GitHub](https://github.com/opencats/OpenCATS). For a complete comparison, see our [OpenCATS vs Reqcore](/blog/opencats-vs-reqcore) head-to-head.
+**Best for:** Agencies needing a free, functional system and comfortable with legacy PHP. The project is maintained on [GitHub](https://github.com/opencats/OpenCATS). For a complete comparison, see our [OpenCATS vs MyRecruiter](/blog/opencats-vs-myrecruiter) head-to-head.
 
 ### FreeATS
 
@@ -210,7 +210,7 @@ The most underappreciated benefit of open source ATS is not cost savings — it 
 
 When you use a proprietary cloud ATS, your candidate database — every resume, interview note, pipeline decision, and communication — lives on the vendor's servers. If you cancel your subscription, data export is often partial. Custom fields, pipeline stages, and scorecards rarely survive migration. The vendor has no incentive to make leaving easy.
 
-With a self-hosted open source ATS, your data lives in a standard database you control. A PostgreSQL `pg_dump` gives you a complete, portable backup. Switch to a different system tomorrow, and your data comes with you. We chose PostgreSQL 16 for Reqcore specifically because its JSON column support handles custom application form schemas, and `pg_dump` produces standards-compliant exports that work with any PostgreSQL-compatible tool — portability was non-negotiable from day one.
+With a self-hosted open source ATS, your data lives in a standard database you control. A PostgreSQL `pg_dump` gives you a complete, portable backup. Switch to a different system tomorrow, and your data comes with you. We chose PostgreSQL 16 for MyRecruiter specifically because its JSON column support handles custom application form schemas, and `pg_dump` produces standards-compliant exports that work with any PostgreSQL-compatible tool — portability was non-negotiable from day one.
 
 This matters more than most teams realize at the point of purchase. The average company uses an ATS for 3–5 years. Over that period, the candidate database becomes a strategic asset — a searchable talent pool for future roles, a record of hiring decisions for compliance, and a dataset for improving your recruitment process. Losing control of that asset because of a vendor relationship is an avoidable risk.
 
@@ -224,7 +224,7 @@ ATS stands for applicant tracking system. It is software that manages the recrui
 
 ### Is there any good open source ATS available?
 
-Yes. [Reqcore](/) is a modern, MIT-licensed open source ATS built on Nuxt 4 and PostgreSQL with transparent AI scoring. OpenCATS is the longest-running open source ATS, suitable for basic tracking needs. FreeATS and SpotAxis are additional options. See our [complete comparison](/blog/best-open-source-applicant-tracking-systems) for a ranked evaluation.
+Yes. [MyRecruiter](/) is a modern, MIT-licensed open source ATS built on Nuxt 4 and PostgreSQL with transparent AI scoring. OpenCATS is the longest-running open source ATS, suitable for basic tracking needs. FreeATS and SpotAxis are additional options. See our [complete comparison](/blog/best-open-source-applicant-tracking-systems) for a ranked evaluation.
 
 ### Is an open source ATS secure enough for candidate data?
 
@@ -248,4 +248,4 @@ Whether it is the right choice depends on three things: your technical resources
 
 ---
 
-*[Reqcore](/) is an open-source applicant tracking system with transparent AI, no per-seat pricing, and full data ownership. [Try the live demo](/auth/sign-in) or explore the [product roadmap](/roadmap).*
+*[MyRecruiter](/) is an open-source applicant tracking system with transparent AI, no per-seat pricing, and full data ownership. [Try the live demo](/auth/sign-in) or explore the [product roadmap](/roadmap).*

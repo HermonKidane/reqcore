@@ -27,4 +27,4 @@ Every cloud-based AI service (OpenAI, Anthropic, Google) requires sending candid
 
 ## Why this is unique
 
-No commercial ATS offers local AI inference. This is a genuine differentiator for Reqcore — the only ATS where sensitive candidate data can be processed by AI without ever touching a third-party server.
+No commercial ATS offers local AI inference. This is a genuine differentiator for MyRecruiter — the only ATS where sensitive candidate data can be processed by AI without ever touching a third-party server.

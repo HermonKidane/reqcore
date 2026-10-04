@@ -25,7 +25,7 @@ A SEO-friendly public job listing page where candidates can browse open position
 
 ## Why it matters
 
-A job board that ranks on Google means candidates find you organically — no job board fees. Reqcore generates proper `JobPosting` schema markup so your listings can appear directly in Google's job search results, which is free distribution most self-hosted ATS platforms don't offer.
+A job board that ranks on Google means candidates find you organically — no job board fees. MyRecruiter generates proper `JobPosting` schema markup so your listings can appear directly in Google's job search results, which is free distribution most self-hosted ATS platforms don't offer.
 
 ## Design notes
 

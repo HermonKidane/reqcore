@@ -11,7 +11,7 @@ competitors:
   opencats: poor
 ---
 
-Use Reqcore comfortably on mobile devices with layouts optimized for smaller screens and touch interactions.
+Use MyRecruiter comfortably on mobile devices with layouts optimized for smaller screens and touch interactions.
 
 ## What it solves
 

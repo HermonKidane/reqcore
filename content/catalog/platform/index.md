@@ -5,4 +5,4 @@ description: "The foundation layer — multi-tenant organizations, authenticatio
 
 Platform features are the invisible infrastructure that makes everything else work. Multi-tenant organizations isolate data between companies, Better Auth handles authentication with zero vendor lock-in, and the Docker Compose stack lets you deploy the entire system with a single command.
 
-Reqcore runs on your infrastructure — whether that's a $5/month VPS, a corporate Kubernetes cluster, or Docker Desktop on your laptop.
+MyRecruiter runs on your infrastructure — whether that's a $5/month VPS, a corporate Kubernetes cluster, or Docker Desktop on your laptop.

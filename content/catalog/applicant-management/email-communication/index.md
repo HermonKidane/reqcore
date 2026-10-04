@@ -15,7 +15,7 @@ Send and receive emails with applicants directly from the ATS — creating a com
 
 ## What it solves
 
-Without in-app email, recruiters switch between their email client and the ATS constantly. Replies get lost, threads get fragmented, and there's no audit trail of what was said to whom. Centralising email inside Reqcore means every message is automatically linked to the right applicant record.
+Without in-app email, recruiters switch between their email client and the ATS constantly. Replies get lost, threads get fragmented, and there's no audit trail of what was said to whom. Centralising email inside MyRecruiter means every message is automatically linked to the right applicant record.
 
 ## Planned scope
 
@@ -36,4 +36,4 @@ Email uses a bring-your-own-SMTP approach to keep infrastructure costs at zero a
 
 ## Why this matters for self-hosters
 
-Self-hosted ATS users often resist cloud tools precisely because candidate data — including private communications — leaves their infrastructure. By routing all email through the self-hosted instance, Reqcore lets teams maintain full data sovereignty without sacrificing recruiter efficiency.
+Self-hosted ATS users often resist cloud tools precisely because candidate data — including private communications — leaves their infrastructure. By routing all email through the self-hosted instance, MyRecruiter lets teams maintain full data sovereignty without sacrificing recruiter efficiency.

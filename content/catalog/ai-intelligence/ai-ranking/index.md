@@ -15,7 +15,7 @@ AI-powered candidate ranking that matches job requirements against candidate ski
 
 ## What it solves
 
-Recruiters reviewing 200+ applications for a single role need help identifying the best candidates quickly. AI ranking can do this — but only if the recruiter can trust the results. Today's commercial ATS platforms rank candidates with proprietary algorithms that provide no explanation. Reqcore gives you the score **and** the proof.
+Recruiters reviewing 200+ applications for a single role need help identifying the best candidates quickly. AI ranking can do this — but only if the recruiter can trust the results. Today's commercial ATS platforms rank candidates with proprietary algorithms that provide no explanation. MyRecruiter gives you the score **and** the proof.
 
 ## Planned implementation
 
@@ -27,7 +27,7 @@ Recruiters reviewing 200+ applications for a single role need help identifying t
 
 ## Glass Box vs. Black Box
 
-| Aspect | Glass Box (Reqcore) | Black Box (Incumbents) |
+| Aspect | Glass Box (MyRecruiter) | Black Box (Incumbents) |
 |--------|----------------------|----------------------|
 | Score visible | ✅ Always | ✅ Usually |
 | Reasoning shown | ✅ Per-criterion breakdown | ❌ "AI confidence score" |

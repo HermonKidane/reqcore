@@ -49,7 +49,7 @@ useSchemaOrg([
     publisher: {
       '@type': 'Organization',
       name: 'MyRecruiter',
-      url: 'https://reqcore.com',
+      url: 'https://ats.myrecruiter.uk',
     },
   }),
 ])
@@ -76,7 +76,7 @@ const { data: session } = await authClient.useSession(useFetch)
           <NuxtLink :to="$localePath('/catalog')" class="transition hover:text-white">Features</NuxtLink>
           <NuxtLink to="/blog" class="text-white transition">Blog</NuxtLink>
           <a
-            href="https://github.com/reqcore-inc/reqcore"
+            href="https://github.com/HermonKidane/reqcore"
             target="_blank"
             class="transition hover:text-white"
           >
@@ -176,7 +176,7 @@ const { data: session } = await authClient.useSession(useFetch)
           <NuxtLink :to="$localePath('/')" class="transition hover:text-white/60">Home</NuxtLink>
           <NuxtLink :to="$localePath('/roadmap')" class="transition hover:text-white/60">Roadmap</NuxtLink>
           <a
-            href="https://github.com/reqcore-inc/reqcore"
+            href="https://github.com/HermonKidane/reqcore"
             target="_blank"
             class="transition hover:text-white/60"
           >

@@ -23,7 +23,7 @@ Full CRUD for jobs with a structured status workflow: **Draft → Open → Close
 
 ## Why it matters
 
-Job management is table stakes for an ATS, but most open-source alternatives get it wrong by either making it too simple (no status workflow) or too complex (enterprise-grade approval chains nobody uses). Reqcore lands in the middle — structured enough to prevent mistakes, simple enough to not slow you down.
+Job management is table stakes for an ATS, but most open-source alternatives get it wrong by either making it too simple (no status workflow) or too complex (enterprise-grade approval chains nobody uses). MyRecruiter lands in the middle — structured enough to prevent mistakes, simple enough to not slow you down.
 
 ## Design notes
 

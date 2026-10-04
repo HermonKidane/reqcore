@@ -53,7 +53,7 @@ useSchemaOrg([
     name: 'MyRecruiter',
     url: 'https://ats.myrecruiter.uk',
     logo: 'https://ats.myrecruiter.uk/myrecruiter-icon.png',
-    sameAs: ['https://github.com/reqcore-inc/reqcore'],
+    sameAs: ['https://github.com/HermonKidane/reqcore'],
     description: 'The desk platform for agency recruiters — jobs, candidates, clients and a proven perm process in one place.',
   }),
   defineWebSite({

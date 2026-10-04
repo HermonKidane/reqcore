@@ -21,7 +21,7 @@ function loadGiscus() {
 
   const script = document.createElement('script')
   script.src = 'https://giscus.app/client.js'
-  script.setAttribute('data-repo', 'reqcore/reqcore')
+  script.setAttribute('data-repo', 'HermonKidane/reqcore')
   script.setAttribute('data-repo-id', runtimeConfig.public.giscusRepoId)
   script.setAttribute('data-category', 'Feature Catalog')
   script.setAttribute('data-category-id', runtimeConfig.public.giscusCategoryId)

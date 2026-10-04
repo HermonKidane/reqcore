@@ -2,7 +2,7 @@
 title: "How Does an Applicant Tracking System Work?"
 description: "Learn how an ATS works from the employer side — job posting, resume parsing, pipeline tracking, AI scoring, and the data flow connecting each stage."
 date: 2026-03-04
-author: "Reqcore Team"
+author: "MyRecruiter Team"
 image: "/og-image.png"
 tags: ["applicant-tracking-system", "ats", "how-ats-works", "recruitment", "hiring"]
 ---
@@ -46,7 +46,7 @@ Resume parsing is the first automated step after a candidate applies. The ATS re
 
 Parsing accuracy varies significantly between systems. Legacy ATS platforms that rely purely on keyword extraction miss context. A resume that says "managed a team of 12 engineers" might get tagged with "management" as a skill, but a more sophisticated parser recognizes "12 engineers" as a team size indicator and "managed" as leadership experience.
 
-When we built Reqcore's parsing pipeline, we found that the biggest challenge was not extracting text — it was handling the diversity of resume formats. Candidates use tables, columns, headers, footers, and graphics that break simple text extraction. PDF files are particularly difficult because they store visual positioning data, not semantic structure. The parser needs to reconstruct reading order from coordinates, which is why some ATS platforms [recommend DOCX over PDF](https://www.indeed.com/career-advice/resumes-cover-letters/ats-resume).
+When we built MyRecruiter's parsing pipeline, we found that the biggest challenge was not extracting text — it was handling the diversity of resume formats. Candidates use tables, columns, headers, footers, and graphics that break simple text extraction. PDF files are particularly difficult because they store visual positioning data, not semantic structure. The parser needs to reconstruct reading order from coordinates, which is why some ATS platforms [recommend DOCX over PDF](https://www.indeed.com/career-advice/resumes-cover-letters/ats-resume).
 
 ## How ATS Pipeline Stages Track Candidates
 
@@ -64,7 +64,7 @@ The pipeline is the operational core of any ATS. It represents the hiring proces
 
 At each stage transition, the ATS records a timestamp, the user who made the move, and any notes attached to the decision. This audit trail serves two purposes: operational visibility (where are all my candidates right now?) and compliance documentation (why was this candidate rejected at this stage?).
 
-**Why rigid pipelines fail:** When we built Reqcore's pipeline system, we learned that rigid 5-stage pipelines break immediately in practice. An engineering team might need a take-home assignment stage between phone screen and interview. A retail company might skip phone screens entirely. A government contractor might require a security clearance stage after the offer. Every team structures hiring differently, which means configurable stages are not optional — they are a core requirement for any production ATS.
+**Why rigid pipelines fail:** When we built MyRecruiter's pipeline system, we learned that rigid 5-stage pipelines break immediately in practice. An engineering team might need a take-home assignment stage between phone screen and interview. A retail company might skip phone screens entirely. A government contractor might require a security clearance stage after the offer. Every team structures hiring differently, which means configurable stages are not optional — they are a core requirement for any production ATS.
 
 The best ATS platforms let you define custom stages per job, not per organization. A senior developer role and an entry-level customer support role should not share the same pipeline.
 
@@ -80,7 +80,7 @@ Candidate scoring is where ATS platforms diverge most. There are three approache
 
 **The transparency problem:** Most commercial ATS platforms that use AI scoring hide the algorithm. A recruiter sees "87% match" but cannot determine whether that score reflects genuine qualification alignment or a statistical artifact. The [EU AI Act classifies employment-decision AI as high-risk](https://artificialintelligenceact.eu/), requiring transparency and human oversight — requirements that opaque scoring cannot meet.
 
-Transparent ATS platforms take a different approach. In [Reqcore](/), AI matching produces a readable summary explaining *why* each candidate scored the way they did — which qualifications matched, which were missing, and how heavily each factor was weighted. This is what we call the "Glass Box" principle: every AI decision is explainable and auditable, not hidden behind a proprietary algorithm.
+Transparent ATS platforms take a different approach. In [MyRecruiter](/), AI matching produces a readable summary explaining *why* each candidate scored the way they did — which qualifications matched, which were missing, and how heavily each factor was weighted. This is what we call the "Glass Box" principle: every AI decision is explainable and auditable, not hidden behind a proprietary algorithm.
 
 This distinction matters beyond compliance. Recruiters who understand *why* a candidate scored well can make faster, more confident decisions. Recruiters who see only a number have to second-guess the system or blindly trust it — neither of which produces good hiring outcomes.
 
@@ -101,7 +101,7 @@ Understanding the data layer matters because it determines who owns your candida
 
 In a cloud ATS (Greenhouse, Lever, Workable), this data lives on the vendor's servers. You access it through the vendor's interface and API. If you cancel your subscription, exporting this data is often incomplete — custom fields, pipeline stages, and scorecards rarely survive migration intact. For a deeper analysis of this trade-off, see our [self-hosted vs cloud ATS comparison](/blog/self-hosted-vs-cloud-ats).
 
-In a [self-hosted ATS](/blog/open-source-applicant-tracking-system), the database runs on infrastructure you control. We chose PostgreSQL 16 for Reqcore specifically because its JSON column support handles custom application form schemas — every organization asks different questions on their application forms, and a relational database needs flexible schema support to accommodate this without schema migrations for every new field. A standard `pg_dump` gives you a complete, portable backup that works with any PostgreSQL-compatible tool.
+In a [self-hosted ATS](/blog/open-source-applicant-tracking-system), the database runs on infrastructure you control. We chose PostgreSQL 16 for MyRecruiter specifically because its JSON column support handles custom application form schemas — every organization asks different questions on their application forms, and a relational database needs flexible schema support to accommodate this without schema migrations for every new field. A standard `pg_dump` gives you a complete, portable backup that works with any PostgreSQL-compatible tool.
 
 **The practical difference:** With a cloud ATS, your candidate database is a rental. With a self-hosted ATS, it is an asset you own. According to [SHRM research](https://www.shrm.org/topics-tools/news/talent-acquisition), the average cost-per-hire sits around $4,700 — much of that cost is wasted if the candidate data you collect disappears when you switch vendors.
 
@@ -135,7 +135,7 @@ An ATS manages active job applications — candidates who have applied to a spec
 
 ### Can a small business benefit from an ATS?
 
-Yes. The break-even point is lower than most teams expect. If you receive more than 20 applications per open role or hire more than 5 people per year, an ATS saves meaningful time over spreadsheets and email. Open source ATS platforms like [Reqcore](/) eliminate the cost barrier entirely — there are no licensing fees, and a self-hosted deployment runs on infrastructure costing [$5–$20 per month](/blog/total-cost-of-ownership-saas-ats-vs-self-hosted).
+Yes. The break-even point is lower than most teams expect. If you receive more than 20 applications per open role or hire more than 5 people per year, an ATS saves meaningful time over spreadsheets and email. Open source ATS platforms like [MyRecruiter](/) eliminate the cost barrier entirely — there are no licensing fees, and a self-hosted deployment runs on infrastructure costing [$5–$20 per month](/blog/total-cost-of-ownership-saas-ats-vs-self-hosted).
 
 ### What data does an ATS collect?
 
@@ -151,4 +151,4 @@ For a deeper comparison of specific platforms that answer these questions differ
 
 ---
 
-*[Reqcore](/) is an open-source applicant tracking system with transparent AI, no per-seat pricing, and full data ownership. [Try the live demo](/auth/sign-in) or explore the [product roadmap](/roadmap).*
+*[MyRecruiter](/) is an open-source applicant tracking system with transparent AI, no per-seat pricing, and full data ownership. [Try the live demo](/auth/sign-in) or explore the [product roadmap](/roadmap).*

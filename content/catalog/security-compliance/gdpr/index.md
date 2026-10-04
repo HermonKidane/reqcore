@@ -15,7 +15,7 @@ Complete GDPR compliance toolkit — data export, right-to-deletion, consent tra
 
 ## What it solves
 
-Under GDPR, candidates have the right to request a copy of all their data and the right to be forgotten. Most ATS platforms handle this with support tickets. Reqcore will automate it — one click to export, one click to delete.
+Under GDPR, candidates have the right to request a copy of all their data and the right to be forgotten. Most ATS platforms handle this with support tickets. MyRecruiter will automate it — one click to export, one click to delete.
 
 ## Planned implementation
 

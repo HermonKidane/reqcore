@@ -25,7 +25,7 @@ Deploy the entire stack — app, database, and file storage — with a single `d
 
 ## Why this is unique
 
-Commercial ATS platforms don't offer self-hosting at all. Among open-source alternatives, most require manual PostgreSQL setup, environment variable hunting, and multiple installation steps. Reqcore's Docker Compose approach means you go from `git clone` to a running ATS in under 5 minutes.
+Commercial ATS platforms don't offer self-hosting at all. Among open-source alternatives, most require manual PostgreSQL setup, environment variable hunting, and multiple installation steps. MyRecruiter's Docker Compose approach means you go from `git clone` to a running ATS in under 5 minutes.
 
 ## Production deployment
 

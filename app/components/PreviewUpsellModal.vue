@@ -43,7 +43,7 @@ function closeModal() {
 
           <div class="flex flex-wrap items-center gap-2">
             <a
-              href="https://github.com/reqcore-inc/reqcore#quick-start"
+              href="https://github.com/HermonKidane/reqcore#quick-start"
               target="_blank"
               rel="noopener noreferrer"
               class="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-700"
@@ -53,7 +53,7 @@ function closeModal() {
             </a>
 
             <a
-              href="https://github.com/reqcore-inc/reqcore"
+              href="https://github.com/HermonKidane/reqcore"
               target="_blank"
               rel="noopener noreferrer"
               class="inline-flex items-center gap-2 rounded-lg border border-surface-300 px-3 py-2 text-sm font-medium text-surface-700 transition-colors hover:bg-surface-50 dark:border-surface-700 dark:text-surface-200 dark:hover:bg-surface-800"

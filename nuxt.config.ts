@@ -92,17 +92,17 @@ export default defineNuxtConfig({
     aiModel: process.env.AI_MODEL || 'gemini-3.8-flash',
     public: {
       /** When set, the dashboard shows a read-only demo banner for this org slug */
-      demoOrgSlug: process.env.DEMO_ORG_SLUG || (isRailwayPreview ? 'reqcore-demo' : ''),
+      demoOrgSlug: process.env.DEMO_ORG_SLUG || (isRailwayPreview ? 'myrecruiter-demo' : ''),
       /** Public live-demo account email used to prefill sign-in */
       liveDemoEmail: (() => {
         const email =
           process.env.LIVE_DEMO_EMAIL
           || process.env.DEMO_EMAIL
-          || 'demo@reqcore.com'
+          || 'demo@myrecruiter.uk'
         // Guard against stale applirank.com domain from old env vars
         if (email.endsWith('@applirank.com')) {
-          console.warn('[config] Stale demo email detected (applirank.com domain) — falling back to demo@reqcore.com')
-          return 'demo@reqcore.com'
+          console.warn('[config] Stale demo email detected (applirank.com domain) — falling back to demo@myrecruiter.uk')
+          return 'demo@myrecruiter.uk'
         }
         return email
       })(),
@@ -156,7 +156,7 @@ export default defineNuxtConfig({
       name: 'MyRecruiter',
       url: 'https://ats.myrecruiter.uk',
       logo: 'https://ats.myrecruiter.uk/myrecruiter-icon.png',
-      sameAs: ['https://github.com/reqcore-inc/reqcore'],
+      sameAs: ['https://github.com/HermonKidane/reqcore'],
     },
   },
 

@@ -46,7 +46,7 @@ export async function sendOrgInvitationEmail(data: {
   const { error } = await resend.emails.send({
     from: fromEmail,
     to: [data.email],
-    subject: `You're invited to join ${data.organization.name} on Reqcore`,
+    subject: `You're invited to join ${data.organization.name} on MyRecruiter`,
     html: buildInvitationHtml({
       inviteeName: data.email,
       inviterName: data.inviter.user.name,
@@ -104,7 +104,7 @@ function buildInvitationHtml(params: {
           <!-- Header -->
           <tr>
             <td style="padding:32px 32px 24px;text-align:center;border-bottom:1px solid #f4f4f5;">
-              <h1 style="margin:0;font-size:20px;font-weight:600;color:#09090b;">Reqcore</h1>
+              <h1 style="margin:0;font-size:20px;font-weight:600;color:#09090b;">MyRecruiter</h1>
             </td>
           </tr>
           <!-- Body -->
@@ -138,7 +138,7 @@ function buildInvitationHtml(params: {
           <tr>
             <td style="padding:16px 32px;text-align:center;border-top:1px solid #f4f4f5;background-color:#fafafa;">
               <p style="margin:0;font-size:12px;color:#a1a1aa;">
-                Sent by Reqcore &mdash; Open-source applicant tracking
+                Sent by MyRecruiter
               </p>
             </td>
           </tr>
@@ -167,7 +167,7 @@ function buildInvitationText(params: {
     'This invitation expires in 48 hours.',
     'If you didn\'t expect this email, you can safely ignore it.',
     '',
-    '— Reqcore',
+    '— MyRecruiter',
   ].join('\n')
 }
 

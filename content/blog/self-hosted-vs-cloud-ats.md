@@ -2,7 +2,7 @@
 title: "Self-Hosted vs Cloud ATS: Cost, Control, and Data Ownership"
 description: "Compare self-hosted and cloud ATS on cost, data ownership, and control. Includes a 3-year TCO breakdown and a 5-question decision framework."
 date: 2026-02-18
-author: "Reqcore Team"
+author: "MyRecruiter Team"
 image: "/og-image.png"
 tags: ["self-hosted-ats", "cloud-ats", "ats-comparison", "data-ownership", "recruitment"]
 ---
@@ -11,7 +11,7 @@ tags: ["self-hosted-ats", "cloud-ats", "ats-comparison", "data-ownership", "recr
 
 A self-hosted ATS runs on infrastructure you control — your own server, VPS, or private cloud — while a cloud ATS is managed entirely by the vendor on their servers. The choice between them determines who owns your candidate data, what you pay per recruiter, and how much control you have over your hiring workflow.
 
-Most companies default to cloud ATS platforms like Greenhouse, Lever, or Workable without running the numbers. That default costs a 10-person hiring team $36,000+ over three years in subscription fees alone. A self-hosted alternative like [Reqcore](/) eliminates per-seat pricing entirely and keeps candidate data on your PostgreSQL database — not locked behind a vendor subscription.
+Most companies default to cloud ATS platforms like Greenhouse, Lever, or Workable without running the numbers. That default costs a 10-person hiring team $36,000+ over three years in subscription fees alone. A self-hosted alternative like [MyRecruiter](/) eliminates per-seat pricing entirely and keeps candidate data on your PostgreSQL database — not locked behind a vendor subscription.
 
 This comparison breaks down the real trade-offs so you can make a decision based on cost, technical capacity, and data ownership priorities.
 
@@ -19,7 +19,7 @@ This comparison breaks down the real trade-offs so you can make a decision based
 
 A **cloud ATS** is software-as-a-service. You sign up, the vendor provides the application, database, and infrastructure. You pay a subscription — typically $50–$150 per recruiter per month — and access the system through your browser. Greenhouse, Lever, Workable, Ashby, JazzHR, and BreezyHR all follow this model.
 
-A **self-hosted ATS** is software you install on your own infrastructure. You provision a server (a $10/month VPS or a managed platform like [Railway](https://railway.com/)), deploy the application, and connect your own database. The software is yours to run, modify, and control. [Reqcore](/) and [OpenCATS](https://github.com/opencats/OpenCATS) are open-source examples. For a full comparison of available options, see our guide to the [best open source applicant tracking systems](/blog/best-open-source-applicant-tracking-systems).
+A **self-hosted ATS** is software you install on your own infrastructure. You provision a server (a $10/month VPS or a managed platform like [Railway](https://railway.com/)), deploy the application, and connect your own database. The software is yours to run, modify, and control. [MyRecruiter](/) and [OpenCATS](https://github.com/opencats/OpenCATS) are open-source examples. For a full comparison of available options, see our guide to the [best open source applicant tracking systems](/blog/best-open-source-applicant-tracking-systems).
 
 The distinction matters because it determines three things: who holds your candidate data, what happens to your system when you stop paying, and whether your software bill grows every time you add a team member.
 
@@ -50,13 +50,13 @@ The distinction matters because it determines three things: who holds your candi
 
 **Full data ownership.** Your candidate database lives in your PostgreSQL instance, backed up on your schedule, retained as long as you decide. No vendor can hold your talent pool hostage behind a subscription.
 
-When we built Reqcore, we chose PostgreSQL 16 specifically because it supports JSON columns for custom application form schemas and has the strongest data export tooling of any relational database. Candidate data is portable from day one — `pg_dump` gives you a complete, standards-compliant backup that works with any PostgreSQL-compatible tool.
+When we built MyRecruiter, we chose PostgreSQL 16 specifically because it supports JSON columns for custom application form schemas and has the strongest data export tooling of any relational database. Candidate data is portable from day one — `pg_dump` gives you a complete, standards-compliant backup that works with any PostgreSQL-compatible tool.
 
 **No per-seat fees.** Self-hosted software has no per-user pricing. Your entire hiring team — recruiters, hiring managers, coordinators — accesses the system without increasing costs. This eliminates the "growth tax" that punishes companies for scaling their teams.
 
 **Privacy sovereignty.** Candidate PII never leaves your network. For companies in regulated industries (healthcare, finance, government) or regions with strict data protection laws ([GDPR](https://gdpr.eu/), [CCPA](https://oag.ca.gov/privacy/ccpa)), self-hosting removes an entire category of compliance risk. There is no third-party data processor to vet, no cross-border data transfer to justify.
 
-**Transparent AI.** Open-source ATS platforms let you inspect the code behind every ranking decision. Reqcore's AI scoring shows a visible Matching Logic summary — recruiters see exactly why a candidate scored the way they did and can verify or override the result. This is the opposite of the "secret algorithm" approach used by commercial platforms.
+**Transparent AI.** Open-source ATS platforms let you inspect the code behind every ranking decision. MyRecruiter's AI scoring shows a visible Matching Logic summary — recruiters see exactly why a candidate scored the way they did and can verify or override the result. This is the opposite of the "secret algorithm" approach used by commercial platforms.
 
 **Full customization.** You control the source code. Need a custom pipeline stage, a proprietary scoring algorithm, or an integration with an internal HRIS? Fork the repo and build it. No enterprise tier required, no feature request queue.
 
@@ -68,7 +68,7 @@ When we built Reqcore, we chose PostgreSQL 16 specifically because it supports J
 
 **Updates are your responsibility.** You pull new releases and deploy them. Most modern self-hosted applications make this a single command (`git pull && docker compose up -d`), but the responsibility is yours.
 
-**No vendor support hotline.** You rely on documentation, community forums, and your own team. Open-source projects with active communities mitigate this — Reqcore's codebase is MIT-licensed and the [product roadmap](/roadmap) is fully public.
+**No vendor support hotline.** You rely on documentation, community forums, and your own team. Open-source projects with active communities mitigate this — MyRecruiter's codebase is MIT-licensed and the [product roadmap](/roadmap) is fully public.
 
 ## The Real Cost: 3-Year TCO Comparison
 
@@ -133,9 +133,9 @@ Switching from a cloud ATS to a self-hosted system is a one-time project, not an
 
 1. **Export your data.** Most cloud ATS platforms offer CSV exports for candidates, applications, jobs, and interview notes. Request the export before canceling your subscription — some vendors restrict access after cancellation.
 
-2. **Deploy the self-hosted ATS.** For Reqcore, clone the repository and run `docker compose up`. This starts PostgreSQL, MinIO (S3-compatible document storage), and the application. Configure your domain and TLS. Total time: 30 minutes to 4 hours depending on your infrastructure choice.
+2. **Deploy the self-hosted ATS.** For MyRecruiter, clone the repository and run `docker compose up`. This starts PostgreSQL, MinIO (S3-compatible document storage), and the application. Configure your domain and TLS. Total time: 30 minutes to 4 hours depending on your infrastructure choice.
 
-3. **Map and import your data.** Align exported CSV columns to the new database schema. Reqcore uses PostgreSQL — write a migration script or use the API to import candidates, jobs, and applications programmatically.
+3. **Map and import your data.** Align exported CSV columns to the new database schema. MyRecruiter uses PostgreSQL — write a migration script or use the API to import candidates, jobs, and applications programmatically.
 
 4. **Verify imported data.** Spot-check 20–30 records across candidates, applications, and documents. Run through a complete hiring workflow (post a job, receive an application, move a candidate through the pipeline) to confirm everything works end-to-end.
 
@@ -149,7 +149,7 @@ The entire migration typically takes 1–3 days for a small-to-medium team. The 
 
 ### What is a self-hosted ATS?
 
-A self-hosted applicant tracking system is recruitment software you install and run on your own infrastructure — a VPS, private cloud, or managed platform. You control the database, the application, and all candidate data. Open-source examples include [Reqcore](/) and OpenCATS.
+A self-hosted applicant tracking system is recruitment software you install and run on your own infrastructure — a VPS, private cloud, or managed platform. You control the database, the application, and all candidate data. Open-source examples include [MyRecruiter](/) and OpenCATS.
 
 ### Is self-hosted ATS cheaper than cloud ATS?
 
@@ -161,7 +161,7 @@ Self-hosted is not inherently less secure than cloud. Code transparency in open-
 
 ### Can a non-technical team use a self-hosted ATS?
 
-Yes, through managed deployment platforms. Reqcore can be deployed on [Railway](https://railway.com/) with a GitHub push — no server administration required. You get the benefits of self-hosting (data ownership, no per-seat fees) without managing infrastructure directly.
+Yes, through managed deployment platforms. MyRecruiter can be deployed on [Railway](https://railway.com/) with a GitHub push — no server administration required. You get the benefits of self-hosting (data ownership, no per-seat fees) without managing infrastructure directly.
 
 ### How long does it take to migrate from a cloud ATS to self-hosted?
 
@@ -177,4 +177,4 @@ If your ATS bill grows every time you add a recruiter, if you want to own your t
 
 ---
 
-*[Reqcore](/) is an open-source applicant tracking system with transparent AI, no per-seat pricing, and full data ownership. [Try the live demo](/auth/sign-in) or explore the [product roadmap](/roadmap).*
+*[MyRecruiter](/) is an open-source applicant tracking system with transparent AI, no per-seat pricing, and full data ownership. [Try the live demo](/auth/sign-in) or explore the [product roadmap](/roadmap).*

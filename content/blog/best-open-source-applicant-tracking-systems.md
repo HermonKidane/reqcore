@@ -2,14 +2,14 @@
 title: "Best Open Source Applicant Tracking Systems [2026]"
 description: "Compare the top open source ATS platforms for 2026. Honest reviews of features, deployment, and cost — from the team building one."
 date: 2026-02-22
-author: "Reqcore Team"
+author: "MyRecruiter Team"
 image: "/og-image.png"
 tags: ["open-source-ats", "applicant-tracking-system", "self-hosted", "recruitment", "hiring", "ats-comparison"]
 ---
 
 # Best Open Source Applicant Tracking Systems [2026]
 
-Open source applicant tracking systems give you what no SaaS vendor will: the source code, the database, and the freedom to run your hiring infrastructure on your terms. After building [Reqcore](/) from scratch and evaluating every credible open source ATS on the market, we compiled this guide to help you pick the right one for your team.
+Open source applicant tracking systems give you what no SaaS vendor will: the source code, the database, and the freedom to run your hiring infrastructure on your terms. After building [MyRecruiter](/) from scratch and evaluating every credible open source ATS on the market, we compiled this guide to help you pick the right one for your team.
 
 This is not a list padded with "freemium" SaaS tools. Every platform here publishes its source code under a recognized open source license. You can inspect it, fork it, and deploy it on your own servers.
 
@@ -43,7 +43,7 @@ We did not score platforms on features they announce but haven't shipped.
 
 ---
 
-## 1. Reqcore
+## 1. MyRecruiter
 
 | Detail | Value |
 |---|---|
@@ -51,22 +51,22 @@ We did not score platforms on features they announce but haven't shipped.
 | **Tech stack** | Nuxt 4, PostgreSQL 16, Drizzle ORM, MinIO (S3-compatible) |
 | **Deployment** | Docker Compose, Railway, any VPS |
 | **Status** | Active development |
-| **Website** | [reqcore.com](https://reqcore.com) |
+| **Website** | [ats.myrecruiter.uk](https://ats.myrecruiter.uk) |
 
-Reqcore is the ATS we built because the alternatives did not meet our requirements. We evaluated OpenCATS, tried bolting Odoo's recruitment module onto an existing ERP setup, and spent weeks testing commercial SaaS platforms. The conclusion was always the same: we wanted three things that no existing open source ATS delivered together — a modern tech stack, transparent AI scoring, and genuine zero-cost team scaling.
+MyRecruiter is the ATS we built because the alternatives did not meet our requirements. We evaluated OpenCATS, tried bolting Odoo's recruitment module onto an existing ERP setup, and spent weeks testing commercial SaaS platforms. The conclusion was always the same: we wanted three things that no existing open source ATS delivered together — a modern tech stack, transparent AI scoring, and genuine zero-cost team scaling.
 
 We chose PostgreSQL 16 over MySQL because we needed robust JSON column support for custom application form schemas, and we picked Drizzle ORM over Prisma because Drizzle generates zero runtime overhead — every query compiles to a plain SQL string at build time. For document storage, we used MinIO (S3-compatible) so resumes and cover letters stay on infrastructure you control, but the system works with any S3 provider including Railway Storage Buckets or AWS. These are not abstract architecture decisions. They determine whether your candidate data is portable or locked in.
 
 **What sets it apart:**
 
-- **Transparent AI (Glass Box principle).** When Reqcore ranks a candidate, it shows the matching logic — a visible summary of why a candidate scored the way they did. Recruiters can verify, override, and trust the results. This is the opposite of the "secret algorithm" approach used by Greenhouse, Lever, and every other commercial platform.
+- **Transparent AI (Glass Box principle).** When MyRecruiter ranks a candidate, it shows the matching logic — a visible summary of why a candidate scored the way they did. Recruiters can verify, override, and trust the results. This is the opposite of the "secret algorithm" approach used by Greenhouse, Lever, and every other commercial platform.
 - **Zero per-seat pricing.** Your entire team accesses the system at no additional cost. Adding a hiring manager or a new recruiter does not increase your software bill.
-- **Full data sovereignty.** Candidate data is stored in your PostgreSQL database. Resumes and documents go to MinIO (or any S3-compatible storage). You own the infrastructure. If you stop using Reqcore tomorrow, your data stays exactly where it is.
+- **Full data sovereignty.** Candidate data is stored in your PostgreSQL database. Resumes and documents go to MinIO (or any S3-compatible storage). You own the infrastructure. If you stop using MyRecruiter tomorrow, your data stays exactly where it is.
 - **Modern stack.** Built on Nuxt 4 with server-side rendering, Drizzle ORM for type-safe database queries, and Tailwind CSS for the UI. The codebase is readable and extensible — not a decade-old PHP monolith.
 
 **Deployment:** Run `docker compose up` and you have PostgreSQL, MinIO, and the application running in minutes. Our `docker-compose.yml` weighs in at under 50 lines — no Kubernetes, no orchestration complexity. For managed hosting, deploy to Railway or Render with a GitHub push. Our production instance runs on a single Railway service at roughly $5/month.
 
-**Limitations:** Reqcore is newer than established options like OpenCATS. Advanced features like resume parsing and AI candidate matching are shipping in phases — the [product roadmap](/roadmap) is public and transparent.
+**Limitations:** MyRecruiter is newer than established options like OpenCATS. Advanced features like resume parsing and AI candidate matching are shipping in phases — the [product roadmap](/roadmap) is public and transparent.
 
 **Best for:** Teams that value data ownership, transparent AI, and a clean modern codebase. Developers and founders who want to self-host without wrestling with legacy PHP.
 
@@ -82,7 +82,7 @@ We chose PostgreSQL 16 over MySQL because we needed robust JSON column support f
 | **Status** | Low activity (sporadic updates) |
 | **Repository** | [github.com/opencats/OpenCATS](https://github.com/opencats/OpenCATS) |
 
-OpenCATS is the grandfather of open source applicant tracking. Originally released around 2007, it has been the default recommendation for anyone searching "open source ATS" for over a decade. For a direct feature breakdown between the most modern and traditional approaches, check out our [OpenCATS vs Reqcore head-to-head comparison](/blog/opencats-vs-reqcore).
+OpenCATS is the grandfather of open source applicant tracking. Originally released around 2007, it has been the default recommendation for anyone searching "open source ATS" for over a decade. For a direct feature breakdown between the most modern and traditional approaches, check out our [OpenCATS vs MyRecruiter head-to-head comparison](/blog/opencats-vs-myrecruiter).
 
 **Strengths:**
 
@@ -250,7 +250,7 @@ Sentrifugo is an open source HRM system that includes a recruitment module. It c
 
 | Platform | License | Language | Database | Docker | AI Features | Pipeline Kanban | API | Best For |
 |---|---|---|---|---|---|---|---|---|
-| **Reqcore** | MIT | TypeScript/JS | PostgreSQL | ✅ Official | Transparent scoring | ✅ | REST | Modern teams, data ownership |
+| **MyRecruiter** | MIT | TypeScript/JS | PostgreSQL | ✅ Official | Transparent scoring | ✅ | REST | Modern teams, data ownership |
 | **OpenCATS** | MPL 2.0 / CPL | PHP | MySQL | ❌ Community | ❌ | ❌ | ❌ | Legacy PHP teams |
 | **CandidATS** | GPL v3 / MPL | PHP | MySQL | ❌ Community | ❌ | ❌ | ❌ | OpenCATS migration |
 | **OrangeHRM** | GPL v3 | PHP | MySQL | ✅ Official | ❌ (paid tier) | ❌ | ❌ (paid) | Full HR suite needs |
@@ -279,9 +279,9 @@ Even at the high end — assuming senior engineering time for setup and monthly 
 
 For a deeper breakdown including hidden cost categories, per-seat compounding analysis, and a TCO calculator framework, see our [total cost of ownership: SaaS ATS vs self-hosted](/blog/total-cost-of-ownership-saas-ats-vs-self-hosted) guide.
 
-The more honest framing: open source does not cost zero. It costs engineering time instead of subscription dollars. For companies with technical capacity, that trade-off is overwhelmingly favorable. For reference, Reqcore's production deployment on Railway costs roughly $5/month for the application service plus the included PostgreSQL database and S3 storage — that is $180 over three years for a fully managed platform, not $36,000.
+The more honest framing: open source does not cost zero. It costs engineering time instead of subscription dollars. For companies with technical capacity, that trade-off is overwhelmingly favorable. For reference, MyRecruiter's production deployment on Railway costs roughly $5/month for the application service plus the included PostgreSQL database and S3 storage — that is $180 over three years for a fully managed platform, not $36,000.
 
-For companies with zero technical staff, a managed deployment option (like Reqcore on Railway or ERPNext on Frappe Cloud) bridges the gap without requiring server administration skills.
+For companies with zero technical staff, a managed deployment option (like MyRecruiter on Railway or ERPNext on Frappe Cloud) bridges the gap without requiring server administration skills.
 
 ---
 
@@ -291,11 +291,11 @@ Before committing to any platform, answer these five questions:
 
 ### 1. Does your team have the technical capacity to self-host?
 
-Running a web application requires someone who can manage a Linux server, configure DNS, set up TLS, and troubleshoot deployment issues. If the answer is "no one on our team can do this," look for platforms with managed hosting options (Reqcore on Railway, ERPNext on Frappe Cloud, Odoo on Odoo.sh).
+Running a web application requires someone who can manage a Linux server, configure DNS, set up TLS, and troubleshoot deployment issues. If the answer is "no one on our team can do this," look for platforms with managed hosting options (MyRecruiter on Railway, ERPNext on Frappe Cloud, Odoo on Odoo.sh).
 
 ### 2. Do you need a dedicated ATS or a recruitment module inside a larger system?
 
-If recruitment is your only need, a focused ATS (Reqcore, OpenCATS) will serve you better than an ERP with a recruitment add-on (Odoo, ERPNext). ERP-based recruitment modules are adequate but shallow — they lack features like advanced pipeline management, candidate scoring, and custom application forms.
+If recruitment is your only need, a focused ATS (MyRecruiter, OpenCATS) will serve you better than an ERP with a recruitment add-on (Odoo, ERPNext). ERP-based recruitment modules are adequate but shallow — they lack features like advanced pipeline management, candidate scoring, and custom application forms.
 
 ### 3. How important is data ownership to your organization?
 
@@ -303,14 +303,14 @@ If you handle sensitive candidate data, operate in regulated industries (healthc
 
 ### 4. Will you need AI-assisted candidate ranking?
 
-Most open source ATS platforms have no AI features. The commercial options that do (Greenhouse, Lever, Ashby) use opaque algorithms you cannot inspect. Reqcore is building transparent AI scoring where the matching logic is visible and auditable — a feature we believe should be table stakes for any system making decisions about people.
+Most open source ATS platforms have no AI features. The commercial options that do (Greenhouse, Lever, Ashby) use opaque algorithms you cannot inspect. MyRecruiter is building transparent AI scoring where the matching logic is visible and auditable — a feature we believe should be table stakes for any system making decisions about people.
 
 ### 5. What is your budget — in money and in engineering time?
 
 | Scenario | Recommendation |
 |---|---|
-| $0 budget, has a developer | Self-hosted Reqcore or OpenCATS |
-| $0 budget, no developer | Managed deployment (Reqcore on Railway) |
+| $0 budget, has a developer | Self-hosted MyRecruiter or OpenCATS |
+| $0 budget, no developer | Managed deployment (MyRecruiter on Railway) |
 | $500–$2,000/yr budget | Self-hosted with occasional contractor support |
 | $10,000+/yr budget, no developer | Consider SaaS — but question per-seat pricing |
 
@@ -345,7 +345,7 @@ For teams ready to get started, here is a general deployment path that applies t
 
 2. **Clone and configure.** Pull the repository, copy the example environment file, and set your database credentials, S3 storage keys, and application secrets.
 
-3. **Start with Docker Compose.** If the platform supports it (Reqcore, OrangeHRM, Odoo, ERPNext), `docker compose up` handles the database, storage, and application in one command.
+3. **Start with Docker Compose.** If the platform supports it (MyRecruiter, OrangeHRM, Odoo, ERPNext), `docker compose up` handles the database, storage, and application in one command.
 
 4. **Set up DNS and TLS.** Point your domain to the server. Use Caddy or Nginx with Let's Encrypt for automatic HTTPS.
 
@@ -357,7 +357,7 @@ For teams ready to get started, here is a general deployment path that applies t
 
 ### What is the best open source applicant tracking system in 2026?
 
-The best open source ATS depends on your team's technical capacity and needs. For teams that want a modern, focused ATS with transparent AI and full data ownership, Reqcore is the strongest option. For teams already running Odoo or ERPNext, their built-in recruitment modules avoid adding another system. OpenCATS remains viable for teams comfortable with PHP.
+The best open source ATS depends on your team's technical capacity and needs. For teams that want a modern, focused ATS with transparent AI and full data ownership, MyRecruiter is the strongest option. For teams already running Odoo or ERPNext, their built-in recruitment modules avoid adding another system. OpenCATS remains viable for teams comfortable with PHP.
 
 ### Is an open source ATS secure enough for candidate data?
 
@@ -365,11 +365,11 @@ Open source software is not inherently less secure than proprietary software. In
 
 ### Can a small company without developers use an open source ATS?
 
-Yes, through managed deployment options. Reqcore can be deployed on Railway with a GitHub push — no server management required. ERPNext offers Frappe Cloud. Odoo offers Odoo.sh. These managed platforms handle infrastructure while you retain the benefits of open source (data portability, no vendor lock-in).
+Yes, through managed deployment options. MyRecruiter can be deployed on Railway with a GitHub push — no server management required. ERPNext offers Frappe Cloud. Odoo offers Odoo.sh. These managed platforms handle infrastructure while you retain the benefits of open source (data portability, no vendor lock-in).
 
 ### How does an open source ATS handle AI candidate scoring?
 
-Most open source ATS platforms do not include AI features yet. Reqcore is actively building transparent AI scoring where every ranking decision comes with a visible Matching Logic summary. This is fundamentally different from commercial ATS platforms that use opaque algorithms — you can see exactly why a candidate was scored the way they were.
+Most open source ATS platforms do not include AI features yet. MyRecruiter is actively building transparent AI scoring where every ranking decision comes with a visible Matching Logic summary. This is fundamentally different from commercial ATS platforms that use opaque algorithms — you can see exactly why a candidate was scored the way they were.
 
 ### How do I migrate from a cloud ATS to an open source ATS?
 
@@ -381,12 +381,12 @@ Export your candidates, jobs, and application data from your current platform (m
 
 The open source ATS market in 2026 splits into two categories: legacy PHP systems (OpenCATS, CandidATS, Sentrifugo) that work but show their age, and recruitment modules bolted onto larger ERP/HR platforms (Odoo, ERPNext, OrangeHRM) that trade depth for breadth.
 
-Reqcore exists because neither category satisfied what we needed: a modern, focused applicant tracking system built for data ownership and transparent AI — without the per-seat tax that punishes growing teams. We built it, we use it, and we open-sourced it under the MIT license because we believe hiring infrastructure should be owned, not rented.
+MyRecruiter exists because neither category satisfied what we needed: a modern, focused applicant tracking system built for data ownership and transparent AI — without the per-seat tax that punishes growing teams. We built it, we use it, and we open-sourced it under the MIT license because we believe hiring infrastructure should be owned, not rented.
 
-Our honest recommendation: if you already run Odoo or ERPNext, use their recruitment modules and skip the overhead of a separate system. If you need a dedicated ATS and have a developer on the team, try Reqcore — deploy it in 10 minutes with Docker Compose and decide for yourself. If you want the fastest path with zero infrastructure, deploy Reqcore on Railway and you will be posting your first job within the hour.
+Our honest recommendation: if you already run Odoo or ERPNext, use their recruitment modules and skip the overhead of a separate system. If you need a dedicated ATS and have a developer on the team, try MyRecruiter — deploy it in 10 minutes with Docker Compose and decide for yourself. If you want the fastest path with zero infrastructure, deploy MyRecruiter on Railway and you will be posting your first job within the hour.
 
 Stop paying rent on your candidate database. The data is yours.
 
 ---
 
-*[Reqcore](/) is an open source applicant tracking system with transparent AI scoring, no per-seat pricing, and full data ownership. [Try the live demo](/auth/sign-in) or explore the [product roadmap](/roadmap).*
+*[MyRecruiter](/) is an open source applicant tracking system with transparent AI scoring, no per-seat pricing, and full data ownership. [Try the live demo](/auth/sign-in) or explore the [product roadmap](/roadmap).*

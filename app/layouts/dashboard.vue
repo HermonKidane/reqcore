@@ -28,7 +28,7 @@ const isDemo = computed(() => {
         <span>
           <strong>Live demo</strong> — Explore freely with sample data. Editing is disabled here.
           <a
-            href="https://github.com/reqcore-inc/reqcore#quick-start"
+            href="https://github.com/HermonKidane/reqcore#quick-start"
             target="_blank"
             rel="noopener noreferrer"
             class="ml-1 font-semibold underline decoration-brand-400/40 underline-offset-2 hover:decoration-brand-400"

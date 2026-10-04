@@ -27,7 +27,7 @@ Manually entering candidate data from resumes is the single biggest time sink fo
 
 ## Why not use a third-party API?
 
-Most resume parsing services (Sovren, Affinda, etc.) require sending candidate PII to external servers. Reqcore's approach keeps parsing on your own infrastructure. The planned Ollama integration (see [Local AI](/catalog/ai-intelligence/local-ai)) will enable fully private, offline resume parsing.
+Most resume parsing services (Sovren, Affinda, etc.) require sending candidate PII to external servers. MyRecruiter's approach keeps parsing on your own infrastructure. The planned Ollama integration (see [Local AI](/catalog/ai-intelligence/local-ai)) will enable fully private, offline resume parsing.
 
 ## Current status
 

@@ -22,7 +22,7 @@ Interview scheduling is one of the most tedious parts of recruiting. Coordinator
 ## Potential approaches
 
 1. **Built-in scheduler** — Full calendar integration with availability management. High effort, maximum control.
-2. **Cal.com integration** — Open-source scheduling tool that aligns with Reqcore's self-hosted philosophy. Medium effort.
+2. **Cal.com integration** — Open-source scheduling tool that aligns with MyRecruiter's self-hosted philosophy. Medium effort.
 3. **Calendar link field** — Simply add a Calendly/Cal.com link to the interview stage. Low effort, minimal feature.
 
 We're leaning toward option 2 (Cal.com integration) for the best balance of capability and development effort.
