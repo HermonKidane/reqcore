@@ -63,6 +63,29 @@ export default defineEventHandler(async (event) => {
         },
         orderBy: (experience, { asc }) => [asc(experience.sortOrder)],
       },
+      // C2.1: education in display order; skills A–Z
+      education: {
+        columns: {
+          id: true,
+          school: true,
+          degree: true,
+          fieldOfStudy: true,
+          startText: true,
+          endText: true,
+          description: true,
+          sortOrder: true,
+          source: true,
+        },
+        orderBy: (education, { asc }) => [asc(education.sortOrder)],
+      },
+      skills: {
+        columns: {
+          id: true,
+          name: true,
+          source: true,
+        },
+        orderBy: (skill, { asc }) => [asc(skill.normalizedName)],
+      },
     },
   })
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowLeft, Pencil, Trash2, Mail, Phone, Calendar, Clock, Briefcase, FileText, Plus, Upload, Download, Eye, X, AlertTriangle, MapPin, Linkedin } from 'lucide-vue-next'
+import { ArrowLeft, Pencil, Trash2, Mail, Phone, Calendar, Clock, Briefcase, FileText, Plus, Upload, Download, Eye, X, AlertTriangle, MapPin, Linkedin, GraduationCap } from 'lucide-vue-next'
 import { z } from 'zod'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
 
@@ -26,7 +26,7 @@ useSeoMeta({
 // Tabs
 // ─────────────────────────────────────────────
 
-const activeTab = ref<'applications' | 'roles' | 'documents' | 'experiences'>('applications')
+const activeTab = ref<'applications' | 'roles' | 'documents' | 'experiences' | 'education'>('applications')
 
 // ─────────────────────────────────────────────
 // Photo avatar + headline (position · company / location / LinkedIn)
@@ -39,12 +39,30 @@ const photoUrl = computed(() => {
     : undefined
 })
 
-/** 'position · company' — only the parts that exist */
+/**
+ * Line under the name: the captured headline (e.g. LinkedIn) wins;
+ * falls back to 'position · company' — only the parts that exist.
+ */
 const headlineLine = computed(() => {
   const c = candidate.value as any
   if (!c) return ''
+  if (c.headline?.trim()) return c.headline.trim()
   return [c.position, c.company].filter(Boolean).join(' · ')
 })
+
+// ─────────────────────────────────────────────
+// About card — 'Show more' toggle
+// ─────────────────────────────────────────────
+
+const showFullSummary = ref(false)
+
+// ─────────────────────────────────────────────
+// Skills chips (max 20 shown)
+// ─────────────────────────────────────────────
+
+const skillList = computed(() => ((candidate.value as any)?.skills ?? []) as Array<{ id: string, name: string }>)
+const visibleSkills = computed(() => skillList.value.slice(0, 20))
+const hiddenSkillCount = computed(() => Math.max(0, skillList.value.length - 20))
 
 // ─────────────────────────────────────────────
 // Experience tab — 'Show more' toggle per entry
@@ -54,6 +72,18 @@ const expandedExperiences = ref<Record<string, boolean>>({})
 
 function toggleExperience(id: string) {
   expandedExperiences.value[id] = !expandedExperiences.value[id]
+}
+
+/** Education tab — 'Show more' toggle per entry (same as experiences) */
+const expandedEducation = ref<Record<string, boolean>>({})
+
+function toggleEducation(id: string) {
+  expandedEducation.value[id] = !expandedEducation.value[id]
+}
+
+/** '2016 – 2020' — only the parts that exist */
+function educationDates(edu: any): string {
+  return [edu.startText, edu.endText].filter(Boolean).join(' – ')
 }
 
 /** 'Jan 2020 – Mar 2022' / 'Jan 2020 – Present' — only the parts that exist */
@@ -351,12 +381,12 @@ function formatFileSize(bytes: number | null | undefined): string {
         <!-- Header -->
         <div class="flex items-start justify-between gap-4 mb-6">
           <div class="flex items-start gap-4 min-w-0">
-            <CandidateAvatar :first-name="(candidate as any).firstName" :last-name="(candidate as any).lastName" :photo-url="photoUrl" class="mt-1 shrink-0" />
+            <CandidateAvatar :first-name="(candidate as any).firstName" :last-name="(candidate as any).lastName" :photo-url="photoUrl" size="lg" class="mt-1 shrink-0" />
             <div class="min-w-0">
               <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-50 truncate mb-1">
                 {{ candidate.firstName }} {{ candidate.lastName }}
               </h1>
-              <!-- position · company / location — only the parts that exist -->
+              <!-- headline (captured) or position · company / location — only the parts that exist -->
               <p v-if="headlineLine" class="text-sm text-surface-600 dark:text-surface-300 truncate">
                 {{ headlineLine }}
               </p>
@@ -465,6 +495,46 @@ function formatFileSize(bytes: number | null | undefined): string {
               </dd>
             </div>
           </dl>
+          <!-- Skills (max 20 chips + "+N more") -->
+          <div v-if="skillList.length" class="mt-4 pt-3 border-t border-surface-100 dark:border-surface-800">
+            <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-200 mb-2">Skills</h3>
+            <div class="flex flex-wrap gap-1.5">
+              <span
+                v-for="skill in visibleSkills"
+                :key="skill.id"
+                class="inline-flex items-center rounded-full bg-surface-100 dark:bg-surface-800 px-2.5 py-1 text-xs font-medium text-surface-700 dark:text-surface-300"
+              >
+                {{ skill.name }}
+              </span>
+              <span
+                v-if="hiddenSkillCount > 0"
+                class="inline-flex items-center rounded-full bg-surface-50 dark:bg-surface-900 px-2.5 py-1 text-xs font-medium text-surface-500 dark:text-surface-400"
+                :title="`${skillList.length} skills in total`"
+              >
+                +{{ hiddenSkillCount }} more
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- About (the captured "About" summary) -->
+        <div
+          v-if="(candidate as any).summary?.trim()"
+          class="rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5 mb-4"
+        >
+          <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-200 mb-3">About</h2>
+          <p
+            class="text-sm text-surface-600 dark:text-surface-300 whitespace-pre-line"
+            :class="showFullSummary ? '' : 'line-clamp-6'"
+          >
+            {{ (candidate as any).summary }}
+          </p>
+          <button
+            class="cursor-pointer mt-1 text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 transition-colors"
+            @click="showFullSummary = !showFullSummary"
+          >
+            {{ showFullSummary ? 'Show less' : 'Show more' }}
+          </button>
         </div>
 
         <!-- Tabs -->
@@ -505,6 +575,15 @@ function formatFileSize(bytes: number | null | undefined): string {
               @click="activeTab = 'experiences'"
             >
               Experience ({{ (candidate as any).experiences?.length ?? 0 }})
+            </button>
+            <button
+              class="cursor-pointer px-3 py-2 text-sm font-medium transition-colors border-b-2 -mb-px"
+              :class="activeTab === 'education'
+                ? 'border-brand-600 text-brand-600'
+                : 'border-transparent text-surface-500 hover:text-surface-700 hover:border-surface-300 dark:hover:text-surface-300'"
+              @click="activeTab = 'education'"
+            >
+              Education ({{ (candidate as any).education?.length ?? 0 }})
             </button>
           </div>
         </div>
@@ -550,6 +629,51 @@ function formatFileSize(bytes: number | null | undefined): string {
                 @click="toggleExperience(exp.id)"
               >
                 {{ expandedExperiences[exp.id] ? 'Show less' : 'Show more' }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Education tab -->
+        <div v-if="activeTab === 'education'">
+          <div
+            v-if="!(candidate as any).education?.length"
+            class="rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-8 text-center"
+          >
+            <GraduationCap class="size-8 text-surface-300 dark:text-surface-600 mx-auto mb-2" />
+            <p class="text-sm text-surface-500 dark:text-surface-400">No education yet.</p>
+          </div>
+
+          <div v-else class="space-y-2">
+            <div
+              v-for="edu in (candidate as any).education"
+              :key="edu.id"
+              class="rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 px-4 py-3"
+            >
+              <div class="min-w-0">
+                <h4 class="text-sm font-semibold text-surface-900 dark:text-surface-100">
+                  {{ edu.school }}
+                </h4>
+                <p v-if="edu.degree || edu.fieldOfStudy" class="text-xs text-surface-500 dark:text-surface-400">
+                  {{ [edu.degree, edu.fieldOfStudy].filter(Boolean).join(' · ') }}
+                </p>
+                <p v-if="educationDates(edu)" class="text-xs text-surface-400">
+                  {{ educationDates(edu) }}
+                </p>
+              </div>
+              <p
+                v-if="edu.description"
+                class="text-sm text-surface-600 dark:text-surface-300 mt-2 whitespace-pre-line"
+                :class="expandedEducation[edu.id] ? '' : 'line-clamp-4'"
+              >
+                {{ edu.description }}
+              </p>
+              <button
+                v-if="edu.description"
+                class="cursor-pointer mt-1 text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 transition-colors"
+                @click="toggleEducation(edu.id)"
+              >
+                {{ expandedEducation[edu.id] ? 'Show less' : 'Show more' }}
               </button>
             </div>
           </div>

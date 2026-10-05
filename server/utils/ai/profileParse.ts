@@ -39,10 +39,28 @@ export const profileParseExperienceSchema = z.object({
   description: z.string().trim().max(4000).optional(),
 })
 
+export const profileParseEducationSchema = z.object({
+  school: z.string().trim().min(1).max(200),
+  degree: z.string().trim().max(200).optional(),
+  fieldOfStudy: z.string().trim().max(200).optional(),
+  startText: z.string().trim().max(50).optional(),
+  endText: z.string().trim().max(50).optional(),
+  description: z.string().trim().max(4000).optional(),
+})
+
 export const profileParseSchema = z.object({
   firstName: z.string().trim().min(1).max(200),
   lastName: z.string().trim().min(1).max(200),
   headline: z.string().trim().max(200).optional(),
+  /** The "About" section text, when present. */
+  summary: z.string().trim().max(4000).optional(),
+  /**
+   * Contact details VISIBLE ON THE PAGE ONLY. NOTE: no .email() here on
+   * purpose — a malformed AI email must not fail the whole parse; the
+   * capture endpoint re-validates with the body's email rule and drops it.
+   */
+  email: z.string().trim().max(320).optional(),
+  phone: z.string().trim().max(50).optional(),
   location: z.string().trim().max(200).optional(),
   /** Current employer, if shown on the page. */
   company: z.string().trim().max(200).optional(),
@@ -50,6 +68,10 @@ export const profileParseSchema = z.object({
   position: z.string().trim().max(200).optional(),
   /** Page order, newest first; at most 30 entries. */
   experiences: z.array(profileParseExperienceSchema).max(30).optional(),
+  /** Education entries in page order; at most 20. */
+  education: z.array(profileParseEducationSchema).max(20).optional(),
+  /** Skills as listed on the page; at most 50, each at most 80 chars. */
+  skills: z.array(z.string().trim().min(1).max(80)).max(50).optional(),
 })
 
 export type ProfileParseResult = z.infer<typeof profileParseSchema>
@@ -71,12 +93,19 @@ Output rules:
 - Dates must be copied EXACTLY as shown on the page (e.g. "Jan 2020", "Present"). Do not reformat or compute durations.
 - "company" and "position" refer to the person's CURRENT role when discernible from the page; otherwise omit them.
 - "headline" is the short descriptive line shown directly under the person's name, when present.
+- "summary" is the text of the person's "About" section, when present (at most 4000 characters).
+- "email" and "phone": ONLY if they are literally visible on the page (e.g. in a contact-info section). NEVER guess, derive or construct them.
+- "skills": the skills listed in the profile's Skills section, copied exactly as listed (at most 50, each at most 80 characters). NEVER invent skills from the person's job titles or experience.
+- "education": the entries of the profile's Education section in page order (at most 20).
 
 Return exactly this JSON shape (keys spelled exactly like this; omit optional keys you cannot find):
 {
   "firstName": "string (required)",
   "lastName": "string (required)",
   "headline": "string",
+  "summary": "string — the About section text",
+  "email": "string — ONLY if literally visible on the page",
+  "phone": "string — ONLY if literally visible on the page",
   "location": "string",
   "company": "string — current employer",
   "position": "string — current job title",
@@ -90,9 +119,22 @@ Return exactly this JSON shape (keys spelled exactly like this; omit optional ke
       "isCurrent": true,
       "description": "string"
     }
-  ]
+  ],
+  "education": [
+    {
+      "school": "string (required)",
+      "degree": "string",
+      "fieldOfStudy": "string",
+      "startText": "string, e.g. 2016",
+      "endText": "string, e.g. 2020",
+      "description": "string"
+    }
+  ],
+  "skills": ["string"]
 }
-If no experience is listed, return "experiences": [].`
+If no experience is listed, return "experiences": [].
+If no education is listed, return "education": [].
+If no skills are listed, return "skills": [].`
 
 function parseFail(reason: string): null {
   // One line, reason only — NEVER page text or provider payloads.
@@ -177,6 +219,8 @@ export async function parseProfileText(params: {
       o.lastName ??= parts.slice(1).join(' ') || '-'
     }
     if (o.experiences == null) o.experiences = []
+    if (o.education == null) o.education = []
+    if (o.skills == null) o.skills = []
   }
 
   const validated = profileParseSchema.safeParse(json)

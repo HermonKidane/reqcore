@@ -89,6 +89,11 @@ export const candidate = pgTable('candidate', {
   linkedinUrl: text('linkedin_url'),
   company: text('company'),
   position: text('position'),
+  // ── C2.1 richer capture ──
+  // headline: the short descriptive line under the name on the source page
+  // (e.g. LinkedIn headline). summary: the "About" section text.
+  headline: text('headline'),
+  summary: text('summary'),
   // display location (free text, e.g. from the capture extension)
   location: text('location'),
   source: text('source').default('manual'),
@@ -192,6 +197,63 @@ export const candidateExperience = pgTable('candidate_experience', {
     columns: [t.organizationId, t.candidateId],
     foreignColumns: [candidate.organizationId, candidate.id],
     name: 'candidate_experience_candidate_fk',
+  }).onDelete('cascade'),
+]))
+
+/**
+ * Education entries for a person (the `candidate` row). Same shape/FK pattern
+ * as candidate_experience: the capture extension fills source 'capture'
+ * (replaced wholesale per capture when non-empty); 'manual' / 'import' rows
+ * are NEVER touched by capture. Dates stay free text ('2016 – 2020').
+ */
+export const candidateEducation = pgTable('candidate_education', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  organizationId: text('organization_id').notNull().references(() => organization.id, { onDelete: 'cascade' }),
+  candidateId: text('candidate_id').notNull(),
+  school: text('school').notNull(),
+  degree: text('degree'),
+  fieldOfStudy: text('field_of_study'),
+  // as displayed on the source page (scraper has no real dates)
+  startText: text('start_text'),
+  endText: text('end_text'),
+  description: text('description'),
+  sortOrder: integer('sort_order').notNull().default(0),
+  source: text('source').notNull().default('manual'), // 'capture' (browser extension) | 'manual' | 'import'
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (t) => ([
+  index('candidate_education_organization_id_idx').on(t.organizationId),
+  index('candidate_education_candidate_sort_idx').on(t.candidateId, t.sortOrder),
+  // Tenant-scoped FK: candidate (organization_id, id) — same pattern as candidate_experience
+  foreignKey({
+    columns: [t.organizationId, t.candidateId],
+    foreignColumns: [candidate.organizationId, candidate.id],
+    name: 'candidate_education_candidate_fk',
+  }).onDelete('cascade'),
+]))
+
+/**
+ * Skills for a person (the `candidate` row), one row per skill. Capture is
+ * ADDITIVE on update (never deletes); uniqueness per candidate on the
+ * NORMALIZED (lower+btrim) name.
+ */
+export const candidateSkill = pgTable('candidate_skill', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  organizationId: text('organization_id').notNull().references(() => organization.id, { onDelete: 'cascade' }),
+  candidateId: text('candidate_id').notNull(),
+  name: text('name').notNull(),
+  normalizedName: text('normalized_name').notNull(),
+  source: text('source').notNull().default('manual'), // 'capture' (browser extension) | 'manual' | 'import'
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (t) => ([
+  index('candidate_skill_organization_id_idx').on(t.organizationId),
+  uniqueIndex('candidate_skill_candidate_normalized_idx').on(t.candidateId, t.normalizedName),
+  check('candidate_skill_normalized_nonempty', sql`normalized_name <> ''`),
+  // Tenant-scoped FK: candidate (organization_id, id) — same pattern as candidate_experience
+  foreignKey({
+    columns: [t.organizationId, t.candidateId],
+    foreignColumns: [candidate.organizationId, candidate.id],
+    name: 'candidate_skill_candidate_fk',
   }).onDelete('cascade'),
 ]))
 
@@ -490,6 +552,8 @@ export const candidateRelations = relations(candidate, ({ one, many }) => ({
   emails: many(candidateEmail),
   roles: many(personRole),
   experiences: many(candidateExperience),
+  education: many(candidateEducation),
+  skills: many(candidateSkill),
   jobContactLinks: many(jobClientContact),
 }))
 
@@ -501,6 +565,16 @@ export const candidateEmailRelations = relations(candidateEmail, ({ one }) => ({
 export const candidateExperienceRelations = relations(candidateExperience, ({ one }) => ({
   organization: one(organization, { fields: [candidateExperience.organizationId], references: [organization.id] }),
   candidate: one(candidate, { fields: [candidateExperience.candidateId], references: [candidate.id] }),
+}))
+
+export const candidateEducationRelations = relations(candidateEducation, ({ one }) => ({
+  organization: one(organization, { fields: [candidateEducation.organizationId], references: [organization.id] }),
+  candidate: one(candidate, { fields: [candidateEducation.candidateId], references: [candidate.id] }),
+}))
+
+export const candidateSkillRelations = relations(candidateSkill, ({ one }) => ({
+  organization: one(organization, { fields: [candidateSkill.organizationId], references: [organization.id] }),
+  candidate: one(candidate, { fields: [candidateSkill.candidateId], references: [candidate.id] }),
 }))
 
 export const importBatchRelations = relations(importBatch, ({ one }) => ({

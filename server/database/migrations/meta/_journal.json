@@ -127,6 +127,13 @@
       "when": 1791216940994,
       "tag": "0017_0017-candidate-experience-location",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1791238360371,
+      "tag": "0018_0018-candidate-headline-summary-education-skills",
+      "breakpoints": true
     }
   ]
 }

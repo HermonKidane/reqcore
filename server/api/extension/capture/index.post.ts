@@ -1,5 +1,6 @@
 import { and, desc, eq, sql, type SQL } from 'drizzle-orm'
-import { candidate, candidateExperience, extensionCaptureEvent, job } from '../../../database/schema'
+import { z } from 'zod'
+import { candidate, candidateEducation, candidateExperience, candidateSkill, extensionCaptureEvent, job } from '../../../database/schema'
 import { extensionCaptureSchema } from '../../../utils/schemas/extension'
 import { authenticateExtensionKey } from '../../../utils/extensionKey'
 import { parseProfileText, type ProfileParseResult } from '../../../utils/ai/profileParse'
@@ -133,29 +134,64 @@ interface MergedCapture {
   linkedinUrl?: string | undefined
   company?: string | undefined
   position?: string | undefined
+  headline?: string | undefined
+  summary?: string | undefined
   location?: string | undefined
   experiences?: ProfileParseResult['experiences']
+  education?: ProfileParseResult['education']
+  skills?: string[]
 }
+
+/** Same email rule as extensionCaptureSchema's body email. */
+const captureEmailRule = z.string().trim().max(320).email()
 
 /**
  * Merge rule (design §10): fields the extension sent explicitly WIN
  * (name from the page title, linkedinUrl, photo); the AI parse fills
- * everything missing — location, company, position, experiences, and the
- * names when absent. `position` falls back to the profile headline.
+ * everything missing — location, company, position, headline, summary,
+ * education, skills, and the names when absent. `position` falls back to
+ * the profile headline.
+ *
+ * C2.1: the AI email is merged only when it passes the SAME email rule as
+ * the body — an invalid AI email is dropped, never stored or matched on.
  */
 function mergeCaptureFields(
   body: ReturnType<typeof extensionCaptureSchema.parse>,
   parsed: ProfileParseResult | null,
 ): MergedCapture {
-  return {
+  const merged: MergedCapture = {
     ...body,
     firstName: body.firstName ?? parsed?.firstName,
     lastName: body.lastName ?? parsed?.lastName,
     company: body.company ?? parsed?.company,
     position: body.position ?? parsed?.position ?? parsed?.headline,
+    headline: body.headline ?? parsed?.headline,
+    summary: body.summary ?? parsed?.summary,
     location: body.location ?? parsed?.location,
     experiences: body.experiences?.length ? body.experiences : parsed?.experiences,
+    education: body.education?.length ? body.education : parsed?.education,
+    skills: body.skills?.length ? body.skills : parsed?.skills,
   }
+  if (merged.email && !captureEmailRule.safeParse(merged.email).success) {
+    console.error('[Reqcore] AI-provided capture email failed validation — dropped')
+    merged.email = undefined
+  }
+  return merged
+}
+
+/** Skills deduped by normalizedName (lower+trim), blanks skipped. */
+function dedupeSkills(skills: string[]): Array<{ name: string, normalizedName: string }> {
+  const seen = new Set<string>()
+  const out: Array<{ name: string, normalizedName: string }> = []
+  for (const raw of skills) {
+    const name = raw.trim()
+    if (!name) continue
+    const normalizedName = name.toLowerCase()
+    if (seen.has(normalizedName)) continue
+    seen.add(normalizedName)
+    out.push({ name, normalizedName })
+  }
+  return out
 }
 
 /** What the popup shows before saving: merged fields, photo excluded. */
@@ -168,8 +204,13 @@ function buildPreview(merged: MergedCapture) {
     linkedinUrl: merged.linkedinUrl ?? null,
     company: merged.company ?? null,
     position: merged.position ?? null,
+    headline: merged.headline ?? null,
+    // first 300 chars is enough for the popup to confirm the About text
+    summary: merged.summary ? merged.summary.slice(0, 300) : null,
     location: merged.location ?? null,
     experiences: merged.experiences ?? [],
+    education: merged.education ?? [],
+    skills: merged.skills ?? [],
   }
 }
 
@@ -210,10 +251,12 @@ export default defineEventHandler(async (event) => {
         statusMessage: 'Could not read this page — open a single profile page and try again',
       })
     }
+    // C2.1: duplicate lookup on the MERGED values — an AI-read email/URL
+    // must find the existing record too (body-only lookup missed it).
     const duplicate = await findDuplicateCandidate(
       db as unknown as DupExecutor,
       organizationId,
-      { email: body.email, linkedinUrl: body.linkedinUrl },
+      { email: merged.email, linkedinUrl: merged.linkedinUrl },
     )
     return { preview: buildPreview(merged), parsed: parsedProfile !== null, duplicate }
   }
@@ -318,11 +361,12 @@ export default defineEventHandler(async (event) => {
       const emailTx = tx as unknown as Parameters<typeof findCandidateIdByEmail>[0]
 
       // Duplicate detection, org-scoped: email first, then LinkedIn URL
-      // (shared with the read-only preview path).
+      // (shared with the read-only preview path). C2.1: on the MERGED
+      // values, so an AI-read email matches an existing candidate too.
       const dup = await findDuplicateCandidate(
         tx as unknown as DupExecutor,
         organizationId,
-        { email: body.email, linkedinUrl: body.linkedinUrl },
+        { email: merged.email, linkedinUrl: merged.linkedinUrl },
       )
       const matchedId = dup?.candidateId ?? null
       const matchedBy = dup?.matchedBy ?? null
@@ -358,6 +402,9 @@ export default defineEventHandler(async (event) => {
         if (body.linkedinUrl?.trim()) updatePayload.linkedinUrl = body.linkedinUrl.trim()
         if (merged.company?.trim()) updatePayload.company = merged.company.trim()
         if (merged.position?.trim()) updatePayload.position = merged.position.trim()
+        // C2.1: headline/summary only when provided non-empty (never blank out)
+        if (merged.headline?.trim()) updatePayload.headline = merged.headline.trim()
+        if (merged.summary?.trim()) updatePayload.summary = merged.summary.trim()
         // location: only overwrite when provided non-empty (never blank out)
         if (merged.location?.trim()) updatePayload.location = merged.location.trim()
 
@@ -388,6 +435,58 @@ export default defineEventHandler(async (event) => {
           )
         }
 
+        // C2.1 Education: same replace-when-non-empty semantics as
+        // experiences — 'manual' / 'import' rows are never touched.
+        if (merged.education?.length) {
+          await tx.delete(candidateEducation)
+            .where(and(
+              eq(candidateEducation.candidateId, matchedId),
+              eq(candidateEducation.organizationId, organizationId),
+              eq(candidateEducation.source, 'capture'),
+            ))
+          await tx.insert(candidateEducation).values(
+            merged.education.map((edu, index) => ({
+              organizationId,
+              candidateId: matchedId,
+              school: edu.school.trim(),
+              degree: edu.degree?.trim() || null,
+              fieldOfStudy: edu.fieldOfStudy?.trim() || null,
+              startText: edu.startText?.trim() || null,
+              endText: edu.endText?.trim() || null,
+              description: edu.description?.trim() || null,
+              sortOrder: index,
+              source: 'capture',
+            })),
+          )
+        }
+
+        // C2.1 Skills: ADDITIVE only — insert the ones not already stored,
+        // never delete (manual skills survive a re-capture).
+        if (merged.skills?.length) {
+          const wanted = dedupeSkills(merged.skills)
+          if (wanted.length) {
+            const existing = await tx.select({ normalizedName: candidateSkill.normalizedName })
+              .from(candidateSkill)
+              .where(and(
+                eq(candidateSkill.candidateId, matchedId),
+                eq(candidateSkill.organizationId, organizationId),
+              ))
+            const existingNames = new Set(existing.map((row) => row.normalizedName))
+            const missing = wanted.filter((skill) => !existingNames.has(skill.normalizedName))
+            if (missing.length) {
+              await tx.insert(candidateSkill).values(
+                missing.map((skill) => ({
+                  organizationId,
+                  candidateId: matchedId,
+                  name: skill.name,
+                  normalizedName: skill.normalizedName,
+                  source: 'capture',
+                })),
+              )
+            }
+          }
+        }
+
         let photoKey: string | null = null
         let previousPhotoKey: string | null = null
         if (photo) {
@@ -407,14 +506,15 @@ export default defineEventHandler(async (event) => {
         // Email via the single email code path (invariants I1–I3). Only fills
         // a MISSING email — an existing primary is never overwritten (no
         // secondary-email API yet), and an email owned by a different
-        // candidate is left alone (never break uniqueness).
-        if (body.email) {
+        // candidate is left alone (never break uniqueness). C2.1: the merged
+        // email (body wins, AI fills) — already validated in mergeCaptureFields.
+        if (merged.email) {
           const [current] = await tx.select({ email: candidate.email })
             .from(candidate)
             .where(eq(candidate.id, matchedId))
-          const owner = await findCandidateIdByEmail(emailTx, organizationId, body.email)
+          const owner = await findCandidateIdByEmail(emailTx, organizationId, merged.email)
           if (!current?.email && owner === null) {
-            await insertPrimaryEmail(emailTx, organizationId, matchedId, body.email.trim(), {
+            await insertPrimaryEmail(emailTx, organizationId, matchedId, merged.email.trim(), {
               source: 'extension',
               sourceDetail: { platform: body.source, sourceDetail: body.sourceDetail ?? null },
             })
@@ -451,6 +551,9 @@ export default defineEventHandler(async (event) => {
         linkedinUrl: body.linkedinUrl?.trim() || null,
         company: body.company?.trim() || null,
         position: body.position?.trim() || null,
+        // C2.1 richer capture (merged: body wins, AI fills)
+        headline: merged.headline?.trim() || null,
+        summary: merged.summary?.trim() || null,
         location: body.location?.trim() || null,
         source: body.source,
         sourceDetail: body.sourceDetail?.trim() || null,
@@ -460,8 +563,9 @@ export default defineEventHandler(async (event) => {
         throw createError({ statusCode: 500, statusMessage: 'Failed to create candidate' })
       }
 
-      if (body.email) {
-        await insertPrimaryEmail(emailTx, organizationId, created.id, body.email.trim(), {
+      // C2.1: merged email (body wins, AI fills — validated in mergeCaptureFields)
+      if (merged.email) {
+        await insertPrimaryEmail(emailTx, organizationId, created.id, merged.email.trim(), {
           source: 'extension',
           sourceDetail: { platform: body.source, sourceDetail: body.sourceDetail ?? null },
         })
@@ -492,6 +596,40 @@ export default defineEventHandler(async (event) => {
             source: 'capture',
           })),
         )
+      }
+
+      // C2.1 Education from the scrape (array order = display order)
+      if (merged.education?.length) {
+        await tx.insert(candidateEducation).values(
+          merged.education.map((edu, index) => ({
+            organizationId,
+            candidateId: created.id,
+            school: edu.school.trim(),
+            degree: edu.degree?.trim() || null,
+            fieldOfStudy: edu.fieldOfStudy?.trim() || null,
+            startText: edu.startText?.trim() || null,
+            endText: edu.endText?.trim() || null,
+            description: edu.description?.trim() || null,
+            sortOrder: index,
+            source: 'capture',
+          })),
+        )
+      }
+
+      // C2.1 Skills (deduped by normalizedName, blanks skipped)
+      if (merged.skills?.length) {
+        const skills = dedupeSkills(merged.skills)
+        if (skills.length) {
+          await tx.insert(candidateSkill).values(
+            skills.map((skill) => ({
+              organizationId,
+              candidateId: created.id,
+              name: skill.name,
+              normalizedName: skill.normalizedName,
+              source: 'capture',
+            })),
+          )
+        }
       }
 
       await tx.insert(extensionCaptureEvent).values({

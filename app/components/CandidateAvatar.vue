@@ -3,7 +3,7 @@ const props = withDefaults(defineProps<{
   firstName: string
   lastName: string
   photoUrl?: string | null
-  size?: 'sm' | 'md'
+  size?: 'sm' | 'md' | 'lg'
 }>(), {
   photoUrl: undefined,
   size: 'md',
@@ -35,9 +35,11 @@ const colorClass = computed(() => {
   return colorPairs[Math.abs(hash) % colorPairs.length]
 })
 
-const sizeClass = computed(() =>
-  props.size === 'sm' ? 'size-7 text-xs' : 'size-9 text-sm',
-)
+const sizeClass = computed(() => {
+  if (props.size === 'sm') return 'size-7 text-xs'
+  if (props.size === 'lg') return 'size-20 text-2xl'
+  return 'size-9 text-sm'
+})
 
 // Fall back to initials when the photo fails to load (or serving isn't live yet)
 const imageError = ref(false)

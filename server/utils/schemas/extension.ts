@@ -35,6 +35,11 @@ export const extensionCaptureSchema = z.object({
   linkedinUrl: z.preprocess(blankToUndefined, z.string().trim().max(500).url().optional()),
   company: z.preprocess(blankToUndefined, z.string().trim().max(200).optional()),
   position: z.preprocess(blankToUndefined, z.string().trim().max(200).optional()),
+  // ── C2.1 richer capture ──
+  // Headline (the line under the name on the source page) and summary (the
+  // "About" text). Body values win; the AI parse fills the gaps.
+  headline: z.preprocess(blankToUndefined, z.string().trim().max(200).optional()),
+  summary: z.preprocess(blankToUndefined, z.string().trim().max(4000).optional()),
   location: z.preprocess(blankToUndefined, z.string().trim().max(200).optional()),
   // Visible text of ONE profile page (AI extraction input). The 250k schema
   // cap is a memory-safety bound only; the endpoint 413s above 200_000.
@@ -53,6 +58,19 @@ export const extensionCaptureSchema = z.object({
     isCurrent: z.boolean().optional(),
     description: z.preprocess(blankToUndefined, z.string().trim().max(4000).optional()),
   })).max(30).optional(),
+  // Education as displayed on the source page (free-text dates). Same
+  // replace-when-non-empty semantics as experiences on update.
+  education: z.array(z.object({
+    school: z.string().trim().min(1).max(200),
+    degree: z.preprocess(blankToUndefined, z.string().trim().max(200).optional()),
+    fieldOfStudy: z.preprocess(blankToUndefined, z.string().trim().max(200).optional()),
+    startText: z.preprocess(blankToUndefined, z.string().trim().max(50).optional()),
+    endText: z.preprocess(blankToUndefined, z.string().trim().max(50).optional()),
+    description: z.preprocess(blankToUndefined, z.string().trim().max(4000).optional()),
+  })).max(20).optional(),
+  // Skills as listed on the source page. On update capture only ADDS missing
+  // ones (never deletes); stored per candidate deduped by lower(trim(name)).
+  skills: z.array(z.string().trim().min(1).max(80)).max(50).optional(),
   source: z.enum([
     'linkedin',
     'linkedin_recruiter',

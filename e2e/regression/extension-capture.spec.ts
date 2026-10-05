@@ -371,6 +371,58 @@ test.describe('Extension capture (C1)', () => {
     expect(detail.experiences[0]).toMatchObject({ title: 'New Role', company: 'New Co', isCurrent: true, sortOrder: 0 })
   })
 
+  test('C2.1 richer capture: headline/summary/education/skills create + update semantics', async ({ authenticatedPage }) => {
+    const api = authenticatedPage.request
+    const { key } = await createKey(api, `c21-${runId}`)
+    const email = `c21-${runId}@example.com`
+
+    // create: headline, summary, 2 education, skills with a dupe + a blank-ish entry
+    const res1 = await capture(api, key, `c21-a-${runId}`, {
+      ...VALID_BODY,
+      email,
+      headline: 'Head of Talent Acquisition',
+      summary: '15 years building engineering teams across Europe.',
+      education: [
+        { school: 'University of Manchester', degree: 'BSc', fieldOfStudy: 'Computer Science', startText: '2004', endText: '2007' },
+        { school: 'Imperial College London', degree: 'MSc', fieldOfStudy: 'Software Engineering', startText: '2008', endText: '2009' },
+      ],
+      skills: ['TypeScript', 'typescript ', 'Go'],
+    })
+    expect(res1.status()).toBe(201)
+    const candidateId = (await res1.json()).candidateId
+
+    const detail1 = await (await api.get(`/api/candidates/${candidateId}`)).json()
+    expect(detail1.headline).toBe('Head of Talent Acquisition')
+    expect(detail1.summary).toBe('15 years building engineering teams across Europe.')
+    expect(detail1.education).toHaveLength(2)
+    expect(detail1.education.map((e: any) => e.school)).toEqual(['University of Manchester', 'Imperial College London'])
+    expect(detail1.education[0]).toMatchObject({ degree: 'BSc', fieldOfStudy: 'Computer Science', startText: '2004', endText: '2007', sortOrder: 0 })
+    // skills deduped by normalizedName ('typescript ' == 'TypeScript'), ordered by name
+    expect(detail1.skills.map((s: any) => s.name)).toEqual(['Go', 'TypeScript'])
+
+    // update: 1 education REPLACES capture rows; skills ADD missing only;
+    // headline omitted → NOT blanked; provided summary overwrites
+    const res2 = await capture(api, key, `c21-b-${runId}`, {
+      firstName: 'Ext',
+      lastName: 'Capture',
+      email,
+      duplicatePolicy: 'update',
+      source: 'linkedin',
+      summary: 'Updated summary text.',
+      education: [{ school: 'Oxford University', degree: 'MBA', startText: '2015', endText: '2017' }],
+      skills: ['Rust'],
+    })
+    expect(res2.status()).toBe(200)
+    expect((await res2.json()).outcome).toBe('updated')
+
+    const detail2 = await (await api.get(`/api/candidates/${candidateId}`)).json()
+    expect(detail2.education).toHaveLength(1)
+    expect(detail2.education[0]).toMatchObject({ school: 'Oxford University', degree: 'MBA', sortOrder: 0 })
+    expect(detail2.skills.map((s: any) => s.name)).toEqual(['Go', 'Rust', 'TypeScript'])
+    expect(detail2.headline).toBe('Head of Talent Acquisition')
+    expect(detail2.summary).toBe('Updated summary text.')
+  })
+
   test('photo of a candidate in another org → 404', async ({ authenticatedPage }) => {
     const api = authenticatedPage.request
 
