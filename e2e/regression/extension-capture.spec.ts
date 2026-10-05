@@ -408,7 +408,7 @@ test.describe('Extension capture (C1)', () => {
   test('candidate without a photo → photo endpoint 404', async ({ authenticatedPage }) => {
     const api = authenticatedPage.request
     const res = await api.post('/api/candidates', {
-      data: { firstName: 'No', lastName: 'Photo' },
+      data: { firstName: 'No', lastName: 'Photo', email: `no-photo-${runId}@example.com` },
     })
     expect(res.status()).toBe(201)
     const { id } = await res.json()
