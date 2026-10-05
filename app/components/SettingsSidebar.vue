@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  Building2, Users, UserCircle, ChevronLeft, Settings,
+  Building2, Users, UserCircle, ChevronLeft, Settings, Puzzle,
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -26,6 +26,13 @@ const settingsNav = [
     description: 'Profile & security',
     to: '/dashboard/settings/account',
     icon: UserCircle,
+    exact: true,
+  },
+  {
+    label: 'Browser extension',
+    description: 'Save-to-ATS API keys',
+    to: '/dashboard/settings/extension',
+    icon: Puzzle,
     exact: true,
   },
 ]
