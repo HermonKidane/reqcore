@@ -90,6 +90,13 @@ export const candidate = pgTable('candidate', {
   company: text('company'),
   position: text('position'),
   source: text('source').default('manual'),
+  // ── Photo / source detail (C0) ──
+  // photoKey: object-storage key for the candidate photo; set by capture
+  // extension / Manatal import. Photo serving lands in C1.
+  photoKey: text('photo_key'),
+  photoUpdatedAt: timestamp('photo_updated_at'),
+  // platform-specific id/URL detail (e.g. LinkedIn public id)
+  sourceDetail: text('source_detail'),
   connectedOn: timestamp('connected_on'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
@@ -518,6 +525,26 @@ export const joinRequestRelations = relations(joinRequest, ({ one }) => ({
   organization: one(organization, { fields: [joinRequest.organizationId], references: [organization.id] }),
   reviewedBy: one(user, { fields: [joinRequest.reviewedById], references: [user.id] }),
 }))
+
+// ─────────────────────────────────────────────
+// Tour Progress
+// ─────────────────────────────────────────────
+
+/**
+ * Per-user, per-org, per-tour completion tracking.
+ * backend for useTour progress; wiring is a follow-up.
+ */
+export const tourProgress = pgTable('tour_progress', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  organizationId: text('organization_id').notNull().references(() => organization.id, { onDelete: 'cascade' }),
+  tourId: text('tour_id').notNull(),
+  completedAt: timestamp('completed_at').notNull().defaultNow(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (t) => ([
+  uniqueIndex('tour_progress_user_org_tour_idx').on(t.userId, t.organizationId, t.tourId),
+  index('tour_progress_user_id_idx').on(t.userId),
+]))
 
 // ─────────────────────────────────────────────
 // CSV Candidate Import

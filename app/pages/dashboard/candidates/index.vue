@@ -139,6 +139,7 @@ const { candidates, total, fetchStatus, error, refresh } = useCandidates({
       >
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-2 mb-1">
+            <CandidateAvatar :first-name="c.firstName" :last-name="c.lastName" class="shrink-0" />
             <h3 class="text-sm font-semibold text-surface-900 dark:text-surface-100 group-hover:text-brand-600 transition-colors truncate">
               {{ c.firstName }} {{ c.lastName }}
             </h3>
