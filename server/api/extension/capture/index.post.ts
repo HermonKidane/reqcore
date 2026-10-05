@@ -163,6 +163,8 @@ function mergeCaptureFields(
     ...body,
     firstName: body.firstName ?? parsed?.firstName,
     lastName: body.lastName ?? parsed?.lastName,
+    email: body.email ?? parsed?.email,
+    phone: body.phone ?? parsed?.phone,
     company: body.company ?? parsed?.company,
     position: body.position ?? parsed?.position ?? parsed?.headline,
     headline: body.headline ?? parsed?.headline,
@@ -398,7 +400,7 @@ export default defineEventHandler(async (event) => {
         const updatePayload: Record<string, unknown> = { updatedAt: new Date() }
         if (merged.firstName?.trim()) updatePayload.firstName = merged.firstName.trim()
         if (merged.lastName?.trim()) updatePayload.lastName = merged.lastName.trim()
-        if (body.phone?.trim()) updatePayload.phone = body.phone.trim()
+        if (merged.phone?.trim()) updatePayload.phone = merged.phone.trim()
         if (body.linkedinUrl?.trim()) updatePayload.linkedinUrl = body.linkedinUrl.trim()
         if (merged.company?.trim()) updatePayload.company = merged.company.trim()
         if (merged.position?.trim()) updatePayload.position = merged.position.trim()
@@ -547,14 +549,14 @@ export default defineEventHandler(async (event) => {
         firstName: captureFirstName,
         lastName: captureLastName,
         email: null,
-        phone: body.phone?.trim() || null,
+        phone: merged.phone?.trim() || null,
         linkedinUrl: body.linkedinUrl?.trim() || null,
-        company: body.company?.trim() || null,
-        position: body.position?.trim() || null,
+        company: merged.company?.trim() || null,
+        position: merged.position?.trim() || null,
         // C2.1 richer capture (merged: body wins, AI fills)
         headline: merged.headline?.trim() || null,
         summary: merged.summary?.trim() || null,
-        location: body.location?.trim() || null,
+        location: merged.location?.trim() || null,
         source: body.source,
         sourceDetail: body.sourceDetail?.trim() || null,
       }).returning({ id: candidate.id })
