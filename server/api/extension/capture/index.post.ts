@@ -179,8 +179,10 @@ export default defineEventHandler(async (event) => {
   // Per-key rate limit (60 req/min) — keyed by credential, not IP
   await extensionCaptureLimiter(event, keyId)
 
-  const idempotencyKey = getHeader(event, 'idempotency-key')
-  if (!idempotencyKey || !idempotencyKeyPattern.test(idempotencyKey)) {
+  // Preview is read-only, so it is the one mode that needs no Idempotency-Key
+  const isPreview = getHeader(event, 'x-capture-mode') === 'preview'
+  const idempotencyKey = getHeader(event, 'idempotency-key') ?? ''
+  if (!isPreview && !idempotencyKeyPattern.test(idempotencyKey)) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Idempotency-Key header required (1-128 chars, [A-Za-z0-9._:-])',
@@ -197,7 +199,7 @@ export default defineEventHandler(async (event) => {
   //    parsing + duplicate lookup. NOTHING is written, and no
   //    Idempotency-Key is required. Lets the popup show the recruiter what
   //    the AI read before they hit Save (design §10, guardrail 11).
-  if (getHeader(event, 'x-capture-mode') === 'preview') {
+  if (isPreview) {
     const parsedProfile = body.pageText
       ? await parseProfileText({ pageText: body.pageText, pageUrl: body.pageUrl })
       : null
