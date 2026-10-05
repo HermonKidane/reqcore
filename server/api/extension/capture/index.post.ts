@@ -161,16 +161,20 @@ export default defineEventHandler(async (event) => {
 
       if (!matchedId && body.linkedinUrl) {
         const wanted = normalizeLinkedinUrl(body.linkedinUrl)
-        const rows = await tx.execute<{ id: string; linkedin_url: string | null }>(sql`
-          SELECT id, linkedin_url FROM candidate
-          WHERE organization_id = ${organizationId} AND linkedin_url IS NOT NULL
+        // Same normalization as normalizeLinkedinUrl(), done in SQL so we
+        // never pull every candidate's URL into memory
+        const rows = await tx.execute<{ id: string }>(sql`
+          SELECT id FROM candidate
+          WHERE organization_id = ${organizationId}
+            AND linkedin_url IS NOT NULL
+            AND rtrim(split_part(split_part(
+                  regexp_replace(regexp_replace(lower(btrim(linkedin_url)), '^https?://', ''), '^www[.]', ''),
+                  '?', 1), '#', 1), '/') = ${wanted}
+          LIMIT 1
         `)
-        for (const row of rows) {
-          if (row.linkedin_url && normalizeLinkedinUrl(row.linkedin_url) === wanted) {
-            matchedId = row.id
-            matchedBy = 'linkedin'
-            break
-          }
+        if (rows[0]) {
+          matchedId = rows[0].id
+          matchedBy = 'linkedin'
         }
       }
 
@@ -216,13 +220,17 @@ export default defineEventHandler(async (event) => {
           .set(updatePayload)
           .where(eq(candidate.id, matchedId))
 
-        // Email via the single email code path (invariants I1–I3).
-        // Skip when the email is already this candidate's; leave untouched
-        // when it belongs to a DIFFERENT candidate (never break uniqueness).
+        // Email via the single email code path (invariants I1–I3). Only fills
+        // a MISSING email — an existing primary is never overwritten (no
+        // secondary-email API yet), and an email owned by a different
+        // candidate is left alone (never break uniqueness).
         if (body.email) {
+          const [current] = await tx.select({ email: candidate.email })
+            .from(candidate)
+            .where(eq(candidate.id, matchedId))
           const owner = await findCandidateIdByEmail(emailTx, organizationId, body.email)
-          if (owner === null) {
-            await replacePrimaryEmail(emailTx, organizationId, matchedId, body.email.trim(), {
+          if (!current?.email && owner === null) {
+            await insertPrimaryEmail(emailTx, organizationId, matchedId, body.email.trim(), {
               source: 'extension',
               sourceDetail: { platform: body.source, sourceDetail: body.sourceDetail ?? null },
             })

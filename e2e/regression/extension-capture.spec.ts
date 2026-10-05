@@ -201,6 +201,23 @@ test.describe('Extension capture (C1)', () => {
     const got = await (await api.get(`/api/candidates/${candidateId}`)).json()
     expect(got.position).toBe('Lead Dev')
     expect(got.company).toBe('Acme Ltd')
+
+    // update matched by LinkedIn with a DIFFERENT email: existing primary email is never overwritten
+    const linkedinUrl = `https://www.linkedin.com/in/upd-${runId}`
+    await capture(api, key, `upd-c-${runId}`, { ...VALID_BODY, email, linkedinUrl, duplicatePolicy: 'update' })
+    const res3 = await capture(api, key, `upd-d-${runId}`, {
+      firstName: 'Ext',
+      lastName: 'Capture',
+      email: `other-${runId}@example.com`,
+      linkedinUrl,
+      duplicatePolicy: 'update',
+      source: 'linkedin',
+    })
+    const r3 = await res3.json()
+    expect(r3.matchedBy).toBe('linkedin')
+    expect(r3.candidateId).toBe(candidateId)
+    const got3 = await (await api.get(`/api/candidates/${candidateId}`)).json()
+    expect(got3.email).toBe(email)
   })
 
   test('cross-org: revoking another org\'s key → 404; no cross-org duplicate match', async ({ authenticatedPage }) => {

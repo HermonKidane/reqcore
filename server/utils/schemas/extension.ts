@@ -40,7 +40,8 @@ export const extensionCaptureSchema = z.object({
   duplicatePolicy: z.enum(['skip', 'update']).default('skip'),
   photo: z.object({
     contentType: photoContentTypeEnum,
-    dataBase64: z.string().min(1),
+    // 2 MB decoded ≈ 2.8M base64 chars; cap the raw string before decoding
+    dataBase64: z.string().min(1).max(2_900_000),
   }).optional(),
 })
 
