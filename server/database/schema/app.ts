@@ -181,7 +181,7 @@ export const candidateExperience = pgTable('candidate_experience', {
   isCurrent: boolean('is_current').notNull().default(false),
   description: text('description'),
   sortOrder: integer('sort_order').notNull().default(0),
-  source: text('source').notNull().default('manual'), // 'linkedin' | 'manual' | 'import'
+  source: text('source').notNull().default('manual'), // 'capture' (browser extension) | 'manual' | 'import'
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (t) => ([

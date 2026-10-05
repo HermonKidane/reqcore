@@ -214,14 +214,14 @@ export default defineEventHandler(async (event) => {
         if (body.location?.trim()) updatePayload.location = body.location.trim()
 
         // Work history: when provided non-empty, replace the candidate's
-        // 'linkedin'-sourced rows wholesale (fresh scrape wins); 'manual' /
+        // 'capture'-sourced rows wholesale (fresh scrape wins); 'manual' /
         // 'import' rows are never touched.
         if (body.experiences?.length) {
           await tx.delete(candidateExperience)
             .where(and(
               eq(candidateExperience.candidateId, matchedId),
               eq(candidateExperience.organizationId, organizationId),
-              eq(candidateExperience.source, 'linkedin'),
+              eq(candidateExperience.source, 'capture'),
             ))
           await tx.insert(candidateExperience).values(
             body.experiences.map((exp, index) => ({
@@ -235,7 +235,7 @@ export default defineEventHandler(async (event) => {
               isCurrent: exp.isCurrent ?? false,
               description: exp.description?.trim() || null,
               sortOrder: index,
-              source: 'linkedin',
+              source: 'capture',
             })),
           )
         }
@@ -327,7 +327,7 @@ export default defineEventHandler(async (event) => {
           .where(eq(candidate.id, created.id))
       }
 
-      // Work history from the scrape (source 'linkedin', array order = display order)
+      // Work history from the scrape (source 'capture', array order = display order)
       if (body.experiences?.length) {
         await tx.insert(candidateExperience).values(
           body.experiences.map((exp, index) => ({
@@ -341,7 +341,7 @@ export default defineEventHandler(async (event) => {
             isCurrent: exp.isCurrent ?? false,
             description: exp.description?.trim() || null,
             sortOrder: index,
-            source: 'linkedin',
+            source: 'capture',
           })),
         )
       }
