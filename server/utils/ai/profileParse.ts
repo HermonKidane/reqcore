@@ -70,7 +70,29 @@ Output rules:
 - Return at most 30 experiences.
 - Dates must be copied EXACTLY as shown on the page (e.g. "Jan 2020", "Present"). Do not reformat or compute durations.
 - "company" and "position" refer to the person's CURRENT role when discernible from the page; otherwise omit them.
-- "headline" is the short descriptive line shown directly under the person's name, when present.`
+- "headline" is the short descriptive line shown directly under the person's name, when present.
+
+Return exactly this JSON shape (keys spelled exactly like this; omit optional keys you cannot find):
+{
+  "firstName": "string (required)",
+  "lastName": "string (required)",
+  "headline": "string",
+  "location": "string",
+  "company": "string — current employer",
+  "position": "string — current job title",
+  "experiences": [
+    {
+      "title": "string (required)",
+      "company": "string",
+      "location": "string",
+      "startText": "string, e.g. Jan 2020",
+      "endText": "string, e.g. Present",
+      "isCurrent": true,
+      "description": "string"
+    }
+  ]
+}
+If no experience is listed, return "experiences": [].`
 
 function parseFail(reason: string): null {
   // One line, reason only — NEVER page text or provider payloads.
@@ -143,6 +165,18 @@ export async function parseProfileText(params: {
   }
   catch {
     return parseFail('provider output was not valid JSON')
+  }
+
+  // Tolerate a single full-name key if the model ignores the split
+  if (json && typeof json === 'object') {
+    const o = json as Record<string, unknown>
+    const full = typeof o.name === 'string' ? o.name : typeof o.fullName === 'string' ? o.fullName : null
+    if (full && (typeof o.firstName !== 'string' || typeof o.lastName !== 'string')) {
+      const parts = full.trim().split(/\s+/)
+      o.firstName ??= parts[0]
+      o.lastName ??= parts.slice(1).join(' ') || '-'
+    }
+    if (o.experiences == null) o.experiences = []
   }
 
   const validated = profileParseSchema.safeParse(json)
