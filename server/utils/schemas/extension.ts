@@ -28,6 +28,19 @@ export const extensionCaptureSchema = z.object({
   linkedinUrl: z.preprocess(blankToUndefined, z.string().trim().max(500).url().optional()),
   company: z.preprocess(blankToUndefined, z.string().trim().max(200).optional()),
   position: z.preprocess(blankToUndefined, z.string().trim().max(200).optional()),
+  location: z.preprocess(blankToUndefined, z.string().trim().max(200).optional()),
+  // Work history as displayed on the source page (free-text dates). On update
+  // the candidate's 'linkedin'-sourced rows are replaced wholesale by this
+  // array (when non-empty); 'manual'/'import' rows are never touched.
+  experiences: z.array(z.object({
+    title: z.string().trim().min(1).max(200),
+    company: z.preprocess(blankToUndefined, z.string().trim().max(200).optional()),
+    location: z.preprocess(blankToUndefined, z.string().trim().max(200).optional()),
+    startText: z.preprocess(blankToUndefined, z.string().trim().max(50).optional()),
+    endText: z.preprocess(blankToUndefined, z.string().trim().max(50).optional()),
+    isCurrent: z.boolean().optional(),
+    description: z.preprocess(blankToUndefined, z.string().trim().max(4000).optional()),
+  })).max(30).optional(),
   source: z.enum([
     'linkedin',
     'linkedin_recruiter',

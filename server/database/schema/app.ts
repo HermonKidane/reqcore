@@ -89,6 +89,8 @@ export const candidate = pgTable('candidate', {
   linkedinUrl: text('linkedin_url'),
   company: text('company'),
   position: text('position'),
+  // display location (free text, e.g. from the capture extension)
+  location: text('location'),
   source: text('source').default('manual'),
   // ── Photo / source detail (C0) ──
   // photoKey: object-storage key for the candidate photo; set by capture
@@ -156,6 +158,40 @@ export const candidateEmail = pgTable('candidate_email', {
     columns: [t.organizationId, t.candidateId],
     foreignColumns: [candidate.organizationId, candidate.id],
     name: 'candidate_email_candidate_fk',
+  }).onDelete('cascade'),
+]))
+
+/**
+ * Work-history entries for a person (the `candidate` row). Filled by the
+ * capture extension (source 'linkedin' — replaced wholesale per capture) and
+ * later by manual entry ('manual') / import ('import'), which are NEVER
+ * touched by capture. Dates stay free text ('Jan 2020') — scrapers only
+ * have the displayed string; real dates are follow-up work.
+ */
+export const candidateExperience = pgTable('candidate_experience', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  organizationId: text('organization_id').notNull().references(() => organization.id, { onDelete: 'cascade' }),
+  candidateId: text('candidate_id').notNull(),
+  title: text('title').notNull(),
+  company: text('company'),
+  location: text('location'),
+  // as displayed on the source page, e.g. 'Jan 2020' (scraper has no real dates)
+  startText: text('start_text'),
+  endText: text('end_text'),
+  isCurrent: boolean('is_current').notNull().default(false),
+  description: text('description'),
+  sortOrder: integer('sort_order').notNull().default(0),
+  source: text('source').notNull().default('manual'), // 'linkedin' | 'manual' | 'import'
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (t) => ([
+  index('candidate_experience_organization_id_idx').on(t.organizationId),
+  index('candidate_experience_candidate_sort_idx').on(t.candidateId, t.sortOrder),
+  // Tenant-scoped FK: candidate (organization_id, id) — same pattern as candidate_email
+  foreignKey({
+    columns: [t.organizationId, t.candidateId],
+    foreignColumns: [candidate.organizationId, candidate.id],
+    name: 'candidate_experience_candidate_fk',
   }).onDelete('cascade'),
 ]))
 
@@ -453,12 +489,18 @@ export const candidateRelations = relations(candidate, ({ one, many }) => ({
   documents: many(document),
   emails: many(candidateEmail),
   roles: many(personRole),
+  experiences: many(candidateExperience),
   jobContactLinks: many(jobClientContact),
 }))
 
 export const candidateEmailRelations = relations(candidateEmail, ({ one }) => ({
   organization: one(organization, { fields: [candidateEmail.organizationId], references: [organization.id] }),
   candidate: one(candidate, { fields: [candidateEmail.candidateId], references: [candidate.id] }),
+}))
+
+export const candidateExperienceRelations = relations(candidateExperience, ({ one }) => ({
+  organization: one(organization, { fields: [candidateExperience.organizationId], references: [organization.id] }),
+  candidate: one(candidate, { fields: [candidateExperience.candidateId], references: [candidate.id] }),
 }))
 
 export const importBatchRelations = relations(importBatch, ({ one }) => ({

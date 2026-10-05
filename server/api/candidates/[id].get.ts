@@ -47,6 +47,22 @@ export default defineEventHandler(async (event) => {
           desc(role.startedAt),
         ],
       },
+      // Work history in display order (capture order / sortOrder)
+      experiences: {
+        columns: {
+          id: true,
+          title: true,
+          company: true,
+          location: true,
+          startText: true,
+          endText: true,
+          isCurrent: true,
+          description: true,
+          sortOrder: true,
+          source: true,
+        },
+        orderBy: (experience, { asc }) => [asc(experience.sortOrder)],
+      },
     },
   })
 
@@ -54,5 +70,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Not found' })
   }
 
-  return result
+  // Never expose the raw photoKey — photos stream via /api/candidates/:id/photo
+  const { photoKey: _photoKey, ...rest } = result
+  return { ...rest, hasPhoto: _photoKey !== null }
 })

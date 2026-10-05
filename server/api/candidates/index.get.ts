@@ -50,6 +50,14 @@ export default defineEventHandler(async (event) => {
         lastName: candidate.lastName,
         email: candidate.email,
         phone: candidate.phone,
+        linkedinUrl: candidate.linkedinUrl,
+        company: candidate.company,
+        position: candidate.position,
+        location: candidate.location,
+        // photoUpdatedAt doubles as the avatar cache-buster (?v=...); the raw
+        // photoKey is never exposed — photos stream via /api/candidates/:id/photo
+        photoUpdatedAt: candidate.photoUpdatedAt,
+        hasPhoto: sql<boolean>`${candidate.photoKey} IS NOT NULL`,
         createdAt: candidate.createdAt,
         updatedAt: candidate.updatedAt,
         applicationCount: sql<number>`count(${application.id})::int`,

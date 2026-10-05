@@ -120,6 +120,13 @@
       "when": 1791197632379,
       "tag": "0016_0016-extension-api-key",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1791216940994,
+      "tag": "0017_0017-candidate-experience-location",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowLeft, Pencil, Trash2, Mail, Phone, Calendar, Clock, Briefcase, FileText, Plus, Upload, Download, Eye, X, AlertTriangle } from 'lucide-vue-next'
+import { ArrowLeft, Pencil, Trash2, Mail, Phone, Calendar, Clock, Briefcase, FileText, Plus, Upload, Download, Eye, X, AlertTriangle, MapPin, Linkedin } from 'lucide-vue-next'
 import { z } from 'zod'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
 
@@ -26,7 +26,40 @@ useSeoMeta({
 // Tabs
 // ─────────────────────────────────────────────
 
-const activeTab = ref<'applications' | 'roles' | 'documents'>('applications')
+const activeTab = ref<'applications' | 'roles' | 'documents' | 'experiences'>('applications')
+
+// ─────────────────────────────────────────────
+// Photo avatar + headline (position · company / location / LinkedIn)
+// ─────────────────────────────────────────────
+
+const photoUrl = computed(() => {
+  const c = candidate.value as any
+  return c?.hasPhoto && c?.photoUpdatedAt
+    ? `/api/candidates/${candidateId}/photo?v=${encodeURIComponent(c.photoUpdatedAt)}`
+    : undefined
+})
+
+/** 'position · company' — only the parts that exist */
+const headlineLine = computed(() => {
+  const c = candidate.value as any
+  if (!c) return ''
+  return [c.position, c.company].filter(Boolean).join(' · ')
+})
+
+// ─────────────────────────────────────────────
+// Experience tab — 'Show more' toggle per entry
+// ─────────────────────────────────────────────
+
+const expandedExperiences = ref<Record<string, boolean>>({})
+
+function toggleExperience(id: string) {
+  expandedExperiences.value[id] = !expandedExperiences.value[id]
+}
+
+/** 'Jan 2020 – Mar 2022' / 'Jan 2020 – Present' — only the parts that exist */
+function experienceDates(exp: any): string {
+  return [exp.startText, exp.isCurrent ? 'Present' : exp.endText].filter(Boolean).join(' – ')
+}
 
 // ─────────────────────────────────────────────
 // Stacked active-role chips — NEVER a single status badge.
@@ -317,10 +350,20 @@ function formatFileSize(bytes: number | null | undefined): string {
       <div v-if="!isEditing">
         <!-- Header -->
         <div class="flex items-start justify-between gap-4 mb-6">
-          <div class="min-w-0">
-            <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-50 truncate mb-1">
-              {{ candidate.firstName }} {{ candidate.lastName }}
-            </h1>
+          <div class="flex items-start gap-4 min-w-0">
+            <CandidateAvatar :first-name="(candidate as any).firstName" :last-name="(candidate as any).lastName" :photo-url="photoUrl" class="mt-1 shrink-0" />
+            <div class="min-w-0">
+              <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-50 truncate mb-1">
+                {{ candidate.firstName }} {{ candidate.lastName }}
+              </h1>
+              <!-- position · company / location — only the parts that exist -->
+              <p v-if="headlineLine" class="text-sm text-surface-600 dark:text-surface-300 truncate">
+                {{ headlineLine }}
+              </p>
+              <p v-if="(candidate as any).location" class="text-sm text-surface-500 dark:text-surface-400 inline-flex items-center gap-1">
+                <MapPin class="size-3.5 shrink-0" />
+                {{ (candidate as any).location }}
+              </p>
             <!-- Stacked active-role chips (never a single status badge) -->
             <div v-if="(candidate.applications?.length ?? 0) > 0 || activeRoleChips.length > 0" class="flex flex-wrap items-center gap-1.5 mb-2">
               <span
@@ -339,7 +382,7 @@ function formatFileSize(bytes: number | null | undefined): string {
                 {{ roleLabels[r.role] ?? r.role }}<template v-if="r.clientCompany?.name"> · {{ r.clientCompany.name }}</template>
               </span>
             </div>
-            <div class="flex items-center gap-4 text-sm text-surface-500">
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-surface-500">
               <span class="inline-flex items-center gap-1">
                 <Mail class="size-3.5" />
                 {{ candidate.email }}
@@ -348,6 +391,17 @@ function formatFileSize(bytes: number | null | undefined): string {
                 <Phone class="size-3.5" />
                 {{ candidate.phone }}
               </span>
+              <a
+                v-if="(candidate as any).linkedinUrl"
+                :href="(candidate as any).linkedinUrl"
+                target="_blank"
+                rel="noopener"
+                class="inline-flex items-center gap-1 text-brand-600 hover:text-brand-700 dark:text-brand-400 transition-colors"
+              >
+                <Linkedin class="size-3.5" />
+                LinkedIn
+              </a>
+            </div>
             </div>
           </div>
 
@@ -381,6 +435,15 @@ function formatFileSize(bytes: number | null | undefined): string {
               <dt class="text-surface-400">Phone</dt>
               <dd class="text-surface-700 dark:text-surface-200 font-medium">
                 {{ candidate.phone || '—' }}
+              </dd>
+            </div>
+            <div>
+              <dt class="text-surface-400 inline-flex items-center gap-1">
+                <MapPin class="size-3.5" />
+                Location
+              </dt>
+              <dd class="text-surface-700 dark:text-surface-200 font-medium">
+                {{ (candidate as any).location || '—' }}
               </dd>
             </div>
             <div>
@@ -434,6 +497,61 @@ function formatFileSize(bytes: number | null | undefined): string {
             >
               Documents ({{ candidate.documents?.length ?? 0 }})
             </button>
+            <button
+              class="cursor-pointer px-3 py-2 text-sm font-medium transition-colors border-b-2 -mb-px"
+              :class="activeTab === 'experiences'
+                ? 'border-brand-600 text-brand-600'
+                : 'border-transparent text-surface-500 hover:text-surface-700 hover:border-surface-300 dark:hover:text-surface-300'"
+              @click="activeTab = 'experiences'"
+            >
+              Experience ({{ (candidate as any).experiences?.length ?? 0 }})
+            </button>
+          </div>
+        </div>
+
+        <!-- Experience tab -->
+        <div v-if="activeTab === 'experiences'">
+          <div
+            v-if="!(candidate as any).experiences?.length"
+            class="rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-8 text-center"
+          >
+            <Briefcase class="size-8 text-surface-300 dark:text-surface-600 mx-auto mb-2" />
+            <p class="text-sm text-surface-500 dark:text-surface-400">No work history yet.</p>
+          </div>
+
+          <div v-else class="space-y-2">
+            <div
+              v-for="exp in (candidate as any).experiences"
+              :key="exp.id"
+              class="rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 px-4 py-3"
+            >
+              <div class="min-w-0">
+                <h4 class="text-sm font-semibold text-surface-900 dark:text-surface-100">
+                  {{ exp.title }}
+                </h4>
+                <p v-if="exp.company" class="text-xs text-surface-500 dark:text-surface-400">
+                  {{ exp.company }}
+                </p>
+                <p class="text-xs text-surface-400">
+                  <span v-if="experienceDates(exp)">{{ experienceDates(exp) }}</span>
+                  <template v-if="exp.location">{{ experienceDates(exp) ? ' · ' : '' }}{{ exp.location }}</template>
+                </p>
+              </div>
+              <p
+                v-if="exp.description"
+                class="text-sm text-surface-600 dark:text-surface-300 mt-2 whitespace-pre-line"
+                :class="expandedExperiences[exp.id] ? '' : 'line-clamp-4'"
+              >
+                {{ exp.description }}
+              </p>
+              <button
+                v-if="exp.description"
+                class="cursor-pointer mt-1 text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 transition-colors"
+                @click="toggleExperience(exp.id)"
+              >
+                {{ expandedExperiences[exp.id] ? 'Show less' : 'Show more' }}
+              </button>
+            </div>
           </div>
         </div>
 

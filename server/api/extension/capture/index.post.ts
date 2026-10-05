@@ -1,5 +1,5 @@
 import { and, desc, eq, sql } from 'drizzle-orm'
-import { candidate, extensionCaptureEvent, job } from '../../../database/schema'
+import { candidate, candidateExperience, extensionCaptureEvent, job } from '../../../database/schema'
 import { extensionCaptureSchema } from '../../../utils/schemas/extension'
 import { authenticateExtensionKey } from '../../../utils/extensionKey'
 
@@ -210,6 +210,35 @@ export default defineEventHandler(async (event) => {
         if (body.linkedinUrl?.trim()) updatePayload.linkedinUrl = body.linkedinUrl.trim()
         if (body.company?.trim()) updatePayload.company = body.company.trim()
         if (body.position?.trim()) updatePayload.position = body.position.trim()
+        // location: only overwrite when provided non-empty (never blank out)
+        if (body.location?.trim()) updatePayload.location = body.location.trim()
+
+        // Work history: when provided non-empty, replace the candidate's
+        // 'linkedin'-sourced rows wholesale (fresh scrape wins); 'manual' /
+        // 'import' rows are never touched.
+        if (body.experiences?.length) {
+          await tx.delete(candidateExperience)
+            .where(and(
+              eq(candidateExperience.candidateId, matchedId),
+              eq(candidateExperience.organizationId, organizationId),
+              eq(candidateExperience.source, 'linkedin'),
+            ))
+          await tx.insert(candidateExperience).values(
+            body.experiences.map((exp, index) => ({
+              organizationId,
+              candidateId: matchedId,
+              title: exp.title.trim(),
+              company: exp.company?.trim() || null,
+              location: exp.location?.trim() || null,
+              startText: exp.startText?.trim() || null,
+              endText: exp.endText?.trim() || null,
+              isCurrent: exp.isCurrent ?? false,
+              description: exp.description?.trim() || null,
+              sortOrder: index,
+              source: 'linkedin',
+            })),
+          )
+        }
 
         let photoKey: string | null = null
         let previousPhotoKey: string | null = null
@@ -274,6 +303,7 @@ export default defineEventHandler(async (event) => {
         linkedinUrl: body.linkedinUrl?.trim() || null,
         company: body.company?.trim() || null,
         position: body.position?.trim() || null,
+        location: body.location?.trim() || null,
         source: body.source,
         sourceDetail: body.sourceDetail?.trim() || null,
       }).returning({ id: candidate.id })
@@ -295,6 +325,25 @@ export default defineEventHandler(async (event) => {
         await tx.update(candidate)
           .set({ photoKey, photoUpdatedAt: new Date() })
           .where(eq(candidate.id, created.id))
+      }
+
+      // Work history from the scrape (source 'linkedin', array order = display order)
+      if (body.experiences?.length) {
+        await tx.insert(candidateExperience).values(
+          body.experiences.map((exp, index) => ({
+            organizationId,
+            candidateId: created.id,
+            title: exp.title.trim(),
+            company: exp.company?.trim() || null,
+            location: exp.location?.trim() || null,
+            startText: exp.startText?.trim() || null,
+            endText: exp.endText?.trim() || null,
+            isCurrent: exp.isCurrent ?? false,
+            description: exp.description?.trim() || null,
+            sortOrder: index,
+            source: 'linkedin',
+          })),
+        )
       }
 
       await tx.insert(extensionCaptureEvent).values({

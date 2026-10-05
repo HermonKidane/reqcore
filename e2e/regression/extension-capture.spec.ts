@@ -69,6 +69,9 @@ const VALID_BODY = {
   source: 'linkedin',
 }
 
+// 1×1 transparent PNG — enough to exercise magic-byte validation + serving
+const TINY_PNG_BASE64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+
 test.describe('Extension capture (C1)', () => {
   test('unauthenticated capture attempts → 401', async ({ authenticatedPage }) => {
     const api = authenticatedPage.request
@@ -285,5 +288,132 @@ test.describe('Extension capture (C1)', () => {
     const raw = JSON.stringify(await listRes.json())
     expect(raw).not.toContain('keyHash')
     expect(raw).not.toContain(key)
+  })
+
+  test('capture with experiences + location + photo: detail API serves them; photo streams', async ({ authenticatedPage }) => {
+    const api = authenticatedPage.request
+    const { key } = await createKey(api, `c2-create-${runId}`)
+
+    const res = await capture(api, key, `c2-create-${runId}`, {
+      ...VALID_BODY,
+      email: `c2-create-${runId}@example.com`,
+      location: 'London, UK',
+      position: 'Senior Developer',
+      company: 'Acme Ltd',
+      linkedinUrl: `https://www.linkedin.com/in/c2-create-${runId}`,
+      experiences: [
+        {
+          title: 'Senior Developer',
+          company: 'Acme Ltd',
+          location: 'London',
+          startText: 'Jan 2022',
+          isCurrent: true,
+          description: 'Leading the payments team.',
+        },
+        {
+          title: 'Developer',
+          company: 'Beta Plc',
+          startText: 'Jun 2019',
+          endText: 'Dec 2021',
+        },
+      ],
+      photo: { contentType: 'image/png', dataBase64: TINY_PNG_BASE64 },
+    })
+    expect(res.status(), 'capture').toBe(201)
+    const r = await res.json()
+    expect(r.photoStored, 'photo upload (needs MinIO)').toBe(true)
+
+    // Detail API: 2 experiences in capture order + location; raw key never exposed
+    const detail = await (await api.get(`/api/candidates/${r.candidateId}`)).json()
+    expect(detail.location).toBe('London, UK')
+    expect(detail.experiences).toHaveLength(2)
+    expect(detail.experiences.map((e: any) => e.title)).toEqual(['Senior Developer', 'Developer'])
+    expect(detail.experiences[0]).toMatchObject({ company: 'Acme Ltd', isCurrent: true, sortOrder: 0 })
+    expect(detail.experiences[1]).toMatchObject({ company: 'Beta Plc', startText: 'Jun 2019', endText: 'Dec 2021', sortOrder: 1 })
+    expect(detail.hasPhoto).toBe(true)
+    expect(detail.photoKey).toBeUndefined()
+
+    // Photo streams through the server with the stored content type
+    const photoRes = await api.get(`/api/candidates/${r.candidateId}/photo`)
+    expect(photoRes.status(), 'photo endpoint').toBe(200)
+    expect(photoRes.headers()['content-type']).toBe('image/png')
+  })
+
+  test('update replaces linkedin-sourced experiences; exactly 1 remains', async ({ authenticatedPage }) => {
+    const api = authenticatedPage.request
+    const { key } = await createKey(api, `c2-upd-${runId}`)
+    const email = `c2-upd-${runId}@example.com`
+
+    const res1 = await capture(api, key, `c2-upd-a-${runId}`, {
+      ...VALID_BODY,
+      email,
+      experiences: [
+        { title: 'Old One', company: 'Old Co', startText: 'Jan 2020', endText: 'Mar 2021' },
+        { title: 'Old Two', company: 'Old Co', startText: 'Apr 2021' },
+      ],
+    })
+    expect(res1.status()).toBe(201)
+    const candidateId = (await res1.json()).candidateId
+
+    const res2 = await capture(api, key, `c2-upd-b-${runId}`, {
+      firstName: 'Ext',
+      lastName: 'Capture',
+      email,
+      duplicatePolicy: 'update',
+      source: 'linkedin',
+      experiences: [{ title: 'New Role', company: 'New Co', startText: 'Feb 2024', isCurrent: true }],
+    })
+    expect(res2.status()).toBe(200)
+    expect((await res2.json()).outcome).toBe('updated')
+
+    const detail = await (await api.get(`/api/candidates/${candidateId}`)).json()
+    expect(detail.experiences).toHaveLength(1)
+    expect(detail.experiences[0]).toMatchObject({ title: 'New Role', company: 'New Co', isCurrent: true, sortOrder: 0 })
+  })
+
+  test('photo of a candidate in another org → 404', async ({ authenticatedPage }) => {
+    const api = authenticatedPage.request
+
+    const slugB = `c2-b-${runId}`
+    const createRes = await api.post('/api/auth/organization/create', {
+      data: { name: `C2 B ${runId}`, slug: slugB },
+      headers: { Origin: BASE },
+    })
+    expect(createRes.status(), 'org B create').toBe(200)
+
+    const orgs = await listOrgs(api)
+    const orgA = orgs.find(o => o.slug !== slugB)!
+    const orgB = orgs.find(o => o.slug === slugB)!
+
+    // Capture with a photo in org A
+    await setActiveOrg(api, orgA.id)
+    const keyA = await createKey(api, `c2-orgA-${runId}`)
+    const resA = await capture(api, keyA.key, `c2-cross-${runId}`, {
+      ...VALID_BODY,
+      email: `c2-cross-${runId}@example.com`,
+      photo: { contentType: 'image/png', dataBase64: TINY_PNG_BASE64 },
+    })
+    expect(resA.status()).toBe(201)
+    const candidateId = (await resA.json()).candidateId
+
+    // Photo is served in org A…
+    expect((await api.get(`/api/candidates/${candidateId}/photo`)).status()).toBe(200)
+
+    // …but 404 from org B's context (no existence leak)
+    await setActiveOrg(api, orgB.id)
+    expect((await api.get(`/api/candidates/${candidateId}/photo`)).status()).toBe(404)
+    expect((await api.get(`/api/candidates/${candidateId}`)).status()).toBe(404)
+  })
+
+  test('candidate without a photo → photo endpoint 404', async ({ authenticatedPage }) => {
+    const api = authenticatedPage.request
+    const res = await api.post('/api/candidates', {
+      data: { firstName: 'No', lastName: 'Photo' },
+    })
+    expect(res.status()).toBe(201)
+    const { id } = await res.json()
+
+    const photoRes = await api.get(`/api/candidates/${id}/photo`)
+    expect(photoRes.status()).toBe(404)
   })
 })
