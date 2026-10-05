@@ -137,9 +137,9 @@ const { candidates, total, fetchStatus, error, refresh } = useCandidates({
         :to="$localePath(`/dashboard/candidates/${c.id}`)"
         class="flex items-center justify-between rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 px-4 py-3 hover:border-surface-300 dark:hover:border-surface-700 hover:shadow-sm transition-all group"
       >
+        <CandidateAvatar :first-name="c.firstName" :last-name="c.lastName" class="mr-3" />
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-2 mb-1">
-            <CandidateAvatar :first-name="c.firstName" :last-name="c.lastName" class="shrink-0" />
             <h3 class="text-sm font-semibold text-surface-900 dark:text-surface-100 group-hover:text-brand-600 transition-colors truncate">
               {{ c.firstName }} {{ c.lastName }}
             </h3>

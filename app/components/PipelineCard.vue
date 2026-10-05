@@ -41,17 +41,9 @@ const transitionClasses: Record<string, string> = {
       :to="$localePath(`/dashboard/applications/${id}`)"
       class="block mb-2 group"
     >
-      <div class="flex items-center gap-2">
-        <CandidateAvatar
-          :first-name="candidateFirstName"
-          :last-name="candidateLastName"
-          size="sm"
-          class="shrink-0"
-        />
-        <h4 class="text-sm font-semibold text-surface-900 dark:text-surface-100 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors truncate">
-          {{ candidateFirstName }} {{ candidateLastName }}
-        </h4>
-      </div>
+      <h4 class="text-sm font-semibold text-surface-900 dark:text-surface-100 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors truncate">
+        {{ candidateFirstName }} {{ candidateLastName }}
+      </h4>
       <div class="flex items-center gap-2 text-xs text-surface-400 mt-0.5">
         <span class="inline-flex items-center gap-1 truncate">
           <User class="size-3 shrink-0" />
