@@ -258,6 +258,25 @@ const MOCK_OUTPUTS: Record<string, unknown> = {
 }
 
 /**
+ * C2 profile-parse mock (no key configured): deterministic heuristic output
+ * built from the page text in the user prompt — firstName/lastName from the
+ * first non-empty line, empty experiences. Real extraction is what a live
+ * provider does; the mock only needs to exercise the merge path in e2e.
+ */
+function mockProfileParse(userPrompt: string): Record<string, unknown> {
+  const marker = 'Page text:\n'
+  const idx = userPrompt.indexOf(marker)
+  const body = idx >= 0 ? userPrompt.slice(idx + marker.length) : userPrompt
+  const firstLine = (body.split('\n').find(l => l.trim()) ?? '').trim()
+  const tokens = firstLine.split(/\s+/).filter(Boolean)
+  return {
+    firstName: tokens[0] ?? 'Unknown',
+    lastName: tokens.slice(1).join(' ') || '-',
+    experiences: [] as unknown[],
+  }
+}
+
+/**
  * Server runtime AI config (from runtimeConfig — never public).
  * Fail-closed rule (design §2): a set key with a missing/empty/unparseable
  * base URL yields 'misconfigured' — the service records a failed run with
@@ -303,6 +322,12 @@ export class MockAiProvider implements AiProvider {
     // provider call, so a concurrent generate's recheck sees it → 409) is
     // only observable if the run outlives the second request's lock wait.
     await new Promise(res => setTimeout(res, 300))
+    // C2 profile-parse mock branch — heuristic output from the page text so
+    // the capture endpoint's AI merge path works without a key. All other
+    // stepKeys keep their existing canned outputs unchanged.
+    if (opts.stepKey === 'profile-parse') {
+      return { text: JSON.stringify(mockProfileParse(opts.userPrompt)), raw: { mock: true, stepKey: opts.stepKey } }
+    }
     const canned = MOCK_OUTPUTS[opts.stepKey]
     const text = JSON.stringify(canned ?? { note: 'No canned output for this step' })
     return { text, raw: { mock: true, stepKey: opts.stepKey } }

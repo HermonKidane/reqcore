@@ -417,3 +417,119 @@ test.describe('Extension capture (C1)', () => {
     expect(photoRes.status()).toBe(404)
   })
 })
+
+test.describe('Extension capture — AI page parsing (C2)', () => {
+  // Deterministic mock parse (no AI key): firstName/lastName from the FIRST
+  // line of pageText, experiences: []. pageText must never be persisted.
+  const AI_PAGE_TEXT = 'Jane Example\nHead of Talent\nLondon'
+
+  function capturePreview(
+    api: import('@playwright/test').APIRequestContext,
+    key: string,
+    body: Record<string, unknown>,
+  ) {
+    return api.post('/api/extension/capture', {
+      data: body,
+      headers: { Authorization: `Bearer ${key}`, 'X-Capture-Mode': 'preview' },
+    })
+  }
+
+  test('preview mode: pageText → 200 preview, nothing created, no Idempotency-Key', async ({ authenticatedPage }) => {
+    const api = authenticatedPage.request
+    const { key } = await createKey(api, `c2prev-${runId}`)
+
+    const linkedinUrl = `https://www.linkedin.com/in/jane-example-${runId}`
+    const countBefore = (await (await api.get('/api/candidates')).json()).total
+
+    const res = await capturePreview(api, key, {
+      pageText: AI_PAGE_TEXT,
+      linkedinUrl,
+      source: 'linkedin',
+    })
+    expect(res.status(), 'preview').toBe(200)
+    const r = await res.json()
+    expect(r.parsed).toBe(true)
+    expect(r.preview.firstName).toBe('Jane')
+    expect(r.preview.lastName).toBe('Example')
+    expect(r.duplicate).toBeNull()
+
+    // Read-only: candidate count unchanged, nothing written
+    const countAfter = (await (await api.get('/api/candidates')).json()).total
+    expect(countAfter).toBe(countBefore)
+
+    // Second preview — same page now reports the would-be duplicate…
+    const res2 = await capturePreview(api, key, {
+      pageText: AI_PAGE_TEXT,
+      linkedinUrl,
+      source: 'linkedin',
+    })
+    expect(res2.status()).toBe(200)
+    expect((await res2.json()).duplicate).toBeNull() // still nothing created
+
+    // …and after an actual capture, preview flags the duplicate by linkedin
+    const cap = await capture(api, key, `c2prev-cap-${runId}`, {
+      firstName: 'Jane',
+      lastName: 'Example',
+      linkedinUrl,
+      source: 'linkedin',
+    })
+    expect(cap.status()).toBe(201)
+
+    const res3 = await capturePreview(api, key, {
+      pageText: AI_PAGE_TEXT,
+      linkedinUrl: `https://linkedin.com/in/jane-example-${runId}/`,
+      source: 'linkedin',
+    })
+    const r3 = await res3.json()
+    expect(r3.duplicate).toEqual({
+      candidateId: (await cap.json()).candidateId,
+      matchedBy: 'linkedin',
+    })
+  })
+
+  test('capture with pageText and NO names → 201 (mock AI parse fills names)', async ({ authenticatedPage }) => {
+    const api = authenticatedPage.request
+    const { key } = await createKey(api, `c2ai-${runId}`)
+
+    const res = await capture(api, key, `c2ai-${runId}`, {
+      pageText: AI_PAGE_TEXT,
+      pageUrl: `https://www.linkedin.com/in/jane-example-${runId}`,
+      linkedinUrl: `https://www.linkedin.com/in/jane-example-${runId}`,
+      source: 'linkedin',
+    })
+    expect(res.status()).toBe(201)
+    const r = await res.json()
+    expect(r.outcome).toBe('created')
+    expect(r.parsed).toBe(true)
+    expect(r.preview.firstName).toBe('Jane')
+    expect(r.preview.lastName).toBe('Example')
+    expect(r.preview.experiences).toEqual([])
+
+    // The AI-filled name is what got stored
+    const detail = await (await api.get(`/api/candidates/${r.candidateId}`)).json()
+    expect(detail.firstName).toBe('Jane')
+    expect(detail.lastName).toBe('Example')
+  })
+
+  test('neither names nor pageText → 422', async ({ authenticatedPage }) => {
+    const api = authenticatedPage.request
+    const { key } = await createKey(api, `c2noname-${runId}`)
+
+    const res = await capture(api, key, `c2noname-${runId}`, {
+      linkedinUrl: `https://www.linkedin.com/in/nobody-${runId}`,
+      source: 'linkedin',
+    })
+    expect(res.status()).toBe(422)
+  })
+
+  test('pageText over 200 000 chars → 413', async ({ authenticatedPage }) => {
+    const api = authenticatedPage.request
+    const { key } = await createKey(api, `c2big-${runId}`)
+
+    const res = await capture(api, key, `c2big-${runId}`, {
+      pageText: `${AI_PAGE_TEXT}\n${'x'.repeat(200_001)}`,
+      source: 'linkedin',
+    })
+    expect(res.status()).toBe(413)
+  })
+})
