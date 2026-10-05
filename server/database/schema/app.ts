@@ -679,3 +679,74 @@ export const candidateImportRowRelations = relations(candidateImportRow, ({ one 
   import: one(candidateImport, { fields: [candidateImportRow.importId], references: [candidateImport.id] }),
   candidate: one(candidate, { fields: [candidateImportRow.candidateId], references: [candidate.id] }),
 }))
+
+// ─────────────────────────────────────────────
+// Browser extension capture (C1) — secured ingestion boundary (guardrail 13)
+// ─────────────────────────────────────────────
+
+/**
+ * Per-user API keys for the Save-to-ATS browser extension (the seam future
+ * tools such as n8n will also use — see info/design-sourcing-capture.md §4).
+ *
+ * Keys are random 256-bit secrets ("mrx_" + base64url(32 random bytes)), so
+ * SHA-256 (not bcrypt) is correct at rest (fast hash of a high-entropy secret).
+ * The server stores ONLY the SHA-256 hash — HMAC request signing is therefore
+ * not possible; protection = bearer token over TLS + idempotency keys +
+ * per-key rate limiting + soft revocation (BUILD-PLAN §2.1 guardrail 13).
+ * keyPrefix = first 12 chars of the key, for display only.
+ */
+export const extensionApiKey = pgTable('extension_api_key', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  organizationId: text('organization_id').notNull().references(() => organization.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  keyPrefix: text('key_prefix').notNull(),
+  keyHash: text('key_hash').notNull().unique(),
+  lastUsedAt: timestamp('last_used_at'),
+  revokedAt: timestamp('revoked_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (t) => ([
+  index('extension_api_key_org_user_idx').on(t.organizationId, t.userId),
+]))
+
+export const extensionCaptureOutcomeEnum = pgEnum('extension_capture_outcome', [
+  'created',
+  'updated',
+  'duplicate_skipped',
+])
+
+export const extensionCaptureMatchedByEnum = pgEnum('extension_capture_matched_by', [
+  'email',
+  'linkedin',
+])
+
+/**
+ * One row per POST /api/extension/capture call (idempotency + audit trail).
+ * candidateId is plain text (no FK) so the provenance record survives
+ * candidate deletion.
+ */
+export const extensionCaptureEvent = pgTable('extension_capture_event', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  organizationId: text('organization_id').notNull().references(() => organization.id, { onDelete: 'cascade' }),
+  apiKeyId: text('api_key_id').notNull().references(() => extensionApiKey.id, { onDelete: 'cascade' }),
+  idempotencyKey: text('idempotency_key').notNull(),
+  candidateId: text('candidate_id'),
+  outcome: extensionCaptureOutcomeEnum('outcome').notNull(),
+  matchedBy: extensionCaptureMatchedByEnum('matched_by'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (t) => ([
+  // Replay protection: one stored result per (key, idempotency key)
+  uniqueIndex('extension_capture_event_api_key_idempotency_idx').on(t.apiKeyId, t.idempotencyKey),
+  index('extension_capture_event_organization_id_idx').on(t.organizationId),
+]))
+
+export const extensionApiKeyRelations = relations(extensionApiKey, ({ one, many }) => ({
+  organization: one(organization, { fields: [extensionApiKey.organizationId], references: [organization.id] }),
+  user: one(user, { fields: [extensionApiKey.userId], references: [user.id] }),
+  captureEvents: many(extensionCaptureEvent),
+}))
+
+export const extensionCaptureEventRelations = relations(extensionCaptureEvent, ({ one }) => ({
+  organization: one(organization, { fields: [extensionCaptureEvent.organizationId], references: [organization.id] }),
+  apiKey: one(extensionApiKey, { fields: [extensionCaptureEvent.apiKeyId], references: [extensionApiKey.id] }),
+}))
