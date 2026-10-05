@@ -61,15 +61,20 @@ export function createRateLimiter(config: RateLimitConfig) {
    * Check and enforce the rate limit for the current request.
    * Throws a 429 error if the limit is exceeded.
    * Sets standard rate limit headers on every response.
+   *
+   * @param event - The current request event
+   * @param key - Optional scope key. When omitted the limiter falls back to
+   *   the client IP. Pass a credential id (e.g. an extension API key id) to
+   *   rate-limit PER CREDENTIAL instead of per IP.
    */
-  return async function rateLimit(event: H3Event): Promise<void> {
-    const ip = getClientIp(event)
+  return async function rateLimit(event: H3Event, key?: string): Promise<void> {
+    const limitKey = key ?? getClientIp(event)
     const now = Date.now()
 
-    let entry = store.get(ip)
+    let entry = store.get(limitKey)
     if (!entry) {
       entry = { timestamps: [] }
-      store.set(ip, entry)
+      store.set(limitKey, entry)
     }
 
     // Remove timestamps outside the current window
