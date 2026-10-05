@@ -2,6 +2,9 @@ import { createHash, randomBytes } from 'node:crypto'
 import { and, eq, isNull } from 'drizzle-orm'
 import type { H3Event } from 'h3'
 import { extensionApiKey, member } from '../database/schema'
+import { admin, member as memberRole, owner } from '~~/shared/permissions'
+
+const ROLES = { owner, admin, member: memberRole } as const
 
 // ─────────────────────────────────────────────
 // Browser-extension API keys (C1)
@@ -36,6 +39,7 @@ export interface AuthenticatedExtensionKey {
  *
  * 401 on: missing/malformed header, unknown key, revoked key, or a key whose
  * user is no longer a member of the key's organization (Better Auth `member`).
+ * 403 if the user's current role lacks candidate create+update.
  * Lookup is by SHA-256 hash — no plaintext secret is ever compared or stored.
  *
  * Updates lastUsedAt fire-and-forget (never blocks or fails the request).
@@ -66,7 +70,7 @@ export async function authenticateExtensionKey(event: H3Event): Promise<Authenti
 
   // Key's owner must still be a member of the key's org
   const [membership] = await db
-    .select({ id: member.id })
+    .select({ id: member.id, role: member.role })
     .from(member)
     .where(and(
       eq(member.userId, keyRow.userId),
@@ -76,6 +80,16 @@ export async function authenticateExtensionKey(event: H3Event): Promise<Authenti
 
   if (!membership) {
     throw createError({ statusCode: 401, statusMessage: 'Invalid or missing API key' })
+  }
+
+  // Re-check the owner's CURRENT role on every call (a later downgrade must
+  // stop an old key from writing). Better Auth stores multiple roles comma-separated.
+  const canCapture = membership.role.split(',').some((r) => {
+    const role = ROLES[r.trim() as keyof typeof ROLES]
+    return role?.authorize({ candidate: ['create', 'update'] }).success === true
+  })
+  if (!canCapture) {
+    throw createError({ statusCode: 403, statusMessage: 'Your role cannot add candidates' })
   }
 
   // Fire-and-forget: last-used tracking must never break the request

@@ -54,6 +54,7 @@ const createError = ref('')
 const createdKey = ref<{ id: string; name: string; keyPrefix: string; key: string } | null>(null)
 
 async function handleCreate() {
+  if (isCreating.value) return
   if (!newKeyName.value.trim()) return
   isCreating.value = true
   createError.value = ''

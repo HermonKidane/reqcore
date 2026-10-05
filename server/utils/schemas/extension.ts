@@ -9,6 +9,10 @@ export const createExtensionKeySchema = z.object({
   name: z.string().trim().min(1, 'Name is required').max(100, 'Name must be 100 characters or fewer'),
 })
 
+// Scrapers send '' when a field isn't on the page — treat as not provided
+// (guardrail 11: never reject a capture for missing optional data)
+const blankToUndefined = (v: unknown) => (typeof v === 'string' && v.trim() === '' ? undefined : v)
+
 const photoContentTypeEnum = z.enum(['image/jpeg', 'image/png', 'image/webp'])
 
 /**
@@ -19,11 +23,11 @@ const photoContentTypeEnum = z.enum(['image/jpeg', 'image/png', 'image/webp'])
 export const extensionCaptureSchema = z.object({
   firstName: z.string().trim().min(1).max(200),
   lastName: z.string().trim().min(1).max(200),
-  email: z.string().trim().max(320).email().optional(),
-  phone: z.string().trim().max(50).optional(),
-  linkedinUrl: z.string().trim().max(500).url().optional(),
-  company: z.string().trim().max(200).optional(),
-  position: z.string().trim().max(200).optional(),
+  email: z.preprocess(blankToUndefined, z.string().trim().max(320).email().optional()),
+  phone: z.preprocess(blankToUndefined, z.string().trim().max(50).optional()),
+  linkedinUrl: z.preprocess(blankToUndefined, z.string().trim().max(500).url().optional()),
+  company: z.preprocess(blankToUndefined, z.string().trim().max(200).optional()),
+  position: z.preprocess(blankToUndefined, z.string().trim().max(200).optional()),
   source: z.enum([
     'linkedin',
     'linkedin_recruiter',
@@ -36,7 +40,7 @@ export const extensionCaptureSchema = z.object({
     'monster',
     'other',
   ]),
-  sourceDetail: z.string().trim().max(500).optional(),
+  sourceDetail: z.preprocess(blankToUndefined, z.string().trim().max(500).optional()),
   duplicatePolicy: z.enum(['skip', 'update']).default('skip'),
   photo: z.object({
     contentType: photoContentTypeEnum,

@@ -137,6 +137,7 @@ export default defineEventHandler(async (event) => {
     outcome: 'created' | 'updated' | 'duplicate_skipped'
     matchedBy: 'email' | 'linkedin' | null
     photoKey: string | null
+    previousPhotoKey: string | null
     created: boolean
     candidateName: string | null
   }
@@ -193,6 +194,7 @@ export default defineEventHandler(async (event) => {
             outcome: 'duplicate_skipped' as const,
             matchedBy,
             photoKey: null,
+            previousPhotoKey: null,
             created: false,
             candidateName: null,
           }
@@ -210,7 +212,12 @@ export default defineEventHandler(async (event) => {
         if (body.position?.trim()) updatePayload.position = body.position.trim()
 
         let photoKey: string | null = null
+        let previousPhotoKey: string | null = null
         if (photo) {
+          const [prev] = await tx.select({ photoKey: candidate.photoKey })
+            .from(candidate)
+            .where(eq(candidate.id, matchedId))
+          previousPhotoKey = prev?.photoKey ?? null
           photoKey = `candidate-photos/${organizationId}/${matchedId}/${Date.now()}.${photo.ext}`
           updatePayload.photoKey = photoKey
           updatePayload.photoUpdatedAt = new Date()
@@ -251,6 +258,7 @@ export default defineEventHandler(async (event) => {
           outcome: 'updated' as const,
           matchedBy,
           photoKey,
+          previousPhotoKey,
           created: false,
           candidateName: [body.firstName?.trim(), body.lastName?.trim()].filter(Boolean).join(' ') || null,
         }
@@ -303,6 +311,7 @@ export default defineEventHandler(async (event) => {
         outcome: 'created' as const,
         matchedBy: null,
         photoKey,
+        previousPhotoKey: null,
         created: true,
         candidateName: `${body.firstName.trim()} ${body.lastName.trim()}`,
       }
@@ -351,6 +360,12 @@ export default defineEventHandler(async (event) => {
     try {
       await uploadToS3(result.photoKey, photo.buffer, photo.contentType)
       photoStored = true
+      // Best-effort: remove the replaced photo only once the new one is stored
+      if (result.previousPhotoKey && result.previousPhotoKey !== result.photoKey) {
+        await deleteFromS3(result.previousPhotoKey).catch((err) => {
+          console.error('[Reqcore] Old candidate photo cleanup failed:', err)
+        })
+      }
     }
     catch (err) {
       // Capture already succeeded — the candidate row references the key but

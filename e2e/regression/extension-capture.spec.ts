@@ -170,6 +170,22 @@ test.describe('Extension capture (C1)', () => {
     expect(r2.candidateId).toBe((await res1.json()).candidateId)
   })
 
+  test('blank optional fields from a scraper are treated as missing, not rejected', async ({ authenticatedPage }) => {
+    const api = authenticatedPage.request
+    const { key } = await createKey(api, `blank-${runId}`)
+    const res = await capture(api, key, `blank-${runId}`, {
+      firstName: 'Blank',
+      lastName: 'Fields',
+      email: '',
+      linkedinUrl: '',
+      phone: ' ',
+      company: '',
+      source: 'reed',
+    })
+    expect(res.status()).toBe(201)
+    expect((await res.json()).outcome).toBe('created')
+  })
+
   test("duplicatePolicy update merges; omitted fields are NOT blanked", async ({ authenticatedPage }) => {
     const api = authenticatedPage.request
     const { key } = await createKey(api, `update-${runId}`)
