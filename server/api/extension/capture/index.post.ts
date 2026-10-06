@@ -1,8 +1,8 @@
-import { and, desc, eq, sql, type SQL } from 'drizzle-orm'
+import { and, desc, eq, inArray, sql, type SQL } from 'drizzle-orm'
 import { z } from 'zod'
-import { candidate, candidateEducation, candidateExperience, candidateSkill, extensionCaptureEvent, job } from '../../../database/schema'
+import { application, candidate, candidateEducation, candidateExperience, candidateSkill, clientCompany, comment, extensionCaptureEvent, job, personRole } from '../../../database/schema'
 import { extensionCaptureSchema } from '../../../utils/schemas/extension'
-import { authenticateExtensionKey } from '../../../utils/extensionKey'
+import { authenticateExtensionKey, extensionRoleAllows } from '../../../utils/extensionKey'
 import { parseProfileText, type ProfileParseResult } from '../../../utils/ai/profileParse'
 
 /**
@@ -28,6 +28,17 @@ import { parseProfileText, type ProfileParseResult } from '../../../utils/ai/pro
  *   experiences); pageText is never stored
  * - X-Capture-Mode: preview = read-only dry run: validation + parsing +
  *   duplicate lookup, no writes, no Idempotency-Key required
+ *
+ * C2.2 (capture actions): the Save-to-ATS popup can send three extras —
+ * `note` (→ comment on the candidate), `jobIds` (→ applications, status
+ * 'new'), and `captureAs: 'contact'` (→ active client_contact role at a
+ * client company, find-or-create by normalized name). They apply in ALL
+ * THREE outcomes, including duplicate_skipped ("already in ATS → still add
+ * note / jobs / contact role"); candidate fields stay untouched on skip.
+ * Job ids are validated as open BEFORE the AI parse; the contact company
+ * name (contactCompany ?? merged company) is required before the
+ * transaction; both need comment/application create permission. One AI
+ * call per capture: Save reuses Preview's result via the merged fields.
  */
 
 const extensionCaptureLimiter = createRateLimiter({
@@ -200,7 +211,8 @@ function dedupeSkills(skills: string[]): Array<{ name: string, normalizedName: s
   return out
 }
 
-/** What the popup shows before saving: merged fields, photo excluded. */
+/** What the popup shows before saving: merged fields, photo excluded.
+ * C2.2: the FULL summary — the popup sends Preview's fields back on Save. */
 function buildPreview(merged: MergedCapture) {
   return {
     firstName: merged.firstName ?? null,
@@ -211,8 +223,7 @@ function buildPreview(merged: MergedCapture) {
     company: merged.company ?? null,
     position: merged.position ?? null,
     headline: merged.headline ?? null,
-    // first 300 chars is enough for the popup to confirm the About text
-    summary: merged.summary ? merged.summary.slice(0, 300) : null,
+    summary: merged.summary ?? null,
     location: merged.location ?? null,
     experiences: merged.experiences ?? [],
     education: merged.education ?? [],
@@ -220,8 +231,114 @@ function buildPreview(merged: MergedCapture) {
   }
 }
 
+// ─────────────────────────────────────────────
+// C2.2: capture actions — note / jobIds / contact role
+// ─────────────────────────────────────────────
+
+/** tx inside db.transaction — typed without importing PgTransaction. */
+type CaptureTx = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
+interface CaptureActions {
+  noteId: string | null
+  applications: Array<{ jobId: string, applicationId: string | null, outcome: 'created' | 'already_applied' }>
+  contact: { clientCompanyId: string, companyName: string, roleId: string | null, roleStarted: boolean } | null
+}
+
+/**
+ * C2.2: apply the popup's optional actions inside the capture transaction.
+ * Runs in ALL THREE outcomes (created / updated / duplicate_skipped) once
+ * the candidate id is known, BEFORE the extensionCaptureEvent insert.
+ * Everything is idempotent-by-conflict: an existing application or an
+ * already-active role is reported, never an error. tx.select/tx.insert/
+ * tx.execute only — never tx.query.* (hangs with postgres-js).
+ */
+async function applyCaptureActions(
+  tx: CaptureTx,
+  args: {
+    organizationId: string
+    userId: string
+    candidateId: string
+    note?: string | undefined
+    jobIds: string[]
+    /** Set only when captureAs === 'contact' (already resolved + required). */
+    contactCompanyName?: string | undefined
+  },
+): Promise<CaptureActions> {
+  const { organizationId, userId, candidateId, note, jobIds, contactCompanyName } = args
+
+  // note → comment on the candidate
+  let noteId: string | null = null
+  if (note) {
+    const [row] = await tx.insert(comment).values({
+      organizationId,
+      authorId: userId,
+      targetType: 'candidate',
+      targetId: candidateId,
+      body: note,
+    }).returning({ id: comment.id })
+    noteId = row?.id ?? null
+  }
+
+  // jobIds → applications (status 'new'); jobs not returned = already applied
+  const applications: CaptureActions['applications'] = []
+  if (jobIds.length) {
+    const created = await tx.insert(application).values(
+      jobIds.map((jobId) => ({
+        organizationId,
+        candidateId,
+        jobId,
+        status: 'new' as const,
+      })),
+    ).onConflictDoNothing().returning({ id: application.id, jobId: application.jobId })
+    const createdByJob = new Map(created.map((row) => [row.jobId, row.id]))
+    for (const jobId of jobIds) {
+      const applicationId = createdByJob.get(jobId) ?? null
+      applications.push({ jobId, applicationId, outcome: applicationId ? 'created' : 'already_applied' })
+    }
+  }
+
+  // contact → find-or-create client_company, then active client_contact role
+  let contact: CaptureActions['contact'] = null
+  if (contactCompanyName) {
+    const name = contactCompanyName
+    await tx.insert(clientCompany).values({
+      organizationId,
+      name,
+      // Same normalisation as server/api/client-companies/index.post.ts
+      normalizedName: sql`lower(btrim(${name}))`,
+    }).onConflictDoNothing()
+
+    const [company] = await tx.select({ id: clientCompany.id, name: clientCompany.name })
+      .from(clientCompany)
+      .where(and(
+        eq(clientCompany.organizationId, organizationId),
+        eq(clientCompany.normalizedName, sql`lower(btrim(${name}))`),
+      ))
+      .limit(1)
+    if (!company) {
+      throw createError({ statusCode: 500, statusMessage: 'Failed to resolve client company' })
+    }
+
+    const [roleRow] = await tx.insert(personRole).values({
+      organizationId,
+      candidateId,
+      role: 'client_contact',
+      clientCompanyId: company.id,
+    }).onConflictDoNothing().returning({ id: personRole.id })
+
+    contact = {
+      clientCompanyId: company.id,
+      companyName: company.name,
+      roleId: roleRow?.id ?? null,
+      roleStarted: roleRow != null,
+    }
+  }
+
+  return { noteId, applications, contact }
+}
+
 export default defineEventHandler(async (event) => {
-  const { keyId, organizationId, userId } = await authenticateExtensionKey(event)
+  const { keyId, organizationId, userId, role } = await authenticateExtensionKey(event)
 
   // Per-key rate limit (60 req/min) — keyed by credential, not IP
   await extensionCaptureLimiter(event, keyId)
@@ -264,7 +381,12 @@ export default defineEventHandler(async (event) => {
       organizationId,
       { email: merged.email, linkedinUrl: merged.linkedinUrl },
     )
-    return { preview: buildPreview(merged), parsed: parsedProfile !== null, duplicate }
+    return {
+      preview: buildPreview(merged),
+      parsed: parsedProfile !== null,
+      duplicate,
+      openJobs: await getOpenJobs(organizationId),
+    }
   }
 
   // ── Photo: decode + validate BEFORE any DB work (413/422 fast-fail) ──────
@@ -317,6 +439,28 @@ export default defineEventHandler(async (event) => {
       openJobs: await getOpenJobs(organizationId),
       parsed: false,
       preview: null,
+      actions: null,
+    }
+  }
+
+  // ── C2.2 job check (BEFORE the AI parse — nothing may be written/paid
+  //    for an invalid save): every jobId must be an OPEN job in this org.
+  const jobIds = body.jobIds?.length ? [...new Set(body.jobIds)] : []
+  if (jobIds.length) {
+    const openJobRows = await db
+      .select({ id: job.id })
+      .from(job)
+      .where(and(
+        eq(job.organizationId, organizationId),
+        eq(job.status, 'open'),
+        inArray(job.id, jobIds),
+      ))
+    const openJobIds = new Set(openJobRows.map((row) => row.id))
+    if (jobIds.some((id) => !openJobIds.has(id))) {
+      throw createError({
+        statusCode: 422,
+        statusMessage: 'Validation failed: jobIds: job not found or not open',
+      })
     }
   }
 
@@ -344,6 +488,28 @@ export default defineEventHandler(async (event) => {
   const captureFirstName = merged.firstName
   const captureLastName = merged.lastName
 
+  // ── C2.2 contact-company check: saving as a contact needs a company
+  //    (explicit contactCompany wins, else the merged company from the page).
+  //    BEFORE the transaction — nothing written on a missing company.
+  const contactCompanyName = body.captureAs === 'contact'
+    ? body.contactCompany ?? merged.company
+    : undefined
+  if (body.captureAs === 'contact' && !contactCompanyName) {
+    throw createError({
+      statusCode: 422,
+      statusMessage: 'Validation failed: contactCompany: a company is required to save a contact',
+    })
+  }
+
+  // ── C2.2 action permissions (BEFORE the transaction): the key owner's
+  //    current role must allow each requested action.
+  if (body.note && !extensionRoleAllows(role, { comment: ['create'] })) {
+    throw createError({ statusCode: 403, statusMessage: 'Your role cannot add comments' })
+  }
+  if (jobIds.length && !extensionRoleAllows(role, { application: ['create'] })) {
+    throw createError({ statusCode: 403, statusMessage: 'Your role cannot add applications' })
+  }
+
   // ── Candidate write + capture-event row in ONE transaction ───────────────
   // NOTE: use tx.select()/tx.execute() inside transactions — tx.query.* hangs
   // with postgres-js (known Drizzle gotcha).
@@ -355,6 +521,7 @@ export default defineEventHandler(async (event) => {
     previousPhotoKey: string | null
     created: boolean
     candidateName: string | null
+    actions: CaptureActions
   }
 
   let result: CaptureResult
@@ -379,6 +546,16 @@ export default defineEventHandler(async (event) => {
 
       if (matchedId) {
         if (body.duplicatePolicy === 'skip') {
+          // C2.2: "already in ATS → still add note / jobs / contact role" —
+          // the candidate's own fields stay untouched on skip.
+          const actions = await applyCaptureActions(tx, {
+            organizationId,
+            userId,
+            candidateId: matchedId,
+            note: body.note,
+            jobIds,
+            contactCompanyName,
+          })
           await tx.insert(extensionCaptureEvent).values({
             organizationId,
             apiKeyId: keyId,
@@ -395,6 +572,7 @@ export default defineEventHandler(async (event) => {
             previousPhotoKey: null,
             created: false,
             candidateName: null,
+            actions,
           }
         }
 
@@ -527,6 +705,16 @@ export default defineEventHandler(async (event) => {
           }
         }
 
+        // C2.2 capture actions — AFTER the candidate update, BEFORE the event
+        const actions = await applyCaptureActions(tx, {
+          organizationId,
+          userId,
+          candidateId: matchedId,
+          note: body.note,
+          jobIds,
+          contactCompanyName,
+        })
+
         await tx.insert(extensionCaptureEvent).values({
           organizationId,
           apiKeyId: keyId,
@@ -544,6 +732,7 @@ export default defineEventHandler(async (event) => {
           previousPhotoKey,
           created: false,
           candidateName: [merged.firstName?.trim(), merged.lastName?.trim()].filter(Boolean).join(' ') || null,
+          actions,
         }
       }
 
@@ -638,6 +827,16 @@ export default defineEventHandler(async (event) => {
         }
       }
 
+      // C2.2 capture actions — BEFORE the event insert
+      const actions = await applyCaptureActions(tx, {
+        organizationId,
+        userId,
+        candidateId: created.id,
+        note: body.note,
+        jobIds,
+        contactCompanyName,
+      })
+
       await tx.insert(extensionCaptureEvent).values({
         organizationId,
         apiKeyId: keyId,
@@ -655,6 +854,7 @@ export default defineEventHandler(async (event) => {
         previousPhotoKey: null,
         created: true,
         candidateName: `${captureFirstName} ${captureLastName}`,
+        actions,
       }
     })
   }
@@ -685,6 +885,7 @@ export default defineEventHandler(async (event) => {
           openJobs: await getOpenJobs(organizationId),
           parsed: false,
           preview: null,
+          actions: null,
         }
       }
       // A raced candidate_email unique violation without a stored event:
@@ -732,6 +933,47 @@ export default defineEventHandler(async (event) => {
     })
   }
 
+  // ── C2.2: fire-and-forget activity for the capture actions (same style
+  //    as above — never blocks or fails the response).
+  if (result.actions.noteId) {
+    recordActivity({
+      organizationId,
+      actorId: userId,
+      action: 'comment_added',
+      resourceType: 'candidate',
+      resourceId: result.candidateId,
+      metadata: { commentId: result.actions.noteId, via: 'extension_capture' },
+    })
+  }
+  for (const app of result.actions.applications) {
+    if (app.outcome === 'created' && app.applicationId) {
+      recordActivity({
+        organizationId,
+        actorId: userId,
+        action: 'created',
+        resourceType: 'application',
+        resourceId: app.applicationId,
+        metadata: { candidateId: result.candidateId, jobId: app.jobId, via: 'extension_capture' },
+      })
+    }
+  }
+  if (result.actions.contact?.roleStarted && result.actions.contact.roleId) {
+    recordActivity({
+      organizationId,
+      actorId: userId,
+      action: 'status_changed',
+      resourceType: 'person_role',
+      resourceId: result.actions.contact.roleId,
+      metadata: {
+        role: 'client_contact',
+        from: null,
+        to: 'active',
+        companyId: result.actions.contact.clientCompanyId,
+        via: 'extension_capture',
+      },
+    })
+  }
+
   setResponseStatus(event, result.created ? 201 : 200)
   return {
     candidateId: result.candidateId,
@@ -742,5 +984,6 @@ export default defineEventHandler(async (event) => {
     openJobs: await getOpenJobs(organizationId),
     parsed: parsedProfile !== null,
     preview: buildPreview(merged),
+    actions: result.actions,
   }
 })

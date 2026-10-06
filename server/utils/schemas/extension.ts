@@ -10,8 +10,13 @@ export const createExtensionKeySchema = z.object({
 })
 
 // Scrapers send '' when a field isn't on the page — treat as not provided
-// (guardrail 11: never reject a capture for missing optional data)
-const blankToUndefined = (v: unknown) => (typeof v === 'string' && v.trim() === '' ? undefined : v)
+// (guardrail 11: never reject a capture for missing optional data).
+// C2.2: the popup sends Preview's fields back on Save, and Preview uses
+// `null` for "not read" — so `null` must behave exactly like a blank.
+const blankToUndefined = (v: unknown) => (v === null || (typeof v === 'string' && v.trim() === '') ? undefined : v)
+
+/** C2.2: Preview round-trips `null` for unread optional objects/arrays. */
+const nullToUndefined = (v: unknown) => (v === null ? undefined : v)
 
 const photoContentTypeEnum = z.enum(['image/jpeg', 'image/png', 'image/webp'])
 
@@ -49,7 +54,7 @@ export const extensionCaptureSchema = z.object({
   // Work history as displayed on the source page (free-text dates). On update
   // the candidate's 'linkedin'-sourced rows are replaced wholesale by this
   // array (when non-empty); 'manual'/'import' rows are never touched.
-  experiences: z.array(z.object({
+  experiences: z.preprocess(nullToUndefined, z.array(z.object({
     title: z.string().trim().min(1).max(200),
     company: z.preprocess(blankToUndefined, z.string().trim().max(200).optional()),
     location: z.preprocess(blankToUndefined, z.string().trim().max(200).optional()),
@@ -57,20 +62,29 @@ export const extensionCaptureSchema = z.object({
     endText: z.preprocess(blankToUndefined, z.string().trim().max(50).optional()),
     isCurrent: z.boolean().optional(),
     description: z.preprocess(blankToUndefined, z.string().trim().max(4000).optional()),
-  })).max(30).optional(),
+  })).max(30).optional()),
   // Education as displayed on the source page (free-text dates). Same
   // replace-when-non-empty semantics as experiences on update.
-  education: z.array(z.object({
+  education: z.preprocess(nullToUndefined, z.array(z.object({
     school: z.string().trim().min(1).max(200),
     degree: z.preprocess(blankToUndefined, z.string().trim().max(200).optional()),
     fieldOfStudy: z.preprocess(blankToUndefined, z.string().trim().max(200).optional()),
     startText: z.preprocess(blankToUndefined, z.string().trim().max(50).optional()),
     endText: z.preprocess(blankToUndefined, z.string().trim().max(50).optional()),
     description: z.preprocess(blankToUndefined, z.string().trim().max(4000).optional()),
-  })).max(20).optional(),
+  })).max(20).optional()),
   // Skills as listed on the source page. On update capture only ADDS missing
   // ones (never deletes); stored per candidate deduped by lower(trim(name)).
-  skills: z.array(z.string().trim().min(1).max(80)).max(50).optional(),
+  skills: z.preprocess(nullToUndefined, z.array(z.string().trim().min(1).max(80)).max(50).optional()),
+  // ── C2.2 capture actions (Save-to-ATS popup) ──
+  // Optional recruiter note — stored as a comment on the candidate.
+  note: z.preprocess(blankToUndefined, z.string().trim().max(5000).optional()),
+  // Open jobs to attach the candidate to (applications, status 'new').
+  jobIds: z.array(z.string().trim().min(1).max(64)).max(10).optional(),
+  // 'contact' also gives the person an active client_contact role at a
+  // client company (contactCompany, falling back to the merged company).
+  captureAs: z.enum(['candidate', 'contact']).default('candidate'),
+  contactCompany: z.preprocess(blankToUndefined, z.string().trim().max(200).optional()),
   source: z.enum([
     'linkedin',
     'linkedin_recruiter',

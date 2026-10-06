@@ -585,3 +585,176 @@ test.describe('Extension capture — AI page parsing (C2)', () => {
     expect(res.status()).toBe(413)
   })
 })
+
+test.describe('Extension capture — actions (C2.2)', () => {
+  async function createOpenJob(api: import('@playwright/test').APIRequestContext, label: string): Promise<string> {
+    const jobRes = await api.post('/api/jobs', { data: { title: `C22 ${label} ${runId}` } })
+    expect(jobRes.status(), `create job ${label}`).toBe(201)
+    const job = await jobRes.json()
+    const patch = await api.patch(`/api/jobs/${job.id}`, { data: { status: 'open' } })
+    expect(patch.status(), `open job ${label}`).toBe(200)
+    return job.id as string
+  }
+
+  test('create with note + 2 jobIds → actions, comment, and 2 applications', async ({ authenticatedPage }) => {
+    const api = authenticatedPage.request
+    const { key } = await createKey(api, `c22-1-${runId}`)
+    const job1 = await createOpenJob(api, 'one')
+    const job2 = await createOpenJob(api, 'two')
+    const note = 'Met at Scala Exchange — strong on distributed systems.'
+
+    const res = await capture(api, key, `c22-1-${runId}`, {
+      ...VALID_BODY,
+      email: `c22-1-${runId}@example.com`,
+      note,
+      jobIds: [job1, job2],
+    })
+    expect(res.status()).toBe(201)
+    const r = await res.json()
+
+    expect(r.actions.noteId).toBeTruthy()
+    expect(r.actions.contact).toBeNull()
+    expect(r.actions.applications).toHaveLength(2)
+    expect(r.actions.applications.every((a: any) => a.outcome === 'created' && a.applicationId)).toBe(true)
+    expect(new Set(r.actions.applications.map((a: any) => a.jobId))).toEqual(new Set([job1, job2]))
+
+    const comments = await (await api.get('/api/comments', {
+      params: { targetType: 'candidate', targetId: r.candidateId },
+    })).json()
+    expect(comments.total).toBe(1)
+    expect(comments.data[0].body).toBe(note)
+
+    const apps = await (await api.get('/api/applications', {
+      params: { candidateId: r.candidateId },
+    })).json()
+    expect(apps.total).toBe(2)
+    expect(new Set(apps.data.map((a: any) => a.jobId))).toEqual(new Set([job1, job2]))
+  })
+
+  test('duplicate_skipped still applies actions: same job already_applied, new job created', async ({ authenticatedPage }) => {
+    const api = authenticatedPage.request
+    const { key } = await createKey(api, `c22-2-${runId}`)
+    const email = `c22-2-${runId}@example.com`
+    const job1 = await createOpenJob(api, 'dup-a')
+    const job2 = await createOpenJob(api, 'dup-b')
+
+    const res1 = await capture(api, key, `c22-2a-${runId}`, { ...VALID_BODY, email, jobIds: [job1] })
+    expect(res1.status()).toBe(201)
+    const candidateId = (await res1.json()).candidateId
+
+    // Same person, new Idempotency-Key, default skip policy
+    const res2 = await capture(api, key, `c22-2b-${runId}`, { ...VALID_BODY, email, jobIds: [job1, job2] })
+    expect(res2.status()).toBe(200)
+    const r2 = await res2.json()
+    expect(r2.outcome).toBe('duplicate_skipped')
+    expect(r2.candidateId).toBe(candidateId)
+
+    const outcomeByJob = Object.fromEntries(r2.actions.applications.map((a: any) => [a.jobId, a.outcome]))
+    expect(outcomeByJob[job1]).toBe('already_applied')
+    expect(outcomeByJob[job2]).toBe('created')
+
+    const apps = await (await api.get('/api/applications', {
+      params: { candidateId: candidateId },
+    })).json()
+    expect(apps.total).toBe(2)
+  })
+
+  test('unknown job id → 422 and NO candidate created', async ({ authenticatedPage }) => {
+    const api = authenticatedPage.request
+    const { key } = await createKey(api, `c22-3-${runId}`)
+    const email = `c22-3-${runId}@example.com`
+
+    const res = await capture(api, key, `c22-3-${runId}`, {
+      ...VALID_BODY,
+      email,
+      jobIds: ['00000000-0000-0000-0000-000000000000'],
+    })
+    expect(res.status()).toBe(422)
+
+    const list = await (await api.get('/api/candidates', { params: { search: email } })).json()
+    expect(list.total).toBe(0)
+  })
+
+  test("captureAs 'contact' → active client_contact role; repeat (case/space) reuses the company", async ({ authenticatedPage }) => {
+    const api = authenticatedPage.request
+    const { key } = await createKey(api, `c22-4-${runId}`)
+    const email = `c22-4-${runId}@example.com`
+
+    const res1 = await capture(api, key, `c22-4a-${runId}`, {
+      ...VALID_BODY,
+      email,
+      captureAs: 'contact',
+      contactCompany: 'Acme Ltd',
+    })
+    expect(res1.status()).toBe(201)
+    const r1 = await res1.json()
+    expect(r1.actions.contact.roleStarted).toBe(true)
+    expect(r1.actions.contact.companyName).toBe('Acme Ltd')
+
+    const roles1 = await (await api.get(`/api/candidates/${r1.candidateId}/roles`)).json()
+    const active1 = roles1.filter((r: any) => r.active && r.role === 'client_contact')
+    expect(active1).toHaveLength(1)
+    expect(active1[0].companyName).toBe('Acme Ltd')
+
+    // Repeat with different case + padding → same company, role NOT restarted
+    const res2 = await capture(api, key, `c22-4b-${runId}`, {
+      ...VALID_BODY,
+      email,
+      captureAs: 'contact',
+      contactCompany: '  acme ltd ',
+    })
+    expect(res2.status()).toBe(200)
+    const r2 = await res2.json()
+    expect(r2.outcome).toBe('duplicate_skipped')
+    expect(r2.actions.contact.roleStarted).toBe(false)
+    expect(r2.actions.contact.clientCompanyId).toBe(r1.actions.contact.clientCompanyId)
+
+    const roles2 = await (await api.get(`/api/candidates/${r1.candidateId}/roles`)).json()
+    expect(roles2.filter((r: any) => r.active && r.role === 'client_contact')).toHaveLength(1)
+  })
+
+  test("captureAs 'contact' without a company (names only, no pageText) → 422", async ({ authenticatedPage }) => {
+    const api = authenticatedPage.request
+    const { key } = await createKey(api, `c22-5-${runId}`)
+
+    const res = await capture(api, key, `c22-5-${runId}`, {
+      firstName: 'No',
+      lastName: 'Company',
+      captureAs: 'contact',
+      source: 'linkedin',
+    })
+    expect(res.status()).toBe(422)
+  })
+
+  test('null headline/summary/experiences/skills (Preview round-trip) → 201', async ({ authenticatedPage }) => {
+    const api = authenticatedPage.request
+    const { key } = await createKey(api, `c22-6-${runId}`)
+
+    const res = await capture(api, key, `c22-6-${runId}`, {
+      firstName: 'Null',
+      lastName: 'Fields',
+      email: `c22-6-${runId}@example.com`,
+      headline: null,
+      summary: null,
+      experiences: null,
+      skills: null,
+      source: 'linkedin',
+    })
+    expect(res.status()).toBe(201)
+    expect((await res.json()).outcome).toBe('created')
+  })
+
+  test('preview response includes an openJobs array', async ({ authenticatedPage }) => {
+    const api = authenticatedPage.request
+    const { key } = await createKey(api, `c22-7-${runId}`)
+    await createOpenJob(api, 'prev')
+
+    const res = await api.post('/api/extension/capture', {
+      data: { firstName: 'Prev', lastName: 'Jobs', source: 'linkedin' },
+      headers: { Authorization: `Bearer ${key}`, 'X-Capture-Mode': 'preview' },
+    })
+    expect(res.status()).toBe(200)
+    const r = await res.json()
+    expect(Array.isArray(r.openJobs)).toBe(true)
+  })
+})

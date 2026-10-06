@@ -32,6 +32,23 @@ export interface AuthenticatedExtensionKey {
   keyId: string
   organizationId: string
   userId: string
+  /** C2.2: the key owner's CURRENT membership role string (comma-separated). */
+  role: string
+}
+
+/**
+ * C2.2: does a (possibly comma-separated) membership role string allow the
+ * given permissions? Same ROLES/authorize logic as the candidate-check below —
+ * any one of the member's roles granting the permission is enough.
+ */
+export function extensionRoleAllows(
+  role: string,
+  permissions: Parameters<typeof owner.authorize>[0],
+): boolean {
+  return role.split(',').some((r) => {
+    const def = ROLES[r.trim() as keyof typeof ROLES]
+    return def?.authorize(permissions).success === true
+  })
 }
 
 /**
@@ -84,11 +101,7 @@ export async function authenticateExtensionKey(event: H3Event): Promise<Authenti
 
   // Re-check the owner's CURRENT role on every call (a later downgrade must
   // stop an old key from writing). Better Auth stores multiple roles comma-separated.
-  const canCapture = membership.role.split(',').some((r) => {
-    const role = ROLES[r.trim() as keyof typeof ROLES]
-    return role?.authorize({ candidate: ['create', 'update'] }).success === true
-  })
-  if (!canCapture) {
+  if (!extensionRoleAllows(membership.role, { candidate: ['create', 'update'] })) {
     throw createError({ statusCode: 403, statusMessage: 'Your role cannot add candidates' })
   }
 
@@ -99,5 +112,5 @@ export async function authenticateExtensionKey(event: H3Event): Promise<Authenti
     .then(() => {})
     .catch(() => {})
 
-  return keyRow
+  return { ...keyRow, role: membership.role }
 }
