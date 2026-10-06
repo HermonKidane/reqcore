@@ -174,6 +174,10 @@ function mergeCaptureFields(
     education: body.education?.length ? body.education : parsed?.education,
     skills: body.skills?.length ? body.skills : parsed?.skills,
   }
+  // Pages decorate phones with emoji/icons ("📞+1 323…") — keep phone chars only
+  if (merged.phone) {
+    merged.phone = merged.phone.replace(/[^\d+()\-.\s]/g, '').replace(/\s+/g, ' ').trim() || undefined
+  }
   if (merged.email && !captureEmailRule.safeParse(merged.email).success) {
     console.error('[Reqcore] AI-provided capture email failed validation — dropped')
     merged.email = undefined
