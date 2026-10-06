@@ -443,9 +443,20 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  const jobIds = body.jobIds?.length ? [...new Set(body.jobIds)] : []
+
+  // ── C2.2 action permissions (BEFORE the job check and the AI
+  //    parse — a refused save must not pay for a provider call): the key owner's
+  //    current role must allow each requested action.
+  if (body.note && !extensionRoleAllows(role, { comment: ['create'] })) {
+    throw createError({ statusCode: 403, statusMessage: 'Your role cannot add comments' })
+  }
+  if (jobIds.length && !extensionRoleAllows(role, { application: ['create'] })) {
+    throw createError({ statusCode: 403, statusMessage: 'Your role cannot add applications' })
+  }
+
   // ── C2.2 job check (BEFORE the AI parse — nothing may be written/paid
   //    for an invalid save): every jobId must be an OPEN job in this org.
-  const jobIds = body.jobIds?.length ? [...new Set(body.jobIds)] : []
   if (jobIds.length) {
     const openJobRows = await db
       .select({ id: job.id })
@@ -499,15 +510,6 @@ export default defineEventHandler(async (event) => {
       statusCode: 422,
       statusMessage: 'Validation failed: contactCompany: a company is required to save a contact',
     })
-  }
-
-  // ── C2.2 action permissions (BEFORE the transaction): the key owner's
-  //    current role must allow each requested action.
-  if (body.note && !extensionRoleAllows(role, { comment: ['create'] })) {
-    throw createError({ statusCode: 403, statusMessage: 'Your role cannot add comments' })
-  }
-  if (jobIds.length && !extensionRoleAllows(role, { application: ['create'] })) {
-    throw createError({ statusCode: 403, statusMessage: 'Your role cannot add applications' })
   }
 
   // ── Candidate write + capture-event row in ONE transaction ───────────────
