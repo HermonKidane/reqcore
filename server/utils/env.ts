@@ -89,6 +89,11 @@ const envSchema = z
       (val) => (typeof val === 'string' && val.trim() === '' ? undefined : val),
       z.coerce.number().int().positive().optional().default(40),
     ),
+    /** better-auth's own limiter: sign-in/sign-up attempts per client IP per 10 s (better-auth default 3). Raise only in sandbox/test. */
+    RATE_LIMIT_SIGNIN_MAX: z.preprocess(
+      (val) => (typeof val === 'string' && val.trim() === '' ? undefined : val),
+      z.coerce.number().int().positive().optional().default(3),
+    ),
     /** Slug of the demo organization. When set, write operations are blocked for this org. */
     DEMO_ORG_SLUG: emptyToUndefined.optional(),
     /** Fine-grained GitHub PAT with Issues:write scope. When set (along with GITHUB_FEEDBACK_REPO), enables in-app feedback. */

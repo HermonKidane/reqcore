@@ -35,6 +35,9 @@ services:
       # Still bounded; sandbox only, never prod.
       RATE_LIMIT_GLOBAL_WRITE_MAX: 500
       RATE_LIMIT_AUTH_WRITE_MAX: 200
+      # better-auth sign-in/up per IP per 10 s (prod default 3); e2e signs up
+      # dozens of accounts from one IP.
+      RATE_LIMIT_SIGNIN_MAX: 100
   adminer:
     profiles: ["never"]
 # Pinned so the bridge gateway (TRUSTED_PROXY_IP above) can't drift when

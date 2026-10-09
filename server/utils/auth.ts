@@ -90,6 +90,12 @@ function getAuth(): Auth {
           ipAddressHeaders: ['x-real-ip'],
         },
       },
+      rateLimit: {
+        customRules: {
+          '/sign-in/*': { window: 10, max: env.RATE_LIMIT_SIGNIN_MAX },
+          '/sign-up/*': { window: 10, max: env.RATE_LIMIT_SIGNIN_MAX },
+        },
+      },
       emailAndPassword: {
         enabled: true,
       },
