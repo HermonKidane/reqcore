@@ -81,6 +81,15 @@ function getAuth(): Auth {
         schema,
       }),
       secret: env.BETTER_AUTH_SECRET,
+      // better-auth's own limiter + session.ip_address read the FIRST
+      // X-Forwarded-For hop by default, which is client-controlled behind an
+      // appending proxy (nginx $proxy_add_x_forwarded_for). nginx overwrites
+      // X-Real-IP with $remote_addr, so trust only that.
+      advanced: {
+        ipAddress: {
+          ipAddressHeaders: ['x-real-ip'],
+        },
+      },
       emailAndPassword: {
         enabled: true,
       },

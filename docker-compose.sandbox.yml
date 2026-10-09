@@ -22,9 +22,29 @@ services:
   app:
     container_name: reqcore_sandbox_app
     ports: !override
-      - "3100:3000"
+      # Loopback only: all traffic must come through host nginx
+      - "127.0.0.1:3100:3000"
+    environment:
+      # Rate limiter: host nginx (published-port DNAT) arrives from the bridge
+      # gateway. If the gateway IP drifts (network recreation), trust fails
+      # CLOSED -> shared-bucket fallback, same as before this change.
+      TRUSTED_PROXY_IP: 172.19.0.1
+      # Raised for the e2e suite (~15 applies/run from one IP). Sandbox only.
+      RATE_LIMIT_APPLY_MAX_REQUESTS: 50
+      # Raised so the full e2e suite from one IP is not throttled mid-run.
+      # Still bounded; sandbox only, never prod.
+      RATE_LIMIT_GLOBAL_WRITE_MAX: 500
+      RATE_LIMIT_AUTH_WRITE_MAX: 200
   adminer:
     profiles: ["never"]
+# Pinned so the bridge gateway (TRUSTED_PROXY_IP above) can't drift when
+# networks are recreated in a different order.
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.19.0.0/16
+          gateway: 172.19.0.1
 volumes:
   postgres_data_sandbox:
   minio_data_sandbox:

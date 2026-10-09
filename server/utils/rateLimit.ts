@@ -112,28 +112,43 @@ export function createRateLimiter(config: RateLimitConfig) {
  * because they are trivially spoofable by direct clients. Uses the socket remote
  * address which cannot be forged at the application layer.
  *
- * If running behind a trusted reverse proxy (nginx, Cloudflare, etc.), configure
- * the proxy to overwrite (not append to) X-Forwarded-For, then set the
- * TRUSTED_PROXY_IP env var to enable header-based IP extraction.
+ * If running behind a trusted reverse proxy (nginx, Cloudflare, etc.), set the
+ * TRUSTED_PROXY_IP env var to enable header-based IP extraction. X-Real-IP is
+ * preferred (nginx sets it to $remote_addr, overwriting any client value);
+ * otherwise the LAST X-Forwarded-For hop is used — the one the trusted proxy
+ * appended. The first hop is client-controlled when the proxy appends
+ * ($proxy_add_x_forwarded_for, the nginx/Hestia default), so it is never used.
  */
+let warnedProxyMismatch = false
+
+/** Strip the IPv4-mapped IPv6 prefix a dual-stack (::) listener reports. */
+function stripMappedIpv4(ip: string | undefined): string | undefined {
+  return ip?.startsWith('::ffff:') ? ip.slice(7) : ip
+}
+
 function getClientIp(event: H3Event): string {
   // Only trust proxy headers when explicitly configured via validated env schema
   const trustedProxy = env.TRUSTED_PROXY_IP
+  const socketIp = stripMappedIpv4(getRequestIP(event))
   if (trustedProxy) {
-    const socketIp = getRequestIP(event)
+    if (socketIp !== trustedProxy && !warnedProxyMismatch) {
+      // Trust fails closed (shared bucket) — make that visible in the logs
+      warnedProxyMismatch = true
+      console.warn(`[rateLimit] TRUSTED_PROXY_IP is set but request came from ${socketIp}; proxy headers ignored`)
+    }
     if (socketIp === trustedProxy) {
-      // Request came from the trusted proxy — read the forwarded header
+      // Request came from the trusted proxy — read the header it set
+      const realIp = getHeader(event, 'x-real-ip')?.trim()
+      if (realIp) return realIp
+
       const forwarded = getHeader(event, 'x-forwarded-for')
       if (forwarded) {
-        const firstIp = forwarded.split(',')[0]?.trim()
-        if (firstIp) return firstIp
+        const lastIp = forwarded.split(',').at(-1)?.trim()
+        if (lastIp) return lastIp
       }
-
-      const realIp = getHeader(event, 'x-real-ip')
-      if (realIp) return realIp
     }
   }
 
   // Default: use the socket remote address (cannot be spoofed)
-  return getRequestIP(event) ?? '0.0.0.0'
+  return socketIp ?? '0.0.0.0'
 }

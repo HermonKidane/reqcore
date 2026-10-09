@@ -61,7 +61,7 @@ const envSchema = z
       (val) => (typeof val === 'string' && val.trim() === '' ? undefined : val === 'true' || val === undefined),
       z.boolean().default(true),
     ),
-    /** IP address of the trusted reverse proxy (e.g., Railway, Cloudflare). When set, X-Forwarded-For is trusted for rate limiting. The proxy MUST overwrite (not append to) X-Forwarded-For, otherwise clients can spoof the first IP. */
+    /** IP address of the trusted reverse proxy as the app sees it (e.g. host nginx via the Docker bridge gateway). The proxy must set X-Real-IP. When set, the proxy's X-Real-IP (else the last X-Forwarded-For hop) is trusted for rate limiting. */
     TRUSTED_PROXY_IP: z.string().min(1).optional(),
     /** Public apply rate limit — max applications per client IP per window. Raise only in sandbox/test environments. */
     RATE_LIMIT_APPLY_MAX_REQUESTS: z.preprocess(
