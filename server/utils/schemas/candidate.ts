@@ -39,12 +39,16 @@ export const createCandidateSchema = z.object({
 export const updateCandidateSchema = z.object({
   firstName: z.string().min(1, 'First name is required').max(100).optional(),
   lastName: z.string().min(1, 'Last name is required').max(100).optional(),
-  email: z
-    .string()
-    .email('Invalid email address')
-    .max(255)
-    .transform((v) => v.toLowerCase().trim())
-    .optional(),
+  // blank / absent = no change (emails are never removed here)
+  email: z.preprocess(
+    blankToUndefined,
+    z
+      .string()
+      .email('Invalid email address')
+      .max(255)
+      .transform((v) => v.toLowerCase().trim())
+      .optional(),
+  ),
   phone: z.string().max(50).nullish(),
   // null = clear the field; blank / absent = no change
   linkedinUrl: z.preprocess(blankToUndefined, linkedinUrlRule.nullish()),

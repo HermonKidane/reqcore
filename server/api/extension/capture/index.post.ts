@@ -4,7 +4,7 @@ import { application, candidate, candidateEducation, candidateExperience, candid
 import { extensionCaptureSchema } from '../../../utils/schemas/extension'
 import { authenticateExtensionKey, extensionRoleAllows } from '../../../utils/extensionKey'
 import { parseProfileText, type ProfileParseResult } from '../../../utils/ai/profileParse'
-import { normalizeLinkedinUrl, findCandidateIdByLinkedinUrl, type DupExecutor } from '../../../utils/linkedinUrl'
+import { findCandidateIdByLinkedinUrl, type DupExecutor } from '../../../utils/linkedinUrl'
 
 /**
  * POST /api/extension/capture
