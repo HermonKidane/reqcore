@@ -33,8 +33,14 @@ export function useCandidates(options?: {
   async function createCandidate(payload: {
     firstName: string
     lastName: string
-    email: string
+    email?: string
     phone?: string
+    linkedinUrl?: string
+    position?: string
+    company?: string
+    location?: string
+    headline?: string
+    summary?: string
   }) {
     try {
       const created = await $fetch('/api/candidates', {

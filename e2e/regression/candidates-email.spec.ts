@@ -6,7 +6,7 @@ import { test, expect } from '../fixtures'
  *
  * Covers: create (201 + cache sync), exact + case-variant duplicate → 409,
  * primary-email patch swap, taking another candidate's email → 409,
- * whitespace email → 400, cross-org/inexistent id → 404, delete → 204.
+ * whitespace email → 201 (blank = no email), cross-org/inexistent id → 404, delete → 204.
  *
  * Runs against the sandbox; each test gets a FRESH org from the fixture,
  * so org-wide email uniqueness is exercised within one tenant.
@@ -44,11 +44,15 @@ test.describe('Candidate CRUD + unified email path', () => {
     const afterDups = await (await api.get('/api/candidates', { params: { search: `crud-${runId}` } })).json()
     expect(afterDups.total).toBe(1)
 
-    // ── Whitespace-only email → rejected by validation ──────────────────────
+    // ── Whitespace-only email → treated as "no email" (201, email null) ─────
     const blank = await api.post('/api/candidates', {
       data: { firstName: 'Blank', lastName: 'Email', email: '   ' },
     })
-    expect(blank.status()).toBe(400)
+    expect(blank.status(), 'blank email should be 201').toBe(201)
+    const blankCreated = await blank.json()
+    expect(blankCreated.email, 'blank email stores null').toBeNull()
+    // Clean up so the search counts below stay right
+    expect((await api.delete(`/api/candidates/${blankCreated.id}`)).status()).toBe(204)
 
     // ── GET reflects the synced cache ───────────────────────────────────────
     const gotRes = await api.get(`/api/candidates/${created.id}`)

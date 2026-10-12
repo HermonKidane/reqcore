@@ -24,6 +24,12 @@ export function useCandidate(id: MaybeRefOrGetter<string>) {
     lastName: string
     email: string
     phone: string | null
+    linkedinUrl: string | null
+    position: string | null
+    company: string | null
+    location: string | null
+    headline: string | null
+    summary: string | null
   }>) {
     try {
       const updated = await $fetch(`/api/candidates/${candidateId.value}`, {

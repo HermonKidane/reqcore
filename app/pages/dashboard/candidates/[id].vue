@@ -130,15 +130,28 @@ const editForm = ref({
   lastName: '',
   email: '',
   phone: '',
+  linkedinUrl: '',
+  position: '',
+  company: '',
+  location: '',
+  headline: '',
+  summary: '',
 })
 
 function startEdit() {
   if (!candidate.value) return
+  const c = candidate.value as any
   editForm.value = {
-    firstName: candidate.value.firstName,
-    lastName: candidate.value.lastName,
-    email: candidate.value.email,
-    phone: candidate.value.phone ?? '',
+    firstName: c.firstName,
+    lastName: c.lastName,
+    email: c.email ?? '',
+    phone: c.phone ?? '',
+    linkedinUrl: c.linkedinUrl ?? '',
+    position: c.position ?? '',
+    company: c.company ?? '',
+    location: c.location ?? '',
+    headline: c.headline ?? '',
+    summary: c.summary ?? '',
   }
   isEditing.value = true
 }
@@ -148,11 +161,25 @@ function cancelEdit() {
   editErrors.value = {}
 }
 
+const blankToUndefined = (v: unknown) => (typeof v === 'string' && v.trim() === '' ? undefined : v)
+
 const editSchema = z.object({
   firstName: z.string().min(1, 'First name is required').max(100),
   lastName: z.string().min(1, 'Last name is required').max(100),
-  email: z.string().min(1, 'Email is required').email('Invalid email address').max(255),
+  email: z.preprocess(
+    blankToUndefined,
+    z.string().email('Invalid email address').max(255).optional(),
+  ),
   phone: z.string().max(50).optional(),
+  linkedinUrl: z.preprocess(
+    blankToUndefined,
+    z.string().max(500).regex(/linkedin\.com\//i, 'Must be a LinkedIn profile URL').optional(),
+  ),
+  position: z.preprocess(blankToUndefined, z.string().max(200).optional()),
+  company: z.preprocess(blankToUndefined, z.string().max(200).optional()),
+  location: z.preprocess(blankToUndefined, z.string().max(200).optional()),
+  headline: z.preprocess(blankToUndefined, z.string().max(300).optional()),
+  summary: z.preprocess(blankToUndefined, z.string().max(5000).optional()),
 })
 
 const isSaving = ref(false)
@@ -175,15 +202,27 @@ async function handleSave() {
     await updateCandidate({
       firstName: editForm.value.firstName,
       lastName: editForm.value.lastName,
-      email: editForm.value.email,
+      // Blank email = leave unchanged (PATCH: absent → no change)
+      email: editForm.value.email || undefined,
       phone: editForm.value.phone || null,
+      // Blank = clear the field
+      linkedinUrl: editForm.value.linkedinUrl || null,
+      position: editForm.value.position || null,
+      company: editForm.value.company || null,
+      location: editForm.value.location || null,
+      headline: editForm.value.headline || null,
+      summary: editForm.value.summary || null,
     })
     isEditing.value = false
   } catch (err: any) {
     if (handlePreviewReadOnlyError(err)) return
     const message = err.data?.statusMessage ?? 'Failed to save changes'
     if (err.statusCode === 409 || err.data?.statusCode === 409) {
-      editErrors.value.email = message
+      if (message.includes('LinkedIn')) {
+        editErrors.value.linkedinUrl = message
+      } else {
+        editErrors.value.email = message
+      }
     } else {
       alert(message)
     }
@@ -969,7 +1008,7 @@ function formatFileSize(bytes: number | null | undefined): string {
           <!-- Email -->
           <div>
             <label for="edit-email" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-              Email <span class="text-danger-500">*</span>
+              Email
             </label>
             <input
               id="edit-email"
@@ -990,6 +1029,87 @@ function formatFileSize(bytes: number | null | undefined): string {
               id="edit-phone"
               v-model="editForm.phone"
               type="tel"
+              class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-900 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+            />
+          </div>
+
+          <!-- LinkedIn URL -->
+          <div>
+            <label for="edit-linkedinUrl" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+              LinkedIn URL
+            </label>
+            <input
+              id="edit-linkedinUrl"
+              v-model="editForm.linkedinUrl"
+              type="text"
+              placeholder="e.g. linkedin.com/in/jane-doe"
+              class="w-full rounded-lg border px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-900 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+              :class="editErrors.linkedinUrl ? 'border-danger-300' : 'border-surface-300 dark:border-surface-700'"
+            />
+            <p v-if="editErrors.linkedinUrl" class="mt-1 text-xs text-danger-600 dark:text-danger-400">{{ editErrors.linkedinUrl }}</p>
+          </div>
+
+          <!-- Position -->
+          <div>
+            <label for="edit-position" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+              Position
+            </label>
+            <input
+              id="edit-position"
+              v-model="editForm.position"
+              type="text"
+              class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-900 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+            />
+          </div>
+
+          <!-- Company -->
+          <div>
+            <label for="edit-company" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+              Company
+            </label>
+            <input
+              id="edit-company"
+              v-model="editForm.company"
+              type="text"
+              class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-900 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+            />
+          </div>
+
+          <!-- Location -->
+          <div>
+            <label for="edit-location" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+              Location
+            </label>
+            <input
+              id="edit-location"
+              v-model="editForm.location"
+              type="text"
+              class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-900 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+            />
+          </div>
+
+          <!-- Headline -->
+          <div>
+            <label for="edit-headline" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+              Headline
+            </label>
+            <input
+              id="edit-headline"
+              v-model="editForm.headline"
+              type="text"
+              class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-900 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+            />
+          </div>
+
+          <!-- Summary -->
+          <div>
+            <label for="edit-summary" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+              Summary
+            </label>
+            <textarea
+              id="edit-summary"
+              v-model="editForm.summary"
+              rows="4"
               class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-900 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
             />
           </div>

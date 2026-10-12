@@ -1,9 +1,10 @@
-import { and, desc, eq, inArray, sql, type SQL } from 'drizzle-orm'
+import { and, desc, eq, inArray, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { application, candidate, candidateEducation, candidateExperience, candidateSkill, clientCompany, comment, extensionCaptureEvent, job, personRole } from '../../../database/schema'
 import { extensionCaptureSchema } from '../../../utils/schemas/extension'
 import { authenticateExtensionKey, extensionRoleAllows } from '../../../utils/extensionKey'
 import { parseProfileText, type ProfileParseResult } from '../../../utils/ai/profileParse'
+import { normalizeLinkedinUrl, findCandidateIdByLinkedinUrl, type DupExecutor } from '../../../utils/linkedinUrl'
 
 /**
  * POST /api/extension/capture
@@ -58,18 +59,6 @@ const PHOTO_MAGIC: Record<string, { bytes: number[]; ext: string }> = {
   'image/webp': { bytes: [0x52, 0x49, 0x46, 0x46], ext: 'webp' }, // "RIFF"; "WEBP" at offset 8 checked below
 }
 
-/** lowercase, strip protocol / leading www. / query / fragment / trailing slash */
-function normalizeLinkedinUrl(raw: string): string {
-  return raw
-    .trim()
-    .toLowerCase()
-    .replace(/^https?:\/\//, '')
-    .replace(/^www\./, '')
-    .split('?')[0]!
-    .split('#')[0]!
-    .replace(/\/+$/, '')
-}
-
 interface DecodedPhoto {
   contentType: string
   buffer: Buffer
@@ -91,16 +80,6 @@ async function getOpenJobs(orgId: string): Promise<Array<{ id: string; title: st
 // ─────────────────────────────────────────────
 
 /**
- * Minimal structural type for the duplicate lookup (same shape as the
- * Executor in candidateEmail.ts). tx/db don't assign cleanly to it
- * (conditional-generic execute<> signature — same pre-existing TS wart as
- * below), so call sites cast.
- */
-interface DupExecutor {
-  execute: <T = unknown>(query: SQL) => Promise<T[]>
-}
-
-/**
  * Org-scoped duplicate detection: normalized email first, then normalized
  * LinkedIn URL. Shared by the capture transaction and the read-only
  * preview path. Reads via the passed executor so the capture path keeps
@@ -117,21 +96,8 @@ async function findDuplicateCandidate(
   }
 
   if (body.linkedinUrl) {
-    const wanted = normalizeLinkedinUrl(body.linkedinUrl)
-    // Same normalization as normalizeLinkedinUrl(), done in SQL so we
-    // never pull every candidate's URL into memory
-    const rows = await executor.execute<{ id: string }>(sql`
-      SELECT id FROM candidate
-      WHERE organization_id = ${organizationId}
-        AND linkedin_url IS NOT NULL
-        AND rtrim(split_part(split_part(
-              regexp_replace(regexp_replace(lower(btrim(linkedin_url)), '^https?://', ''), '^www[.]', ''),
-              '?', 1), '#', 1), '/') = ${wanted}
-      LIMIT 1
-    `)
-    if (rows[0]) {
-      return { candidateId: rows[0].id, matchedBy: 'linkedin' }
-    }
+    const id = await findCandidateIdByLinkedinUrl(executor, organizationId, body.linkedinUrl)
+    if (id) return { candidateId: id, matchedBy: 'linkedin' }
   }
 
   return null
