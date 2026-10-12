@@ -52,8 +52,8 @@ export default defineEventHandler(async (event) => {
 
       // LinkedIn URL: string = set (duplicate-checked), null = clear,
       // undefined = leave unchanged
-      let linkedinUrl: string | null | undefined
-      if (body.linkedinUrl != null) {
+      let linkedinUrl: string | null | undefined = body.linkedinUrl
+      if (typeof body.linkedinUrl === 'string') {
         const linkedinTx = tx as unknown as Parameters<typeof findCandidateIdByLinkedinUrl>[0]
         const owner = await findCandidateIdByLinkedinUrl(linkedinTx, orgId, body.linkedinUrl)
         if (owner && owner !== id) {

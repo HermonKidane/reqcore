@@ -124,6 +124,9 @@ test.describe('Candidate fields 1.0', () => {
 
   test('UI: Add Candidate with first + last name only redirects to the list', async ({ authenticatedPage }) => {
     await authenticatedPage.goto('/dashboard/candidates/new')
+    await authenticatedPage.waitForLoadState('networkidle')
+    // Wait for hydration — a click on the un-hydrated form does a native GET submit
+    await authenticatedPage.getByLabel('First Name').waitFor({ state: 'visible', timeout: 15_000 })
     await authenticatedPage.getByLabel('First Name').fill(`Ui${runId}`)
     await authenticatedPage.getByLabel('Last Name').fill('NameOnly')
     await authenticatedPage.getByRole('button', { name: 'Add Candidate' }).click()
