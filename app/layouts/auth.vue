@@ -233,6 +233,12 @@ const { isDark, toggle } = useColorMode()
 .auth-muted { font-size: 14px; line-height: 20px; color: var(--auth-text-2); text-align: center; }
 .auth-alert { border-radius: 12px; border: 1px solid var(--auth-alert-border); background: var(--auth-alert-bg); color: var(--auth-alert-text); padding: 12px 14px; font-size: 14px; line-height: 20px; }
 .auth-shell :focus-visible { outline: 2px solid var(--auth-focus); outline-offset: 2px; }
+.auth-input--invalid { border-color: #e11d48; }
+.auth-input--invalid:focus { border-color: #e11d48; box-shadow: 0 0 0 4px rgba(225, 29, 72, 0.18), var(--auth-in-shadow); }
+.auth-field-error { margin: 0; font-size: 13px; line-height: 18px; color: var(--auth-alert-text); }
+.dark .auth-shell .auth-field-error { color: #fda4af; }
+.auth-field-hint { margin: 0; font-size: 13px; line-height: 18px; color: var(--auth-text-2); }
+.auth-suggest { padding: 0; border: 0; background: none; font: inherit; font-weight: 600; color: var(--auth-link); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; border-radius: 4px; }
 
 /* Top-right controls */
 .auth-theme-toggle {

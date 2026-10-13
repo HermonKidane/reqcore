@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { friendlyAuthError } from '~/utils/email'
 definePageMeta({
   layout: 'auth',
   middleware: ['guest'],
@@ -11,7 +12,7 @@ useSeoMeta({
 })
 
 const name = ref('')
-const email = ref('')
+const { email, emailError, emailSuggestion, emailInput, onBlur: onEmailBlur, validate: validateEmail, applySuggestion } = useEmailField()
 const password = ref('')
 const confirmPassword = ref('')
 const error = ref('')
@@ -21,8 +22,13 @@ const localePath = useLocalePath()
 async function handleSignUp() {
   error.value = ''
 
-  if (!name.value || !email.value || !password.value) {
-    error.value = 'All fields are required.'
+  if (!name.value.trim()) {
+    error.value = 'Enter your name.'
+    return
+  }
+  if (!validateEmail()) return
+  if (!password.value) {
+    error.value = 'Choose a password.'
     return
   }
 
@@ -45,7 +51,7 @@ async function handleSignUp() {
   })
 
   if (result.error) {
-    error.value = result.error.message ?? 'Sign-up failed. Please try again.'
+    error.value = friendlyAuthError(result.error.message, 'Sign-up failed. Please try again.')
     isLoading.value = false
     return
   }
@@ -68,7 +74,26 @@ async function handleSignUp() {
 
     <div class="auth-field">
       <label class="auth-label" for="signup-email">Email</label>
-      <input id="signup-email" v-model="email" type="email" inputmode="email" autocomplete="email" placeholder="you@company.com" required class="auth-input" />
+      <input
+        id="signup-email"
+        ref="emailInput"
+        v-model="email"
+        type="email"
+        inputmode="email"
+        autocomplete="email"
+        placeholder="you@company.com"
+        required
+        class="auth-input"
+        :class="{ 'auth-input--invalid': emailError }"
+        :aria-invalid="emailError ? 'true' : undefined"
+        :aria-describedby="emailError ? 'signup-email-error' : undefined"
+        @blur="onEmailBlur"
+        @input="emailError = ''"
+      />
+      <p v-if="emailError" id="signup-email-error" class="auth-field-error" data-testid="email-error">{{ emailError }}</p>
+      <p v-else-if="emailSuggestion" class="auth-field-hint" data-testid="email-suggestion">
+        Did you mean <button type="button" class="auth-suggest" @click="applySuggestion">{{ emailSuggestion }}</button>?
+      </p>
     </div>
 
     <div class="auth-field">

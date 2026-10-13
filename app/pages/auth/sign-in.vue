@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { friendlyAuthError } from '~/utils/email'
 definePageMeta({
   layout: 'auth',
   middleware: ['guest'],
@@ -10,7 +11,7 @@ useSeoMeta({
   robots: 'noindex, nofollow',
 })
 
-const email = ref('')
+const { email, emailError, emailSuggestion, emailInput, onBlur: onEmailBlur, validate: validateEmail, applySuggestion } = useEmailField()
 const password = ref('')
 const error = ref('')
 const isLoading = ref(false)
@@ -41,8 +42,9 @@ if (socialError) {
 async function handleSignIn() {
   error.value = ''
 
-  if (!email.value || !password.value) {
-    error.value = 'Email and password are required.'
+  if (!validateEmail()) return
+  if (!password.value) {
+    error.value = 'Enter your password.'
     return
   }
 
@@ -54,7 +56,7 @@ async function handleSignIn() {
   })
 
   if (result.error) {
-    error.value = result.error.message ?? 'Invalid credentials. Please try again.'
+    error.value = friendlyAuthError(result.error.message, 'Wrong email or password. Please try again.')
     isLoading.value = false
     return
   }
@@ -74,6 +76,7 @@ async function handleSignIn() {
       <label class="auth-label" for="signin-email">Email</label>
       <input
         id="signin-email"
+        ref="emailInput"
         v-model="email"
         type="email"
         inputmode="email"
@@ -81,7 +84,16 @@ async function handleSignIn() {
         placeholder="you@company.com"
         required
         class="auth-input"
+        :class="{ 'auth-input--invalid': emailError }"
+        :aria-invalid="emailError ? 'true' : undefined"
+        :aria-describedby="emailError ? 'signin-email-error' : undefined"
+        @blur="onEmailBlur"
+        @input="emailError = ''"
       />
+      <p v-if="emailError" id="signin-email-error" class="auth-field-error" data-testid="email-error">{{ emailError }}</p>
+      <p v-else-if="emailSuggestion" class="auth-field-hint" data-testid="email-suggestion">
+        Did you mean <button type="button" class="auth-suggest" @click="applySuggestion">{{ emailSuggestion }}</button>?
+      </p>
     </div>
 
     <div class="auth-field">
