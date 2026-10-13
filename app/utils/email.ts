@@ -51,8 +51,9 @@ export function suggestDomain(domain: string): string | null {
       bestDist = dist
     }
   }
-  // Only one or two keystrokes away counts as a typo
-  return best && bestDist <= 2 ? best : null
+  // One keystroke away for short domains, up to two for longer ones; a wrong guess is worse than none.
+  const allowed = d.length < 8 ? 1 : 2
+  return best && bestDist <= allowed ? best : null
 }
 
 export function checkEmail(raw: string): EmailCheck {
@@ -74,9 +75,10 @@ export function friendlyAuthError(message: string | undefined, fallback: string)
   if (!message) return fallback
   const stripped = message.replace(/^\[[\w.]+\]\s*/, '').trim()
   const lower = stripped.toLowerCase()
-  if (lower.includes('invalid email')) return 'That doesn’t look like a full email address. Check it and try again.'
-  if (lower.includes('already exists')) return 'An account with this email already exists. Sign in instead, or use "Forgot password".'
+  // Order matters: "invalid email or password" must not be read as an email-format error.
   if (lower.includes('invalid email or password') || lower.includes('invalid password')) return 'Wrong email or password. Please try again.'
+  if (lower.includes('invalid email')) return 'That doesn’t look like a full email address. Check it and try again.'
+  if (lower.includes('already exists')) return 'An account with this email already exists. Sign in instead.'
   if (lower.includes('password too short')) return 'Password must be at least 8 characters.'
   if (lower.includes('too many requests') || lower.includes('rate limit')) return 'Too many attempts. Wait a minute and try again.'
   return stripped || fallback
