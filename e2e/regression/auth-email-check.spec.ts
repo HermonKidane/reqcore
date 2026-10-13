@@ -1,4 +1,5 @@
 import { test, expect } from '../fixtures'
+import { waitForHydration } from '../helpers/hydration'
 
 /**
  * Email mistakes on the auth forms are caught before the request is sent and
@@ -11,6 +12,7 @@ test.describe('auth email checks', () => {
     page.on('request', (req) => { if (req.url().includes('/api/auth/sign-up')) apiCalls++ })
 
     await page.goto('/auth/sign-up')
+    await waitForHydration(page)
     await page.getByLabel('Name').fill('Isaac Kidane')
     await page.getByLabel('Email').fill('isaac@r2r')
     await page.getByLabel('Password', { exact: true }).fill('TestPassword123!')
@@ -28,6 +30,7 @@ test.describe('auth email checks', () => {
 
   test('sign-up: a common domain typo offers a one-tap correction', async ({ page }) => {
     await page.goto('/auth/sign-up')
+    await waitForHydration(page)
     const email = page.getByLabel('Email')
     await email.fill('isaac@gmial.com')
     await email.blur()
@@ -40,6 +43,7 @@ test.describe('auth email checks', () => {
 
   test('sign-in: same check, and a wrong password reads as plain English', async ({ page }) => {
     await page.goto('/auth/sign-in')
+    await waitForHydration(page)
     await page.getByLabel('Email').fill('someone@r2r')
     await page.getByLabel('Password').fill('whatever123')
     await page.getByRole('button', { name: 'Sign in' }).click()
