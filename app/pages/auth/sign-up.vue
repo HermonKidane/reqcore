@@ -56,70 +56,41 @@ async function handleSignUp() {
 </script>
 
 <template>
-  <form class="flex flex-col gap-4" @submit.prevent="handleSignUp">
-    <h2 class="text-xl font-semibold text-center text-surface-900 dark:text-surface-100 mb-2">Create your account</h2>
+  <form class="auth-form" @submit.prevent="handleSignUp">
+    <h2 class="sr-only">Create your account</h2>
 
-    <div v-if="error" class="rounded-md border border-danger-200 dark:border-danger-800 bg-danger-50 dark:bg-danger-950 p-3 text-sm text-danger-700 dark:text-danger-400">{{ error }}</div>
+    <div v-if="error" class="auth-alert" role="alert">{{ error }}</div>
 
-    <label class="flex flex-col gap-1 text-sm font-medium text-surface-700 dark:text-surface-300">
-      <span>Name</span>
-      <input
-        v-model="name"
-        type="text"
-        autocomplete="name"
-        required
-        class="px-3 py-2 border border-surface-300 dark:border-surface-700 rounded-md text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15"
-      />
-    </label>
+    <div class="auth-field">
+      <label class="auth-label" for="signup-name">Name</label>
+      <input id="signup-name" v-model="name" type="text" autocomplete="name" placeholder="Your full name" required class="auth-input" />
+    </div>
 
-    <label class="flex flex-col gap-1 text-sm font-medium text-surface-700 dark:text-surface-300">
-      <span>Email</span>
-      <input
-        v-model="email"
-        type="email"
-        autocomplete="email"
-        required
-        class="px-3 py-2 border border-surface-300 dark:border-surface-700 rounded-md text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15"
-      />
-    </label>
+    <div class="auth-field">
+      <label class="auth-label" for="signup-email">Email</label>
+      <input id="signup-email" v-model="email" type="email" inputmode="email" autocomplete="email" placeholder="you@company.com" required class="auth-input" />
+    </div>
 
-    <label class="flex flex-col gap-1 text-sm font-medium text-surface-700 dark:text-surface-300">
-      <span>Password</span>
-      <input
-        v-model="password"
-        type="password"
-        autocomplete="new-password"
-        required
-        minlength="8"
-        class="px-3 py-2 border border-surface-300 dark:border-surface-700 rounded-md text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15"
-      />
-    </label>
+    <div class="auth-field">
+      <label class="auth-label" for="signup-password">Password</label>
+      <input id="signup-password" v-model="password" type="password" autocomplete="new-password" placeholder="At least 8 characters" required minlength="8" class="auth-input" />
+    </div>
 
-    <label class="flex flex-col gap-1 text-sm font-medium text-surface-700 dark:text-surface-300">
-      <span>Confirm password</span>
-      <input
-        v-model="confirmPassword"
-        type="password"
-        autocomplete="new-password"
-        required
-        class="px-3 py-2 border border-surface-300 dark:border-surface-700 rounded-md text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15"
-      />
-    </label>
+    <div class="auth-field">
+      <label class="auth-label" for="signup-confirm">Confirm password</label>
+      <input id="signup-confirm" v-model="confirmPassword" type="password" autocomplete="new-password" placeholder="Repeat your password" required class="auth-input" />
+    </div>
 
-    <button
-      type="submit"
-      :disabled="isLoading"
-      class="mt-2 px-4 py-2.5 bg-brand-600 text-white rounded-md text-sm font-medium hover:bg-brand-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
-    >
+    <button type="submit" :disabled="isLoading" class="auth-btn auth-btn-primary">
       {{ isLoading ? 'Creating account…' : 'Sign up' }}
+      <svg v-if="!isLoading" class="auth-arrow" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" /></svg>
     </button>
 
     <SocialSignIn label="or sign up with" />
 
-    <p class="text-center text-sm text-surface-500 dark:text-surface-400">
+    <p class="auth-muted">
       Already have an account?
-      <NuxtLink :to="$localePath('/auth/sign-in')" class="text-brand-600 dark:text-brand-400 hover:underline">Sign in</NuxtLink>
+      <NuxtLink :to="$localePath('/auth/sign-in')" class="auth-link">Sign in</NuxtLink>
     </p>
   </form>
 </template>
-

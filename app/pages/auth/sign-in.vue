@@ -65,47 +65,48 @@ async function handleSignIn() {
 </script>
 
 <template>
-  <form class="flex flex-col gap-4" @submit.prevent="handleSignIn">
-    <h2 class="text-xl font-semibold text-center text-surface-900 dark:text-surface-100 mb-2">Sign in to your account</h2>
+  <form class="auth-form" @submit.prevent="handleSignIn">
+    <h2 class="sr-only">Sign in to your account</h2>
 
-    <div v-if="error" class="rounded-md border border-danger-200 dark:border-danger-800 bg-danger-50 dark:bg-danger-950 p-3 text-sm text-danger-700 dark:text-danger-400">{{ error }}</div>
+    <div v-if="error" class="auth-alert" role="alert">{{ error }}</div>
 
-    <label class="flex flex-col gap-1 text-sm font-medium text-surface-700 dark:text-surface-300">
-      <span>Email</span>
+    <div class="auth-field">
+      <label class="auth-label" for="signin-email">Email</label>
       <input
+        id="signin-email"
         v-model="email"
         type="email"
+        inputmode="email"
         autocomplete="email"
+        placeholder="you@company.com"
         required
-        class="px-3 py-2 border border-surface-300 dark:border-surface-700 rounded-md text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15"
+        class="auth-input"
       />
-    </label>
+    </div>
 
-    <label class="flex flex-col gap-1 text-sm font-medium text-surface-700 dark:text-surface-300">
-      <span>Password</span>
+    <div class="auth-field">
+      <label class="auth-label" for="signin-password">Password</label>
       <input
+        id="signin-password"
         v-model="password"
         type="password"
         autocomplete="current-password"
+        placeholder="Enter your password"
         required
-        class="px-3 py-2 border border-surface-300 dark:border-surface-700 rounded-md text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-800 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15"
+        class="auth-input"
       />
-    </label>
+    </div>
 
-    <button
-      type="submit"
-      :disabled="isLoading"
-      class="mt-2 px-4 py-2.5 bg-brand-600 text-white rounded-md text-sm font-medium hover:bg-brand-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
-    >
+    <button type="submit" :disabled="isLoading" class="auth-btn auth-btn-primary">
       {{ isLoading ? 'Signing in…' : 'Sign in' }}
+      <svg v-if="!isLoading" class="auth-arrow" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" /></svg>
     </button>
 
     <SocialSignIn />
 
-    <p class="text-center text-sm text-surface-500 dark:text-surface-400">
+    <p class="auth-muted">
       Don't have an account?
-      <NuxtLink :to="$localePath('/auth/sign-up')" class="text-brand-600 dark:text-brand-400 hover:underline">Sign up</NuxtLink>
+      <NuxtLink :to="$localePath('/auth/sign-up')" class="auth-link">Sign up</NuxtLink>
     </p>
   </form>
 </template>
-
