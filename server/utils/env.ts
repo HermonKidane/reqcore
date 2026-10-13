@@ -94,6 +94,14 @@ const envSchema = z
       (val) => (typeof val === 'string' && val.trim() === '' ? undefined : val),
       z.coerce.number().int().positive().optional().default(3),
     ),
+    /** Social sign-in (Google). Both set → "Continue with Google" appears. Redirect URI = BETTER_AUTH_URL + /api/auth/callback/google. */
+    GOOGLE_CLIENT_ID: emptyToUndefined.pipe(z.string().min(1)).optional(),
+    GOOGLE_CLIENT_SECRET: emptyToUndefined.pipe(z.string().min(1)).optional(),
+    /** Social sign-in (Microsoft Entra, multitenant app). Both set → "Continue with Microsoft" appears. Redirect URI = BETTER_AUTH_URL + /api/auth/callback/microsoft. */
+    MICROSOFT_CLIENT_ID: emptyToUndefined.pipe(z.string().min(1)).optional(),
+    MICROSOFT_CLIENT_SECRET: emptyToUndefined.pipe(z.string().min(1)).optional(),
+    /** Entra tenant for the authorize/token endpoints. "common" = any work/school tenant (multitenant app). */
+    MICROSOFT_TENANT_ID: emptyToUndefined.pipe(z.string().min(1)).optional().default('common'),
     /** Slug of the demo organization. When set, write operations are blocked for this org. */
     DEMO_ORG_SLUG: emptyToUndefined.optional(),
     /** Fine-grained GitHub PAT with Issues:write scope. When set (along with GITHUB_FEEDBACK_REPO), enables in-app feedback. */
@@ -150,7 +158,7 @@ export const env = new Proxy({} as z.infer<typeof envSchema>, {
           `Ensure these variables are set in your Railway service (Settings → Variables).\n` +
           `Required: DATABASE_URL, BETTER_AUTH_SECRET, S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY, S3_BUCKET\n` +
           `Required outside Railway PR/preview environments: BETTER_AUTH_URL\n` +
-          `Optional: BETTER_AUTH_TRUSTED_ORIGINS, S3_REGION (default: us-east-1), S3_FORCE_PATH_STYLE (default: true), TRUSTED_PROXY_IP, DEMO_ORG_SLUG, RESEND_API_KEY, RESEND_FROM_EMAIL\n`,
+          `Optional: BETTER_AUTH_TRUSTED_ORIGINS, S3_REGION (default: us-east-1), S3_FORCE_PATH_STYLE (default: true), TRUSTED_PROXY_IP, DEMO_ORG_SLUG, RESEND_API_KEY, RESEND_FROM_EMAIL, GOOGLE_CLIENT_ID/SECRET, MICROSOFT_CLIENT_ID/SECRET/TENANT_ID\n`,
         )
         throw result.error
       }

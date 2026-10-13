@@ -1,6 +1,7 @@
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { organization } from 'better-auth/plugins'
+import { APIError } from 'better-auth/api'
 import { ac, owner, admin, member } from '~~/shared/permissions'
 import { sendOrgInvitationEmail } from './email'
 import * as schema from '../database/schema'
@@ -65,6 +66,59 @@ function resolveBetterAuthUrl(): string {
 }
 
 /**
+ * Social sign-in providers, each enabled only when its client id + secret are set.
+ * Redirect URIs are fixed by Better Auth: <BETTER_AUTH_URL>/api/auth/callback/<provider>
+ * — register exactly those at Google / Entra (see .env.example).
+ */
+export function resolveSocialProviders(): NonNullable<Parameters<typeof betterAuth>[0]['socialProviders']> {
+  const providers: NonNullable<Parameters<typeof betterAuth>[0]['socialProviders']> = {}
+
+  if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
+    providers.google = {
+      clientId: env.GOOGLE_CLIENT_ID,
+      clientSecret: env.GOOGLE_CLIENT_SECRET,
+      prompt: 'select_account',
+    }
+  }
+
+  if (env.MICROSOFT_CLIENT_ID && env.MICROSOFT_CLIENT_SECRET) {
+    providers.microsoft = {
+      clientId: env.MICROSOFT_CLIENT_ID,
+      clientSecret: env.MICROSOFT_CLIENT_SECRET,
+      tenantId: env.MICROSOFT_TENANT_ID,
+      prompt: 'select_account',
+      disableProfilePhoto: true,
+      // Entra's `email` claim is NOT verified by default: a tenant admin can set any
+      // address on a user (the "nOAuth" takeover). Treat it as verified only when the
+      // token carries Microsoft's verification claims — these must be added as
+      // optional claims on the app registration (Token configuration → ID token:
+      // email, xms_edov, verified_primary_email, verified_secondary_email).
+      mapProfileToUser: (profile) => {
+        const email = typeof profile.email === 'string' ? profile.email.toLowerCase() : undefined
+        const inList = (list: unknown) => Array.isArray(list) && !!email && list.some(e => typeof e === 'string' && e.toLowerCase() === email)
+        const emailVerified = !!email && (
+          profile.email_verified === true
+          || profile.xms_edov === true
+          || inList(profile.verified_primary_email)
+          || inList(profile.verified_secondary_email)
+        )
+        return { emailVerified }
+      },
+    }
+  }
+
+  return providers
+}
+
+/** Which social providers are configured (safe to expose — no secrets). */
+export function enabledSocialProviders(): { google: boolean, microsoft: boolean } {
+  return {
+    google: !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET),
+    microsoft: !!(env.MICROSOFT_CLIENT_ID && env.MICROSOFT_CLIENT_SECRET),
+  }
+}
+
+/**
  * Lazily create the Better Auth instance on first access.
  * Prevents build-time prerendering from crashing when auth env vars
  * aren't available (Railway injects env vars only at deploy time).
@@ -98,6 +152,34 @@ function getAuth(): Auth {
       },
       emailAndPassword: {
         enabled: true,
+      },
+      socialProviders: resolveSocialProviders(),
+      databaseHooks: {
+        user: {
+          create: {
+            // OAuth sign-ups must arrive with a provider-verified email. Otherwise an
+            // unverified Microsoft/Entra email could create a user that a later verified
+            // Google login for the same address would implicitly link into.
+            // Email/password sign-ups (path /sign-up/email) are unaffected.
+            before: async (user, ctx) => {
+              if (ctx?.path === '/callback/:id' && !user.emailVerified) {
+                throw new APIError('BAD_REQUEST', { message: 'provider email not verified' })
+              }
+            },
+          },
+        },
+      },
+      account: {
+        accountLinking: {
+          // Better Auth default: an OAuth login is linked to an existing user with the
+          // same email ONLY when the provider reports the email as verified (or the
+          // provider is listed in trustedProviders). We list none — Google verifies
+          // Workspace emails itself; Microsoft only when the optional claims below are
+          // present. Otherwise the login fails with `account_not_linked` instead of
+          // merging into someone else's account.
+          enabled: true,
+          trustedProviders: [],
+        },
       },
       plugins: [
         organization({

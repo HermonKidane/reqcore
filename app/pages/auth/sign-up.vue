@@ -114,6 +114,8 @@ async function handleSignUp() {
       {{ isLoading ? 'Creating account…' : 'Sign up' }}
     </button>
 
+    <SocialSignIn label="or sign up with" />
+
     <p class="text-center text-sm text-surface-500 dark:text-surface-400">
       Already have an account?
       <NuxtLink :to="$localePath('/auth/sign-in')" class="text-brand-600 dark:text-brand-400 hover:underline">Sign in</NuxtLink>

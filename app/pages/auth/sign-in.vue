@@ -23,6 +23,21 @@ if (route.query.live === '1') {
   password.value = config.public.liveDemoSecret
 }
 
+// Better Auth sends social-login failures back here as ?error=<code>.
+const socialErrorMessages: Record<string, string> = {
+  account_not_linked: 'An account with this email already exists. Sign in with your password first, then connect this provider from Settings.',
+  provider_email_not_verified: 'Your sign-in provider did not confirm your email address, so we could not create an account. Sign up with email and password instead, or ask your IT admin to enable verified email claims.',
+  email_not_found: 'Your provider did not share an email address, so we could not sign you in.',
+  signup_disabled: 'Sign-up with this provider is disabled.',
+  state_mismatch: 'The sign-in session expired. Please try again.',
+  please_restart_the_process: 'The sign-in session expired. Please try again.',
+  unable_to_get_user_info: 'We could not read your profile from the provider. Please try again.',
+}
+const socialError = typeof route.query.error === 'string' ? route.query.error : ''
+if (socialError) {
+  error.value = socialErrorMessages[socialError] ?? 'Sign-in with that provider failed. Please try again or use your password.'
+}
+
 async function handleSignIn() {
   error.value = ''
 
@@ -84,6 +99,8 @@ async function handleSignIn() {
     >
       {{ isLoading ? 'Signing in…' : 'Sign in' }}
     </button>
+
+    <SocialSignIn />
 
     <p class="text-center text-sm text-surface-500 dark:text-surface-400">
       Don't have an account?

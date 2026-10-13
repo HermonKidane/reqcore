@@ -38,6 +38,13 @@ services:
       # better-auth sign-in/up per IP per 10 s (prod default 3); e2e signs up
       # dozens of accounts from one IP.
       RATE_LIMIT_SIGNIN_MAX: 100
+      # Social sign-in — client IDs are public identifiers (secrets live in .env,
+      # filled from the vault: oauth--google--myrecruiter-ats-sandbox--client-secret,
+      # oauth--microsoft--myrecruiter-sandbox--client-secret). Google project
+      # "Myrecruiter" client "ATS sandbox"; Entra app "MyRecruiter" (tenant R2R).
+      GOOGLE_CLIENT_ID: 633720783646-802l70ee288b6uhv632k4r5g2dtiinqg.apps.googleusercontent.com
+      MICROSOFT_CLIENT_ID: 681ebe1f-3c1f-4b96-b585-6f5851b36575
+      MICROSOFT_TENANT_ID: common
   adminer:
     profiles: ["never"]
 # Pinned so the bridge gateway (TRUSTED_PROXY_IP above) can't drift when
