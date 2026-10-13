@@ -51,7 +51,7 @@ test.describe('auth email checks', () => {
 
     await page.getByLabel('Email').fill('nobody-e2e@test.local')
     await page.getByRole('button', { name: 'Sign in' }).click()
-    const alert = page.getByRole('alert')
+    const alert = page.locator('form').getByRole('alert') // the Nuxt route announcer is also role=alert
     await expect(alert).toBeVisible({ timeout: 15_000 })
     await expect(alert).not.toContainText('[body')
     await expect(alert).toContainText(/wrong email or password|too many attempts/i)
