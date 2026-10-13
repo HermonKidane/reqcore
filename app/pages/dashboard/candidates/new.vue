@@ -74,7 +74,7 @@ async function handleSubmit() {
 
   isSubmitting.value = true
   try {
-    await createCandidate({
+    const created: any = await createCandidate({
       firstName: form.value.firstName,
       lastName: form.value.lastName,
       email: form.value.email || undefined,
@@ -86,7 +86,8 @@ async function handleSubmit() {
       headline: form.value.headline || undefined,
       summary: form.value.summary || undefined,
     })
-    await navigateTo(localePath('/dashboard/candidates'))
+    // Open the new profile (Hermon 10-13, Manatal gap C01 #7) — fall back to the list
+    await navigateTo(localePath(created?.id ? `/dashboard/candidates/${created.id}` : '/dashboard/candidates'))
   } catch (err: any) {
     const message = err.data?.statusMessage ?? 'Something went wrong'
     // Show conflict as a field-level error (LinkedIn duplicates go to the URL field)

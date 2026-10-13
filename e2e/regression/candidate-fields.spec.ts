@@ -122,7 +122,7 @@ test.describe('Candidate fields 1.0', () => {
     }
   })
 
-  test('UI: Add Candidate with first + last name only redirects to the list', async ({ authenticatedPage }) => {
+  test('UI: Add Candidate with first + last name only opens the new profile', async ({ authenticatedPage }) => {
     await authenticatedPage.goto('/dashboard/candidates/new')
     await authenticatedPage.waitForLoadState('networkidle')
     // Wait for hydration — a click on the un-hydrated form does a native GET submit
@@ -130,7 +130,8 @@ test.describe('Candidate fields 1.0', () => {
     await authenticatedPage.getByLabel('First Name').fill(`Ui${runId}`)
     await authenticatedPage.getByLabel('Last Name').fill('NameOnly')
     await authenticatedPage.getByRole('button', { name: 'Add Candidate' }).click()
-    // Redirect back to the list = the create succeeded
-    await expect(authenticatedPage).toHaveURL(/\/dashboard\/candidates$/)
+    // Lands on the new profile = the create succeeded (Hermon 10-13: open the profile, not the list)
+    await expect(authenticatedPage).toHaveURL(/\/dashboard\/candidates\/[0-9a-f-]{36}$/)
+    await expect(authenticatedPage.getByRole('heading', { level: 1, name: `Ui${runId} NameOnly` })).toBeVisible()
   })
 })
