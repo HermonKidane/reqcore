@@ -368,6 +368,9 @@ function getInitials(name: string | undefined): string {
       </div>
     </section>
 
+    <!-- Connected sign-ins (Google / Microsoft) -->
+    <ConnectedAccounts />
+
     <!-- Session info -->
     <section class="mt-8 rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden">
       <div class="px-6 py-5 border-b border-surface-200 dark:border-surface-800">
