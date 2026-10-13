@@ -386,6 +386,8 @@ function getInitials(name: string | undefined): string {
       </div>
 
       <div class="px-6 py-5">
+        <!-- Client-only: toLocaleDateString differs between the server locale and the browser's (hydration mismatch) -->
+        <ClientOnly>
         <dl class="space-y-3">
           <div class="flex items-center justify-between">
             <dt class="text-sm text-surface-500 dark:text-surface-400">Session ID</dt>
@@ -406,6 +408,7 @@ function getInitials(name: string | undefined): string {
             </dd>
           </div>
         </dl>
+        </ClientOnly>
       </div>
     </section>
   </div>
