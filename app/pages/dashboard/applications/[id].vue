@@ -170,7 +170,7 @@ function formatResponseValue(value: unknown): string {
             {{ application.status }}
           </span>
           <span class="text-sm text-surface-500 dark:text-surface-400">
-            Applied {{ new Date(application.createdAt).toLocaleDateString() }}
+            Applied {{ formatDate(application.createdAt) }}
           </span>
         </div>
       </div>
@@ -275,7 +275,7 @@ function formatResponseValue(value: unknown): string {
                 Applied
               </dt>
               <dd class="text-surface-700 dark:text-surface-200 font-medium">
-                {{ new Date(application.createdAt).toLocaleDateString() }}
+                {{ formatDate(application.createdAt) }}
               </dd>
             </div>
             <div>
@@ -284,7 +284,7 @@ function formatResponseValue(value: unknown): string {
                 Updated
               </dt>
               <dd class="text-surface-700 dark:text-surface-200 font-medium">
-                {{ new Date(application.updatedAt).toLocaleDateString() }}
+                {{ formatDate(application.updatedAt) }}
               </dd>
             </div>
           </dl>

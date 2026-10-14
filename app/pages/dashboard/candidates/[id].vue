@@ -521,7 +521,7 @@ function formatFileSize(bytes: number | null | undefined): string {
                 Created
               </dt>
               <dd class="text-surface-700 dark:text-surface-200 font-medium">
-                {{ new Date(candidate.createdAt).toLocaleDateString() }}
+                {{ formatDate(candidate.createdAt) }}
               </dd>
             </div>
             <div>
@@ -530,7 +530,7 @@ function formatFileSize(bytes: number | null | undefined): string {
                 Updated
               </dt>
               <dd class="text-surface-700 dark:text-surface-200 font-medium">
-                {{ new Date(candidate.updatedAt).toLocaleDateString() }}
+                {{ formatDate(candidate.updatedAt) }}
               </dd>
             </div>
           </dl>
@@ -577,10 +577,10 @@ function formatFileSize(bytes: number | null | undefined): string {
         </div>
 
         <!-- Tabs -->
-        <div class="border-b border-surface-200 dark:border-surface-800 mb-4">
-          <div class="flex gap-1">
+        <div class="border-b border-surface-200 dark:border-surface-800 mb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
+          <div class="flex gap-1 overflow-x-auto overscroll-x-contain [scrollbar-width:none]">
             <button
-              class="cursor-pointer px-3 py-2 text-sm font-medium transition-colors border-b-2 -mb-px"
+              class="cursor-pointer shrink-0 whitespace-nowrap min-h-11 px-3 py-2 text-sm font-medium transition-colors border-b-2 -mb-px"
               :class="activeTab === 'applications'
                 ? 'border-brand-600 text-brand-600'
                 : 'border-transparent text-surface-500 hover:text-surface-700 hover:border-surface-300 dark:hover:text-surface-300'"
@@ -589,7 +589,7 @@ function formatFileSize(bytes: number | null | undefined): string {
               Applications ({{ candidate.applications?.length ?? 0 }})
             </button>
             <button
-              class="cursor-pointer px-3 py-2 text-sm font-medium transition-colors border-b-2 -mb-px"
+              class="cursor-pointer shrink-0 whitespace-nowrap min-h-11 px-3 py-2 text-sm font-medium transition-colors border-b-2 -mb-px"
               :class="activeTab === 'roles'
                 ? 'border-brand-600 text-brand-600'
                 : 'border-transparent text-surface-500 hover:text-surface-700 hover:border-surface-300 dark:hover:text-surface-300'"
@@ -598,7 +598,7 @@ function formatFileSize(bytes: number | null | undefined): string {
               Roles ({{ (candidate.roles ?? []).filter((r: any) => r.endedAt === null).length }})
             </button>
             <button
-              class="cursor-pointer px-3 py-2 text-sm font-medium transition-colors border-b-2 -mb-px"
+              class="cursor-pointer shrink-0 whitespace-nowrap min-h-11 px-3 py-2 text-sm font-medium transition-colors border-b-2 -mb-px"
               :class="activeTab === 'documents'
                 ? 'border-brand-600 text-brand-600'
                 : 'border-transparent text-surface-500 hover:text-surface-700 hover:border-surface-300 dark:hover:text-surface-300'"
@@ -607,7 +607,7 @@ function formatFileSize(bytes: number | null | undefined): string {
               Documents ({{ candidate.documents?.length ?? 0 }})
             </button>
             <button
-              class="cursor-pointer px-3 py-2 text-sm font-medium transition-colors border-b-2 -mb-px"
+              class="cursor-pointer shrink-0 whitespace-nowrap min-h-11 px-3 py-2 text-sm font-medium transition-colors border-b-2 -mb-px"
               :class="activeTab === 'experiences'
                 ? 'border-brand-600 text-brand-600'
                 : 'border-transparent text-surface-500 hover:text-surface-700 hover:border-surface-300 dark:hover:text-surface-300'"
@@ -616,7 +616,7 @@ function formatFileSize(bytes: number | null | undefined): string {
               Experience ({{ (candidate as any).experiences?.length ?? 0 }})
             </button>
             <button
-              class="cursor-pointer px-3 py-2 text-sm font-medium transition-colors border-b-2 -mb-px"
+              class="cursor-pointer shrink-0 whitespace-nowrap min-h-11 px-3 py-2 text-sm font-medium transition-colors border-b-2 -mb-px"
               :class="activeTab === 'education'
                 ? 'border-brand-600 text-brand-600'
                 : 'border-transparent text-surface-500 hover:text-surface-700 hover:border-surface-300 dark:hover:text-surface-300'"
@@ -756,7 +756,7 @@ function formatFileSize(bytes: number | null | undefined): string {
                   {{ app.job.title }}
                 </h4>
                 <span class="text-xs text-surface-400">
-                  Applied {{ new Date(app.createdAt).toLocaleDateString() }}
+                  Applied {{ formatDate(app.createdAt) }}
                 </span>
               </div>
               <span
@@ -906,7 +906,7 @@ function formatFileSize(bytes: number | null | undefined): string {
                     </p>
                     <span class="text-xs text-surface-400">
                       {{ documentTypeLabels[doc.type] ?? doc.type }}
-                      · {{ new Date(doc.createdAt).toLocaleDateString() }}
+                      · {{ formatDate(doc.createdAt) }}
                       <template v-if="doc.mimeType === 'application/pdf'"> · <span class="text-brand-500 dark:text-brand-400">Click to preview</span></template>
                     </span>
                   </div>

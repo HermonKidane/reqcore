@@ -166,7 +166,7 @@ const { candidates, total, fetchStatus, error, refresh } = useCandidates({
               <Phone class="size-3" />
               {{ c.phone }}
             </span>
-            <span>{{ new Date(c.createdAt).toLocaleDateString() }}</span>
+            <span>{{ formatDate(c.createdAt) }}</span>
           </div>
         </div>
       </NuxtLink>

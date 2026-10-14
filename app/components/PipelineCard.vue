@@ -55,7 +55,7 @@ const transitionClasses: Record<string, string> = {
     <div class="flex items-center justify-between text-xs text-surface-400">
       <span class="inline-flex items-center gap-1">
         <Calendar class="size-3" />
-        {{ new Date(createdAt).toLocaleDateString() }}
+        {{ formatDate(createdAt) }}
       </span>
       <span v-if="score != null" class="inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset bg-surface-50 text-surface-600 ring-surface-200 dark:bg-surface-800/60 dark:text-surface-300 dark:ring-surface-700">
         {{ score }}pts

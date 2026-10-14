@@ -122,7 +122,7 @@ async function handleEndRole(roleId: string) {
 }
 
 function formatDate(value: string | null): string {
-  return value ? new Date(value).toLocaleDateString() : '—'
+  return formatDate(value)
 }
 </script>
 

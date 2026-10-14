@@ -402,7 +402,7 @@ const responsesCount = computed(() => application.value?.responses?.length ?? 0)
                   {{ application.status }}
                 </span>
                 <span class="text-sm text-surface-400">
-                  Applied {{ new Date(application.createdAt).toLocaleDateString() }}
+                  Applied {{ formatDate(application.createdAt) }}
                 </span>
               </div>
 
@@ -478,7 +478,7 @@ const responsesCount = computed(() => application.value?.responses?.length ?? 0)
                     Applied
                   </dt>
                   <dd class="text-surface-800 dark:text-surface-200 font-medium">
-                    {{ new Date(application.createdAt).toLocaleDateString() }}
+                    {{ formatDate(application.createdAt) }}
                   </dd>
                 </div>
                 <div>
@@ -487,7 +487,7 @@ const responsesCount = computed(() => application.value?.responses?.length ?? 0)
                     Updated
                   </dt>
                   <dd class="text-surface-800 dark:text-surface-200 font-medium">
-                    {{ new Date(application.updatedAt).toLocaleDateString() }}
+                    {{ formatDate(application.updatedAt) }}
                   </dd>
                 </div>
               </dl>
@@ -696,7 +696,7 @@ const responsesCount = computed(() => application.value?.responses?.length ?? 0)
                       </p>
                       <span class="text-xs text-surface-400">
                         {{ documentTypeLabels[doc.type] ?? doc.type }}
-                        · {{ new Date(doc.createdAt).toLocaleDateString() }}
+                        · {{ formatDate(doc.createdAt) }}
                         <template v-if="doc.mimeType === 'application/pdf'"> · <span class="text-brand-500 dark:text-brand-400">Click to preview</span></template>
                       </span>
                     </div>

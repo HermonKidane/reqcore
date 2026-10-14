@@ -224,7 +224,7 @@ async function handleDelete(id: string) {
           <div class="flex items-center gap-3 text-xs text-surface-400">
             <span v-if="c.website">{{ c.website }}</span>
             <span>{{ c.activeContactCount }} active contact{{ c.activeContactCount === 1 ? '' : 's' }}</span>
-            <span>Added {{ new Date(c.createdAt).toLocaleDateString() }}</span>
+            <span>Added {{ formatDate(c.createdAt) }}</span>
           </div>
         </NuxtLink>
         <button

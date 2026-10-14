@@ -198,8 +198,8 @@ async function handleDelete() {
                 </p>
               </div>
               <span class="text-xs text-surface-400 shrink-0">
-                <template v-if="c.active">since {{ new Date(c.startedAt).toLocaleDateString() }}</template>
-                <template v-else>{{ new Date(c.startedAt).toLocaleDateString() }} → {{ c.endedAt ? new Date(c.endedAt).toLocaleDateString() : '—' }}</template>
+                <template v-if="c.active">since {{ formatDate(c.startedAt) }}</template>
+                <template v-else>{{ formatDate(c.startedAt) }} → {{ formatDate(c.endedAt) }}</template>
               </span>
             </NuxtLink>
           </div>

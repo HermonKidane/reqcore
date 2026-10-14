@@ -133,7 +133,7 @@ async function handleRevoke() {
 // ─────────────────────────────────────────────
 function formatDate(value: string | null): string {
   if (!value) return 'Never'
-  return new Date(value).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+  return formatDate(value, 'medium')
 }
 </script>
 

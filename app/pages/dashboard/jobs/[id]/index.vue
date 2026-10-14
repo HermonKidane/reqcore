@@ -278,7 +278,7 @@ function timeAgo(date: string | Date) {
   if (hrs < 24) return `${hrs}h ago`
   const days = Math.floor(hrs / 24)
   if (days < 30) return `${days}d ago`
-  return new Date(date).toLocaleDateString()
+  return formatDate(date)
 }
 
 function scoreClass(score: number) {
@@ -1048,13 +1048,13 @@ function closeDocPreview() {
                     <div>
                       <dt class="text-xs font-medium text-surface-400 dark:text-surface-500 mb-1">Applied</dt>
                       <dd class="text-surface-800 dark:text-surface-200 font-medium">
-                        {{ new Date(currentSummary.createdAt).toLocaleDateString() }}
+                        {{ formatDate(currentSummary.createdAt) }}
                       </dd>
                     </div>
                     <div>
                       <dt class="text-xs font-medium text-surface-400 dark:text-surface-500 mb-1">Updated</dt>
                       <dd class="text-surface-800 dark:text-surface-200 font-medium">
-                        {{ new Date(currentSummary.updatedAt).toLocaleDateString() }}
+                        {{ formatDate(currentSummary.updatedAt) }}
                       </dd>
                     </div>
                   </dl>
@@ -1106,7 +1106,7 @@ function closeDocPreview() {
                           {{ doc.originalFilename }}
                         </p>
                         <p class="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
-                          {{ formatDocumentType(doc.type) }} · {{ new Date(doc.createdAt).toLocaleDateString() }}
+                          {{ formatDocumentType(doc.type) }} · {{ formatDate(doc.createdAt) }}
                         </p>
                       </div>
                     </div>

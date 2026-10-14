@@ -57,7 +57,7 @@ const phases = computed(() => {
 })
 
 function formatDate(value: string | null): string {
-  return value ? new Date(value).toLocaleDateString() : ''
+  return value ? formatDate(value) : ''
 }
 
 // ─────────────────────────────────────────────

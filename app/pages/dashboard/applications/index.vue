@@ -171,7 +171,7 @@ function timeAgo(date: string | Date) {
   if (hrs < 24) return `${hrs}h ago`
   const days = Math.floor(hrs / 24)
   if (days < 30) return `${days}d ago`
-  return new Date(date).toLocaleDateString()
+  return formatDate(date)
 }
 
 function candidateInitials(first: string, last: string) {

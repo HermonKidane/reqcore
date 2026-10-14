@@ -111,7 +111,7 @@ function relativeTime(iso: string): string {
   if (minutes < 60) return `${minutes}m ago`
   const hours = Math.round(minutes / 60)
   if (hours < 24) return `${hours}h ago`
-  return new Date(iso).toLocaleDateString()
+  return formatDate(iso)
 }
 
 /** Pretty-print output: parsed JSON first (design §6). */
