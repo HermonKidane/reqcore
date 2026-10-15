@@ -22,13 +22,13 @@ curl -s http://127.0.0.1:3100 | head -c 200
 ```
 
 ## Rollback
-1. `docker compose -p reqcore -f docker-compose.yml stop app`
+1. `docker compose -f docker-compose.yml -f docker-compose.prod.yml stop app`
 2. `gunzip -c ~/backups/reqcore/db-<latest>.sql.gz | docker exec -i reqcore_db psql -U $DB_USER -d $DB_NAME`
-3. `docker compose -p reqcore -f docker-compose.yml start app`
-4. Image tagging: `docker tag reqcore_app:latest reqcore_app:live && docker tag reqcore_app:latest reqcore_app:rollback-<YYYY-MM-DD>`
+3. `docker compose -f docker-compose.yml -f docker-compose.prod.yml start app`
+4. Image tagging (image name is `reqcore-app`): before a prod build run `docker tag reqcore-app:latest reqcore-app:rollback-<YYYYMMDD>`; to roll the code back, `docker tag reqcore-app:rollback-<YYYYMMDD> reqcore-app:latest` then `up -d` (no `--build`)
 
 ## Key Paths
-- Prod: `~/apps/reqcore/docker-compose.yml`
+- Prod: `~/apps/reqcore/` — `docker-compose.yml` + `docker-compose.prod.yml` (loopback port, TRUSTED_PROXY_IP, pinned subnet, public OAuth client IDs; secrets in `.env`). Deploy: `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build` (run both backup scripts first)
 - Sandbox: `~/apps/reqcore-sandbox/` (+ `docker-compose.sandbox.yml`)
 - Backups: `~/backups/reqcore/`
-- Migrations: `drizzle/migrations/` + `drizzle.config.ts`
+- Migrations: `server/database/migrations/` + `drizzle.config.ts` (applied automatically at app boot by `server/plugins/migrations.ts`; `0011` also needs `docker compose … exec -T app npm run db:backfill-emails` once, idempotent)
