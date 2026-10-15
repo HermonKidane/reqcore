@@ -1,0 +1,36 @@
+# Production override — ats.myrecruiter.uk on VM1 (~/apps/reqcore).
+# Deploy: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+# Explicit project name = hardening (same value the directory already derives,
+# so adopting this file recreates nothing by name).
+name: reqcore
+
+services:
+  app:
+    ports: !override
+      # Loopback only: all traffic must come through host nginx (ats.myrecruiter.uk)
+      - "127.0.0.1:3000:3000"
+    environment:
+      # Rate limiter: host nginx (published-port DNAT) arrives from the bridge
+      # gateway. nginx sends X-Real-IP = client; the app trusts it only from here.
+      TRUSTED_PROXY_IP: 172.18.0.1
+      # Social sign-in — client IDs are public identifiers; the secrets live in
+      # .env on the VM, filled from the vault:
+      #   oauth--google--myrecruiter-ats-prod--client-secret
+      #   oauth--microsoft--myrecruiter-prod--client-secret
+      # Google project "Myrecruiter" client "ATS prod"; Entra app "MyRecruiter"
+      # (tenant R2R, same app as sandbox, prod redirect URI + own secret).
+      # A provider's button appears only when BOTH its id and secret are set.
+      MICROSOFT_CLIENT_ID: 681ebe1f-3c1f-4b96-b585-6f5851b36575
+      MICROSOFT_TENANT_ID: common
+      # GOOGLE_CLIENT_ID: set once the "ATS prod" client exists
+  adminer:
+    profiles: ["never"]
+
+# Pinned so the bridge gateway (TRUSTED_PROXY_IP above) can't drift when
+# networks are recreated in a different order. Matches the current network.
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.18.0.0/16
+          gateway: 172.18.0.1
