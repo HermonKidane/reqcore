@@ -22,7 +22,7 @@ services:
       # A provider's button appears only when BOTH its id and secret are set.
       MICROSOFT_CLIENT_ID: 681ebe1f-3c1f-4b96-b585-6f5851b36575
       MICROSOFT_TENANT_ID: common
-      # GOOGLE_CLIENT_ID: set once the "ATS prod" client exists
+      GOOGLE_CLIENT_ID: 633720783646-bfp2hiiaf1qghptdqs18jd3v0tljc1if.apps.googleusercontent.com
   adminer:
     profiles: ["never"]
 
