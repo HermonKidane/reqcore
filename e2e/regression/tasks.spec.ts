@@ -102,7 +102,7 @@ test.describe('Slice 1 — tasks', () => {
 
     await page.goto('/dashboard/tasks')
     await waitForHydration(page)
-    await page.getByTestId('nav-tasks').waitFor()
+    await page.getByRole('heading', { name: 'Tasks' }).waitFor()
     await page.getByTestId('task-add-title').fill(`From the page ${runId}`)
     await page.getByTestId('task-add-submit').click()
     // undated task lands in "No date"

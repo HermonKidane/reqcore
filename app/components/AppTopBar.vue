@@ -4,7 +4,7 @@ import {
   Kanban, FileText, LogOut, Table2,
   Sun, Moon, MessageSquarePlus, Settings,
   ChevronDown, Menu, X, Users, ChevronLeft, Building2,
-  LayoutDashboard,
+  LayoutDashboard, ListTodo,
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -105,6 +105,7 @@ const mainNav = [
   { label: 'Candidates', to: '/dashboard/candidates', icon: Users, exact: false },
   { label: 'Companies', to: '/dashboard/companies', icon: Building2, exact: false },
   { label: 'Applications', to: '/dashboard/applications', icon: FileText, exact: false },
+  { label: 'Tasks', to: '/dashboard/tasks', icon: ListTodo, exact: false },
   { label: 'Settings', to: '/dashboard/settings', icon: Settings, exact: false },
 ]
 
