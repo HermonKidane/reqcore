@@ -252,11 +252,141 @@ const MOCK_STEP20 = {
   },
 }
 
+// ── Session W slice 1: prep / outcome shapes (keyed `stepKey:purpose`) ──
+// Neutral, rule-compliant, populated enough for the e2e "use in step" path.
+// Keep in sync with `shared/recruitment/ai-prompts-slice1.ts`.
+
+const MOCK_STEP1_OUTCOME = {
+  title: 'Client call — [CONFIRM: role title]',
+  summary: 'The client described the vacancy, the pay range and the interview process. Fee and approver were not discussed.',
+  keyTakeaways: [
+    { text: 'Two interview stages, second with the director', quote: 'two stages, the second one with me and the director' },
+    { text: 'Hybrid, three days in the office', quote: 'three days in, two at home' },
+  ],
+  actionTasks: [
+    { text: 'Confirm the fee and who signs the terms', dueDate: null, linkTo: 'client_contact', quote: null },
+    { text: 'Send the client the agreed job-order summary', dueDate: null, linkTo: 'job', quote: 'send me what we agreed' },
+  ],
+  jobOrderGaps: [
+    { field: 'fee_terms', status: 'missing', howToAsk: 'So I can get the paperwork right, what fee and terms do you work to?', quote: null },
+    { field: 'approver', status: 'missing', howToAsk: 'Does anyone else need to approve this before an offer can be made?', quote: null },
+    { field: 'salary_range', status: 'covered', howToAsk: null, quote: 'thirty to thirty-eight base' },
+  ],
+  successProfile: {
+    outcomes: [{ text: 'Billing consistently by month six', quote: 'billing properly by month six' }],
+    complexity: { revenue: null, headcount: '12 in the office', ownership: 'unknown', notes: null },
+    hardParameters: [{ text: 'Must be commutable to the office three days a week', quote: 'three days in' }],
+  },
+  claims: [
+    { item: 'Base 30–38k', quote: 'thirty to thirty-eight base', status: 'client_said' },
+    { item: 'Car allowance', quote: null, status: 'unverified' },
+  ],
+  suggestedTag: 'chase_qualify',
+  suggestedTagReason: 'Fee terms and approver are not on file.',
+  suggestedReminder: { when: null, why: 'Chase fee terms before sourcing starts' },
+  flags: [],
+}
+
+const MOCK_STEP5_PREP = {
+  ...MOCK_STEP5,
+  hookLine: { line: '[CONFIRM: a genuine, work-related reason to call this person]', basis: null },
+  deskQualification: {
+    fitToBrief: 'Unknown — the record holds a title and company only.',
+    mpaObservable: [
+      { trait: 'performance_track_record', evidence: 'unknown' },
+      { trait: 'desk_matches_brief', evidence: 'unknown' },
+      { trait: 'stability', evidence: 'unknown' },
+    ],
+    tier: null,
+    tierReason: 'Not enough on file to place in a tier.',
+    openQuestions: ['Which desk and sector do they run today?', 'How long have they been in the current role?'],
+  },
+  numberAsk: 'What is the best number to reach you on outside work hours, or shall I give you mine so you can text me when it suits?',
+  slotOffer: ['[CONFIRM: slot 1]', '[CONFIRM: slot 2]'],
+}
+
+const MOCK_STEP5_OUTCOME = {
+  contactOutcome: 'interested',
+  callBackAt: null,
+  referral: null,
+  noticePeriod: { value: 'one month', quote: 'I am on a month' },
+  salaryExpectation: { value: null, quote: null },
+  mobileMentioned: true,
+  secondPitchAt: { value: 'Thursday 6pm', quote: 'Thursday after six works' },
+  doNotContact: false,
+  doNotContactQuote: null,
+  valuesHeard: [{ text: 'Wants a clearer route to a team lead role', quote: 'I want to run a team at some point' }],
+  nextActions: [{ text: 'Book the second call for Thursday 6pm', dueDate: null }],
+  sourceQuote: ['Thursday after six works', 'I am on a month'],
+  flags: ['Mobile number mentioned on the call — type it into the record'],
+}
+
+const MOCK_STEP6_PREP = {
+  confirmList: [
+    { field: 'position', currentValue: '[from record]', ask: 'Is that still your title?' },
+    { field: 'company', currentValue: '[from record]', ask: 'Still at the same firm?' },
+  ],
+  phase1Questions: [
+    { topic: 'current_role', question: 'Tell me about the desk you run today — sector, perm or temp, how the work comes in.' },
+    { topic: 'performance', question: 'How has the last twelve months gone against target, in whatever numbers you use?' },
+    { topic: 'motivation', question: 'What would need to be true about a move for it to be worth your while?' },
+  ],
+  valuesFromStep5: [{ value: 'Route to team lead', quote: 'I want to run a team at some point' }],
+  openItems: ['Notice period not confirmed from contract'],
+}
+
+const MOCK_STEP6_OUTCOME = {
+  currentRole: {
+    desk: { value: 'Finance & accounting, perm', quote: 'I do perm finance roles' },
+    sector: { value: 'Finance', quote: 'finance' },
+    permTemp: { value: 'perm', quote: 'perm' },
+    bdOrInherited: { value: null, quote: null },
+    teamSize: { value: null, quote: null },
+    tools: [],
+  },
+  performance: {
+    billingsAnnual: { value: null, quote: null },
+    billingsMonthly: { value: null, quote: null },
+    basis: 'unknown',
+    target: { value: null, quote: null },
+    attainment: { value: null, quote: null },
+    topAchievement: { value: null, quote: null },
+  },
+  comp: {
+    base: { value: null, quote: null },
+    commission: { value: null, quote: null },
+    bonus: { value: null, quote: null },
+    car: { value: null, quote: null },
+    hybridDays: { value: 'two at home', quote: 'two days at home' },
+    benefits: [],
+  },
+  noticePeriod: { value: 'one month', quote: 'a month' },
+  covenantsMentioned: false,
+  motivations: [{ rank: 1, value: 'Progression to team lead', quote: 'I want to run a team' }],
+  desireToChange: { scale: null, evidence: null },
+  timeline: { value: null, quote: null },
+  otherProcesses: [],
+  rolesSought: ['Senior consultant with a route to team lead'],
+  noGoCompanies: [],
+  dreamCompanies: [],
+  reasonsForLeaving: [],
+  mpa: [{ trait: 'performance_track_record', status: 'unknown', evidence: null }],
+  profileSummary: 'Perm finance recruiter, one month notice, two days at home today; wants a route to running a team. Billings not discussed on this call.',
+  reconciliation: [{ field: 'position', cvValue: '[from record]', callValue: 'perm finance consultant', note: 'Wording differs; confirm the title.' }],
+  flags: ['Billings not covered — ask on the next call'],
+}
+
 /** Deterministic canned output per stepKey (mock mode / e2e). */
 const MOCK_OUTPUTS: Record<string, unknown> = {
   candidate_contact: MOCK_STEP5,
   candidate_debrief: MOCK_STEP11,
   closing_negotiating: MOCK_STEP20,
+  'complete_job_order:outcome': MOCK_STEP1_OUTCOME,
+  'candidate_contact:prep': MOCK_STEP5_PREP,
+  'candidate_contact:outcome': MOCK_STEP5_OUTCOME,
+  'candidate_profile:prep': MOCK_STEP6_PREP,
+  'candidate_profile:outcome': MOCK_STEP6_OUTCOME,
+  'candidate_debrief:outcome': MOCK_STEP11,
 }
 
 /**

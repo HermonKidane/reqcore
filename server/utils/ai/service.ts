@@ -157,7 +157,18 @@ export function renderTemplate(template: string, context: Record<string, unknown
       cur = (cur as Record<string, unknown>)[part]
       if (cur === undefined) return match
     }
-    return cur === null || cur === undefined ? '' : String(cur)
+    if (cur === null || cur === undefined) return ''
+    // Slice 1: object leaves (e.g. {{candidateProfile}}) render as compact
+    // JSON inside the data fence — still a single pass, never re-scanned.
+    if (typeof cur === 'object') {
+      try {
+        return JSON.stringify(cur, null, 1)
+      }
+      catch {
+        return '[unrenderable]'
+      }
+    }
+    return String(cur)
   })
 }
 

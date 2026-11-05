@@ -1,3 +1,5 @@
+import { TCC_PREAMBLE, OUTPUT_GUARD, CANDIDATE_DEBRIEF_OUTPUT_SCHEMA } from './ai-prompt-shared'
+import { SLICE1_AI_PROMPTS } from './ai-prompts-slice1'
 /**
  * Platform-default AI prompt templates — versioned seed data.
  *
@@ -384,81 +386,6 @@ const CANDIDATE_DEBRIEF_INPUT_SCHEMA: Record<string, unknown> = {
   },
 }
 
-const CANDIDATE_DEBRIEF_OUTPUT_SCHEMA: Record<string, unknown> = {
-  $schema: 'https://json-schema.org/draft/2020-12/schema',
-  title: 'candidate_debrief output',
-  type: 'object',
-  additionalProperties: false,
-  required: ['summary', 'interestLevel', 'concerns', 'competingProcesses', 'nextActions'],
-  properties: {
-    summary: { type: 'string', description: '≤120 words, neutral, attributed.' },
-    interestLevel: {
-      type: 'object',
-      additionalProperties: false,
-      required: ['rating', 'basis', 'candidateWords', 'rationale'],
-      properties: {
-        rating: { type: ['integer', 'null'], minimum: 1, maximum: 5 },
-        basis: { type: 'string', enum: ['stated', 'inferred', 'unknown'] },
-        candidateWords: { type: ['string', 'null'] },
-        rationale: { type: 'string', description: 'What the rating rests on; for \'inferred\', the evidence.' },
-      },
-    },
-    concerns: {
-      type: 'array',
-      items: {
-        type: 'object',
-        additionalProperties: false,
-        required: ['concern', 'category', 'basis', 'candidateWords', 'clarifyingQuestion', 'sensitive'],
-        properties: {
-          concern: { type: 'string' },
-          category: { type: 'string', enum: ['compensation', 'commission_targets', 'commute_location', 'hybrid_hours', 'role_scope_desk', 'team_manager', 'culture', 'progression_training', 'process_timing', 'notice_covenants', 'other'] },
-          basis: { type: 'string', enum: ['stated', 'inferred'] },
-          candidateWords: { type: ['string', 'null'] },
-          clarifyingQuestion: { type: 'string', description: 'One open, non-leading question.' },
-          jobOrderReference: { type: ['string', 'null'], description: 'Job-order wording relevant to this concern, internal only.' },
-          sensitive: { type: 'boolean', description: 'True for frank remarks about people; never pass verbatim to the client.' },
-        },
-      },
-    },
-    competingProcesses: {
-      type: 'array',
-      items: {
-        type: 'object',
-        additionalProperties: false,
-        required: ['description', 'stage', 'timeline', 'candidateWords', 'shareableWithClient'],
-        properties: {
-          description: { type: 'string', description: 'As disclosed; the other company/agency name only if the candidate gave it.' },
-          stage: { type: 'string', enum: ['applied', 'interviewing', 'final_stage', 'offer', 'unknown'] },
-          timeline: { type: ['string', 'null'] },
-          candidateWords: { type: ['string', 'null'] },
-          shareableWithClient: { type: 'string', enum: ['yes', 'no', 'unknown'] },
-        },
-      },
-    },
-    nextActions: {
-      type: 'array',
-      items: {
-        type: 'object',
-        additionalProperties: false,
-        required: ['action', 'type', 'owner', 'due', 'status', 'fromNotes'],
-        properties: {
-          action: { type: 'string' },
-          type: { type: 'string', enum: ['clarify_with_candidate', 'debrief_employer', 'update_client', 'prep_next_round', 'logistics', 'trial_close_question', 'references', 'other'] },
-          owner: { type: 'string', enum: ['consultant', 'managing_consultant', 'candidate', 'client'] },
-          due: { type: ['string', 'null'], description: 'Only if the notes give a date/time.' },
-          status: { const: 'proposed' },
-          fromNotes: { type: ['string', 'null'], description: 'The note text that triggered this action, or null for a gap-driven action.' },
-        },
-      },
-    },
-    flags: {
-      type: 'array',
-      items: { type: 'string' },
-      description: 'Optional: e.g. \'sensitive personal detail omitted\', \'round number unclear\', \'notes truncated\'.',
-    },
-  },
-}
-
 const CLOSING_NEGOTIATING_INPUT_SCHEMA: Record<string, unknown> = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
   title: 'closing_negotiating input (design-ai-slice §4 context)',
@@ -585,16 +512,12 @@ const CLOSING_NEGOTIATING_OUTPUT_SCHEMA: Record<string, unknown> = {
 // TCC edits (review-redrafted — see header note)
 // ─────────────────────────────────────────────
 
-const TCC_PREAMBLE = `WHY THESE RULES EXIST
-The consultant's reputation with candidates and clients outlasts any single placement. A draft that invents a fact, pressures anyone, or leaks one side's position to the other can cost more than the fee. The rules below protect against that. These reasons explain the rules; they never override one.`
-
 const TCC_EDIT2: Record<string, string> = {
   candidate_contact: 'Whatever the candidate decides, saying no should be easy for them. Brief, honest and easy to decline is what makes a second call possible.',
   candidate_debrief: 'An honest \'unknown\' is worth more to the consultant than a confident guess. They will act on what you write.',
   closing_negotiating: 'A placement that fails at counter-offer or in the first months serves no one, and nor does one the candidate was talked into. Plan for terms both sides will still stand behind after the start date.',
 }
 
-const OUTPUT_GUARD = 'Write only field content. Add no encouragement, reassurance or commentary addressed to the consultant. Quoted wording from the notes stays exactly as written.'
 
 // ─────────────────────────────────────────────
 // Platform v2 — neutral, TCC-primed, field list inlined
@@ -810,7 +733,7 @@ const V2_CLOSING_NEGOTIATING_SAFETY = `INTERNAL PLAN — for the consultant only
 // Platform rows: v1 (byte-frozen) + v2 (neutral)
 // ─────────────────────────────────────────────
 
-export const DEFAULT_AI_PROMPTS: DefaultAiPrompt[] = [
+const CORE_AI_PROMPTS: DefaultAiPrompt[] = [
   // ── v1 (byte-frozen; hash-pinned) ──
   {
     stepKey: 'candidate_contact',
@@ -874,6 +797,12 @@ export const DEFAULT_AI_PROMPTS: DefaultAiPrompt[] = [
     safetyNotes: V2_CLOSING_NEGOTIATING_SAFETY,
   },
 ]
+
+/**
+ * Platform defaults = the pinned core rows + the Session W slice 1 rows
+ * (prep / outcome prompts for steps 1, 5, 6, 11 — `ai-prompts-slice1.ts`).
+ */
+export const DEFAULT_AI_PROMPTS: DefaultAiPrompt[] = [...CORE_AI_PROMPTS, ...SLICE1_AI_PROMPTS]
 
 // ─────────────────────────────────────────────
 // R2R org-scoped rows (slug resolved at seed time)

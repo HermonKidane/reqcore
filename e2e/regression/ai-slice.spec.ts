@@ -356,7 +356,7 @@ test.describe('AI vertical slice (mock provider)', () => {
       'closing_negotiating.userPromptTemplate': 'e6ba1c0a3db34eb5',
       'closing_negotiating.safetyNotes': '4f33b2c57b596141',
     }
-    for (const p of DEFAULT_AI_PROMPTS.filter(p => p.version === 1)) {
+    for (const p of DEFAULT_AI_PROMPTS.filter(p => p.version === 1 && (p.purpose ?? 'assist') === 'assist')) {
       for (const f of ['systemPrompt', 'userPromptTemplate', 'safetyNotes'] as const) {
         const h = createHash('sha256').update(p[f]).digest('hex').slice(0, 16)
         expect(h, `${p.stepKey}.${f} changed — v1 is byte-frozen; add a v3 instead`).toBe(pinned[`${p.stepKey}.${f}`])
@@ -375,7 +375,7 @@ test.describe('AI vertical slice (mock provider)', () => {
       'r2r:candidate_debrief': '2c753d6d208288c8',
       'r2r:closing_negotiating': '81a97e873ee05e75',
     }
-    for (const p of DEFAULT_AI_PROMPTS.filter(p => p.version === 2)) {
+    for (const p of DEFAULT_AI_PROMPTS.filter(p => p.version === 2 && (p.purpose ?? 'assist') === 'assist')) {
       const h = createHash('sha256').update(p.systemPrompt).digest('hex').slice(0, 16)
       expect(h, `platform v2 ${p.stepKey} changed`).toBe(v2Pinned[`platform:${p.stepKey}`])
     }
@@ -386,10 +386,20 @@ test.describe('AI vertical slice (mock provider)', () => {
 
     // Platform v2: neutral — no R2R-specific vocabulary anywhere
     const R2R = /Recruit2Recruit|\bR2R\b|rec-to-rec/i
-    for (const p of DEFAULT_AI_PROMPTS.filter(p => p.version === 2)) {
+    for (const p of DEFAULT_AI_PROMPTS.filter(p => p.version === 2 && (p.purpose ?? 'assist') === 'assist')) {
       expect(R2R.test(p.systemPrompt), `${p.stepKey} v2 systemPrompt`).toBe(false)
       expect(R2R.test(p.userPromptTemplate), `${p.stepKey} v2 userPromptTemplate`).toBe(false)
       expect(R2R.test(p.safetyNotes), `${p.stepKey} v2 safetyNotes`).toBe(false)
+    }
+
+    // Session W slice 1 (prep / outcome prompts): platform defaults, so neutral too,
+    // and every row carries an explicit purpose.
+    for (const p of DEFAULT_AI_PROMPTS.filter(p => (p.purpose ?? 'assist') !== 'assist')) {
+      expect(['prep', 'outcome']).toContain(p.purpose)
+      expect(R2R.test(p.systemPrompt), `${p.stepKey}:${p.purpose} systemPrompt`).toBe(false)
+      expect(R2R.test(p.userPromptTemplate), `${p.stepKey}:${p.purpose} userPromptTemplate`).toBe(false)
+      expect(R2R.test(p.safetyNotes), `${p.stepKey}:${p.purpose} safetyNotes`).toBe(false)
+      expect(p.systemPrompt).toContain('<<< >>>')
     }
 
     // R2R v2 = v1 + TCC edits + softened close + OUTPUT FIELDS
