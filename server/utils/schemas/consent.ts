@@ -10,7 +10,8 @@ export const createConsentSchema = z.object({
   scope: z.enum(['all_clients', 'named_clients', 'role_types']),
   clientCompanyIds: z.array(z.string().min(1).max(64)).max(50).default([]),
   roleTypes: z.array(z.string().trim().min(1).max(60)).max(10).default([]),
-  givenAt: z.coerce.date().max(new Date(Date.now() + 5 * 60_000), 'Consent cannot be dated in the future'),
+  // Checked per request: a bound built at module load goes stale minutes after boot.
+  givenAt: z.coerce.date().refine(d => d.getTime() <= Date.now() + 5 * 60_000, 'Consent cannot be dated in the future'),
   channel: z.enum(['call', 'email', 'whatsapp', 'in_person', 'other']),
   evidenceQuote: z.string().trim().min(1, 'Record the candidate\'s words').max(1000),
 }).strict().superRefine((v, ctx) => {

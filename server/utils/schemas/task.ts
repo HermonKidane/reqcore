@@ -6,9 +6,10 @@ import { z } from 'zod'
  */
 const blankToUndefined = (v: unknown) => (typeof v === 'string' && v.trim() === '' ? undefined : v)
 const FIVE_YEARS = 5 * 366 * 24 * 3600 * 1000
+// Bounds checked per request (a Date built at module load would go stale)
 const dueAtRule = z.coerce.date()
-  .min(new Date(Date.now() - FIVE_YEARS), 'Due date is too far in the past')
-  .max(new Date(Date.now() + FIVE_YEARS), 'Due date is too far ahead')
+  .refine(d => d.getTime() >= Date.now() - FIVE_YEARS, 'Due date is too far in the past')
+  .refine(d => d.getTime() <= Date.now() + FIVE_YEARS, 'Due date is too far ahead')
 
 const linkId = z.preprocess(blankToUndefined, z.string().min(1).max(64).optional())
 

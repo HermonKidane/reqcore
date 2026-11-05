@@ -24,7 +24,7 @@ export const createCallTranscriptSchema = z.object({
   jobId: z.preprocess(blankToUndefined, z.string().min(1).max(64).optional()),
   applicationId: z.preprocess(blankToUndefined, z.string().min(1).max(64).optional()),
   stepInstanceId: z.preprocess(blankToUndefined, z.string().min(1).max(64).optional()),
-  recordedAt: z.preprocess(blankToUndefined, z.coerce.date().max(new Date(Date.now() + 5 * 60_000), 'Recorded time cannot be in the future').optional()),
+  recordedAt: z.preprocess(blankToUndefined, z.coerce.date().refine(d => d.getTime() <= Date.now() + 5 * 60_000, 'Recorded time cannot be in the future').optional()),
   durationSeconds: z.preprocess(blankToUndefined, z.coerce.number().int().min(0).max(24 * 3600).optional()),
 }).strict()
 
