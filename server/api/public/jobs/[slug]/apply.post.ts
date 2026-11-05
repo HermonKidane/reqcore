@@ -3,6 +3,7 @@ import { fileTypeFromBuffer } from 'file-type'
 import { job, candidate, application, jobQuestion, questionResponse, document, organization } from '../../../../database/schema'
 import { publicApplicationSchema, publicJobSlugSchema } from '../../../../utils/schemas/publicApplication'
 import { createPreviewReadOnlyError } from '../../../../utils/previewReadOnly'
+import { art14Defaults } from '../../../../utils/privacyNotice'
 import {
   ALLOWED_MIME_TYPES,
   MAX_FILE_SIZE,
@@ -310,6 +311,9 @@ export default defineEventHandler(async (event) => {
           lastName,
           email: null,
           phone,
+          // Slice 1: collection date for the privacy-notice tracker (the applicant
+          // gave the data themselves, so the notice is due at collection)
+          ...art14Defaults(),
         }).returning({ id: candidate.id })
 
         if (!created) {
