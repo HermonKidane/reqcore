@@ -376,8 +376,8 @@ const MOCK_STEP6_OUTCOME = {
   flags: ['Billings not covered — ask on the next call'],
 }
 
-/** Deterministic canned output per stepKey (mock mode / e2e). */
-const MOCK_OUTPUTS: Record<string, unknown> = {
+/** Deterministic canned output per stepKey (mock mode / e2e). Exported so e2e can test the use-in-step mapping in-process. */
+export const MOCK_OUTPUTS: Record<string, unknown> = {
   candidate_contact: MOCK_STEP5,
   candidate_debrief: MOCK_STEP11,
   closing_negotiating: MOCK_STEP20,

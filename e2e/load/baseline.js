@@ -124,8 +124,11 @@ export default function (data) {
   const r3 = http.get(`${BASE}/api/candidates?search=candidate%2000&limit=20`, Object.assign({ tags: { name: 'GET /api/candidates?search' } }, params))
   const r4 = http.get(`${BASE}/api/jobs/${job}`, Object.assign({ tags: { name: 'GET /api/jobs/:id' } }, params))
   const r5 = http.get(`${BASE}/dashboard`, Object.assign({ tags: { name: 'GET /dashboard (SSR)' } }, params))
+  // Slice 1: the to-do list read (dashboard card + Tasks page hit it on every load)
+  const r6 = http.get(`${BASE}/api/tasks?scope=mine&status=open&due=any&limit=5`, Object.assign({ tags: { name: 'GET /api/tasks' } }, params))
 
   check(r1, { 'jobs 200': (r) => r.status === 200 })
+  check(r6, { 'tasks 200': (r) => r.status === 200 })
   check(r2, { 'candidates 200': (r) => r.status === 200 })
   check(r3, { 'search 200': (r) => r.status === 200 })
   check(r4, { 'job 200': (r) => r.status === 200 })
