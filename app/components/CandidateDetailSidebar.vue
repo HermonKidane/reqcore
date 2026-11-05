@@ -434,6 +434,7 @@ const responsesCount = computed(() => application.value?.responses?.length ?? 0)
                   <dt class="text-xs font-medium text-surface-400 dark:text-surface-500 mb-1">Name</dt>
                   <dd class="text-surface-800 dark:text-surface-200 font-medium">
                     {{ application.candidate.firstName }} {{ application.candidate.lastName }}
+                    <DoNotContactBadge :flagged="(application.candidate as any).doNotContact" compact class="ml-1" />
                   </dd>
                 </div>
                 <div>

@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
     where: and(eq(application.id, id), eq(application.organizationId, orgId)),
     with: {
       candidate: {
-        columns: { id: true, firstName: true, lastName: true, email: true, phone: true },
+        columns: { id: true, firstName: true, lastName: true, email: true, phone: true, doNotContact: true },
         with: {
           documents: {
             columns: {

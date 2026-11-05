@@ -150,6 +150,7 @@ const { candidates, total, fetchStatus, error, refresh } = useCandidates({
             <h3 class="text-sm font-semibold text-surface-900 dark:text-surface-100 group-hover:text-brand-600 transition-colors truncate">
               {{ c.firstName }} {{ c.lastName }}
             </h3>
+            <DoNotContactBadge :flagged="(c as any).doNotContact" compact />
             <span
               v-if="c.applicationCount > 0"
               class="inline-flex items-center rounded-full bg-brand-50 dark:bg-brand-950 px-2 py-0.5 text-xs font-medium text-brand-700 dark:text-brand-400 shrink-0"

@@ -26,7 +26,7 @@ useSeoMeta({
 // Tabs
 // ─────────────────────────────────────────────
 
-const activeTab = ref<'applications' | 'roles' | 'documents' | 'experiences' | 'education'>('applications')
+const activeTab = ref<'applications' | 'roles' | 'documents' | 'experiences' | 'education' | 'consent'>('applications')
 
 // ─────────────────────────────────────────────
 // Photo avatar + headline (position · company / location / LinkedIn)
@@ -425,6 +425,7 @@ function formatFileSize(bytes: number | null | undefined): string {
               <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-50 truncate mb-1">
                 {{ candidate.firstName }} {{ candidate.lastName }}
               </h1>
+              <DoNotContactBadge :flagged="(candidate as any).doNotContact" class="mb-1" />
               <!-- headline (captured) or position · company / location — only the parts that exist -->
               <p v-if="headlineLine" class="text-sm text-surface-600 dark:text-surface-300 truncate">
                 {{ headlineLine }}
@@ -624,6 +625,16 @@ function formatFileSize(bytes: number | null | undefined): string {
             >
               Education ({{ (candidate as any).education?.length ?? 0 }})
             </button>
+            <button
+              class="cursor-pointer shrink-0 whitespace-nowrap min-h-11 px-3 py-2 text-sm font-medium transition-colors border-b-2 -mb-px"
+              :class="activeTab === 'consent'
+                ? 'border-brand-600 text-brand-600'
+                : 'border-transparent text-surface-500 hover:text-surface-700 hover:border-surface-300 dark:hover:text-surface-300'"
+              data-testid="tab-consent"
+              @click="activeTab = 'consent'"
+            >
+              Consent & contact<template v-if="(candidate as any).doNotContact"> · ⛔</template>
+            </button>
           </div>
         </div>
 
@@ -721,6 +732,11 @@ function formatFileSize(bytes: number | null | undefined): string {
         <!-- Roles tab -->
         <div v-if="activeTab === 'roles'">
           <PersonRolesPanel :candidate-id="candidateId" @changed="refresh()" />
+        </div>
+
+        <!-- Consent & contact tab (slice 1) -->
+        <div v-if="activeTab === 'consent'">
+          <ConsentPanel :candidate-id="candidateId" :candidate="(candidate as any)" @changed="refresh()" />
         </div>
 
         <!-- Applications tab -->

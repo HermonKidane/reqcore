@@ -30,6 +30,11 @@ export function useCandidate(id: MaybeRefOrGetter<string>) {
     location: string | null
     headline: string | null
     summary: string | null
+    doNotContact: boolean
+    doNotContactSource: 'call' | 'email' | 'whatsapp' | 'sms' | 'linkedin' | 'other' | null
+    doNotContactNote: string | null
+    collectedAt: string | null
+    privacyNoticeSentAt: string | null
   }>) {
     try {
       const updated = await $fetch(`/api/candidates/${candidateId.value}`, {
