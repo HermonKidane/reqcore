@@ -12,8 +12,10 @@ import {
   clientCompany,
 } from '../../database/schema'
 import { DEFAULT_AI_PROMPTS } from '~~/shared/recruitment/ai-prompts'
-import { sanitizeOpaqueString } from './sanitizer'
+import { sanitizeOpaqueString, sanitizeTranscript } from './sanitizer'
 import { selectProvider, type AiRuntimeConfig } from './provider'
+import type { AiPurpose } from '../schemas/recruitment'
+import { candidateExperience, candidateSkill } from '../../database/schema'
 
 /**
  * AI vertical-slice service (design-ai-slice.md §3–§5, locked).
@@ -57,6 +59,7 @@ export async function ensureDefaultAiPrompts(): Promise<void> {
     .values(DEFAULT_AI_PROMPTS.map(p => ({
       organizationId: null,
       stepKey: p.stepKey,
+      purpose: p.purpose ?? 'assist',
       name: p.name,
       version: p.version,
       systemPrompt: p.systemPrompt,
@@ -88,6 +91,7 @@ type StepTemplateRow = typeof recruitmentStepTemplate.$inferSelect
 export async function resolvePrompt(
   orgId: string,
   stepTemplate: Pick<StepTemplateRow, 'key' | 'promptTemplateId'>,
+  purpose: AiPurpose = 'assist',
 ): Promise<typeof aiPromptTemplate.$inferSelect | null> {
   await ensureDefaultAiPrompts()
 
@@ -95,11 +99,14 @@ export async function resolvePrompt(
     const linked = await db.query.aiPromptTemplate.findFirst({
       where: eq(aiPromptTemplate.id, stepTemplate.promptTemplateId),
     })
+    // The explicit link only ever covers the step's 'assist' prompt; prep /
+    // outcome prompts resolve by (stepKey, purpose) below.
     const linkedUsable = linked
       && linked.active
+      && linked.purpose === purpose
       && (linked.organizationId === null || linked.organizationId === orgId)
     if (linkedUsable) return linked
-    // Explicitly linked but INACTIVE or cross-org: not usable — fall through.
+    // Explicitly linked but INACTIVE, other purpose or cross-org: fall through.
   }
 
   const [orgScoped, platform] = await Promise.all([
@@ -107,6 +114,7 @@ export async function resolvePrompt(
       where: and(
         eq(aiPromptTemplate.organizationId, orgId),
         eq(aiPromptTemplate.stepKey, stepTemplate.key),
+        eq(aiPromptTemplate.purpose, purpose),
         eq(aiPromptTemplate.active, true),
       ),
       orderBy: desc(aiPromptTemplate.version),
@@ -115,6 +123,7 @@ export async function resolvePrompt(
       where: and(
         isNull(aiPromptTemplate.organizationId),
         eq(aiPromptTemplate.stepKey, stepTemplate.key),
+        eq(aiPromptTemplate.purpose, purpose),
         eq(aiPromptTemplate.active, true),
       ),
       orderBy: desc(aiPromptTemplate.version),
@@ -160,18 +169,64 @@ export interface AiInputContext {
   stepKey: string
   stepNumber: number
   stepName: string
+  /** Slice 1: which prompt purpose is running */
+  purpose: AiPurpose
+  /** Interview round for debrief prompts (1 when not given) */
+  round: number
   job: { title: string | null, location: string | null }
   clientCompany: { name: string } | null
-  candidate: { name: string | null }
+  candidate: { name: string | null, doNotContact: boolean }
   application: { status: string | null }
   stepCompletionDataText: string | null
   jobOrderContext: { step1: string | null, step2: string | null }
+  /** Sanitised transcript text (purpose 'outcome' only; contacts redacted) */
+  transcript: string | null
+  /**
+   * Step 6 only: what the ATS already holds, so the model can reconcile the
+   * call against the CV. Names of other people are not included (work history
+   * rows carry title/company/dates only).
+   */
+  candidateProfile: {
+    headline: string | null
+    position: string | null
+    company: string | null
+    location: string | null
+    summary: string | null
+    experiences: Array<{ title: string | null, company: string | null, startText: string | null, endText: string | null, isCurrent: boolean }>
+    skills: string[]
+  } | null
   generatedAt: string
 }
 
 type InstanceWithTemplate = typeof recruitmentStepInstance.$inferSelect & {
   stepTemplate: Pick<StepTemplateRow, 'stepNumber' | 'key' | 'name' | 'promptTemplateId'>
   workflow: { jobId: string, applicationId: string | null }
+}
+
+export interface AiRunExtras {
+  purpose?: AiPurpose
+  round?: number
+  /** Raw transcript text (sanitised here, never upstream) + its row id */
+  transcript?: { id: string, text: string } | null
+}
+
+/** The candidate behind a workflow (org-scoped), with the flags AI needs. */
+export async function loadWorkflowCandidate(
+  orgId: string,
+  applicationId: string | null,
+): Promise<{ id: string, name: string, doNotContact: boolean } | null> {
+  if (!applicationId) return null
+  const appRow = await db.query.application.findFirst({
+    where: and(eq(application.id, applicationId), eq(application.organizationId, orgId)),
+    columns: { candidateId: true },
+  })
+  if (!appRow) return null
+  const person = await db.query.candidate.findFirst({
+    where: and(eq(candidate.id, appRow.candidateId), eq(candidate.organizationId, orgId)),
+    columns: { id: true, firstName: true, lastName: true, doNotContact: true },
+  })
+  if (!person) return null
+  return { id: person.id, name: `${person.firstName} ${person.lastName}`.trim(), doNotContact: person.doNotContact }
 }
 
 /**
@@ -185,9 +240,11 @@ type InstanceWithTemplate = typeof recruitmentStepInstance.$inferSelect & {
 export async function buildInputContext(
   orgId: string,
   instance: InstanceWithTemplate,
+  extras: AiRunExtras = {},
 ): Promise<AiInputContext> {
   const { workflow } = instance
   const stepTemplate = instance.stepTemplate
+  const purpose: AiPurpose = extras.purpose ?? 'assist'
 
   // Job row via the workflow (org-scoped)
   const jobRow = await db.query.job.findFirst({
@@ -199,6 +256,8 @@ export async function buildInputContext(
   // notes are EXCLUDED (unclassified free text; PII policy, §4).
   let applicationStatus: string | null = null
   let candidateName: string | null = null
+  let doNotContact = false
+  let candidateProfile: AiInputContext['candidateProfile'] = null
   if (workflow.applicationId) {
     const appRow = await db.query.application.findFirst({
       where: and(eq(application.id, workflow.applicationId), eq(application.organizationId, orgId)),
@@ -208,9 +267,46 @@ export async function buildInputContext(
       applicationStatus = appRow.status
       const person = await db.query.candidate.findFirst({
         where: and(eq(candidate.id, appRow.candidateId), eq(candidate.organizationId, orgId)),
-        columns: { firstName: true, lastName: true },
+        columns: {
+          id: true, firstName: true, lastName: true, doNotContact: true,
+          headline: true, position: true, company: true, location: true, summary: true,
+        },
       })
-      if (person) candidateName = `${person.firstName} ${person.lastName}`.trim()
+      if (person) {
+        candidateName = `${person.firstName} ${person.lastName}`.trim()
+        doNotContact = person.doNotContact
+        // Step 6 (candidate_profile): the CV side of the CV ↔ call reconciliation.
+        if (stepTemplate.key === 'candidate_profile') {
+          const [experiences, skills] = await Promise.all([
+            db.query.candidateExperience.findMany({
+              where: and(eq(candidateExperience.candidateId, person.id), eq(candidateExperience.organizationId, orgId)),
+              columns: { title: true, company: true, startText: true, endText: true, isCurrent: true, sortOrder: true },
+              orderBy: (t, { asc }) => [asc(t.sortOrder)],
+              limit: 30,
+            }),
+            db.query.candidateSkill.findMany({
+              where: and(eq(candidateSkill.candidateId, person.id), eq(candidateSkill.organizationId, orgId)),
+              columns: { name: true },
+              limit: 60,
+            }),
+          ])
+          candidateProfile = {
+            headline: sanitizeOpaqueString(person.headline),
+            position: sanitizeOpaqueString(person.position),
+            company: sanitizeOpaqueString(person.company),
+            location: sanitizeOpaqueString(person.location),
+            summary: sanitizeOpaqueString(person.summary),
+            experiences: experiences.map(e => ({
+              title: sanitizeOpaqueString(e.title),
+              company: sanitizeOpaqueString(e.company),
+              startText: e.startText,
+              endText: e.endText,
+              isCurrent: e.isCurrent,
+            })),
+            skills: skills.map(s => s.name).filter((n): n is string => typeof n === 'string' && n.trim() !== ''),
+          }
+        }
+      }
     }
   }
 
@@ -263,12 +359,16 @@ export async function buildInputContext(
     stepKey: stepTemplate.key,
     stepNumber: stepTemplate.stepNumber,
     stepName: stepTemplate.name,
+    purpose,
+    round: extras.round ?? 1,
     job: { title: jobRow?.title ?? null, location: jobRow?.location ?? null },
     clientCompany: clientCompanyCtx,
-    candidate: { name: candidateName },
+    candidate: { name: candidateName, doNotContact },
     application: { status: applicationStatus },
     stepCompletionDataText: sanitizeOpaqueString(instance.completionData),
     jobOrderContext: { step1, step2 },
+    transcript: purpose === 'outcome' ? sanitizeTranscript(extras.transcript?.text) : null,
+    candidateProfile,
     generatedAt: new Date().toISOString(),
   }
 }
@@ -291,15 +391,23 @@ export async function generateAiRun(params: {
   userId: string
   instance: InstanceWithTemplate & { status: string }
   config: AiRuntimeConfig
+  extras?: AiRunExtras
 }): Promise<AiRunWithTemplate> {
   const { orgId, userId, instance, config } = params
+  const extras = params.extras ?? {}
+  const purpose: AiPurpose = extras.purpose ?? 'assist'
 
-  const prompt = await resolvePrompt(orgId, instance.stepTemplate)
+  const prompt = await resolvePrompt(orgId, instance.stepTemplate, purpose)
   if (!prompt) {
-    throw createError({ statusCode: 422, statusMessage: 'No AI prompt configured for this step' })
+    throw createError({
+      statusCode: 422,
+      statusMessage: purpose === 'assist'
+        ? 'No AI prompt configured for this step'
+        : `No "${purpose}" prompt configured for this step`,
+    })
   }
 
-  const context = await buildInputContext(orgId, instance)
+  const context = await buildInputContext(orgId, instance, extras)
   const renderedUserPrompt = renderTemplate(prompt.userPromptTemplate, context as unknown as Record<string, unknown>)
 
   const promptSnapshot = {
@@ -361,6 +469,8 @@ export async function generateAiRun(params: {
       stepInstanceId: instance.id,
       promptTemplateId: prompt.id,
       requestedById: userId,
+      purpose,
+      transcriptId: purpose === 'outcome' ? extras.transcript?.id ?? null : null,
       provider: selection.kind === 'misconfigured' ? 'openai-compat' : selection.provider.provider,
       model: selection.model,
       promptSnapshot,
@@ -387,6 +497,7 @@ export async function generateAiRun(params: {
         userPrompt: renderedUserPrompt,
         model: selection.model,
         stepKey: instance.stepTemplate.key,
+        purpose,
         signal: controller.signal,
       })
       // Parse-only validation (§8): best-effort JSON.parse, strict
@@ -430,6 +541,7 @@ export async function generateAiRun(params: {
     metadata: {
       stepKey: instance.stepTemplate.key,
       stepNumber: instance.stepTemplate.stepNumber,
+      purpose,
       status: finalStatus,
       provider: run.provider,
     },

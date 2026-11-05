@@ -23,6 +23,8 @@ export interface AiGenerateOptions {
   model: string
   /** Step key — lets the mock return deterministic per-step output. */
   stepKey: string
+  /** Prompt purpose (slice 1): the mock keys canned output on `stepKey:purpose` first. */
+  purpose?: 'assist' | 'prep' | 'outcome'
   signal: AbortSignal
 }
 
@@ -328,8 +330,12 @@ export class MockAiProvider implements AiProvider {
     if (opts.stepKey === 'profile-parse') {
       return { text: JSON.stringify(mockProfileParse(opts.userPrompt)), raw: { mock: true, stepKey: opts.stepKey } }
     }
-    const canned = MOCK_OUTPUTS[opts.stepKey]
+    // Slice 1: prep/outcome prompts have their own canned shapes; 'assist'
+    // (and anything unkeyed) falls back to the per-step output as before.
+    const purpose = opts.purpose ?? 'assist'
+    const canned = (purpose !== 'assist' ? MOCK_OUTPUTS[`${opts.stepKey}:${purpose}`] : undefined)
+      ?? MOCK_OUTPUTS[opts.stepKey]
     const text = JSON.stringify(canned ?? { note: 'No canned output for this step' })
-    return { text, raw: { mock: true, stepKey: opts.stepKey } }
+    return { text, raw: { mock: true, stepKey: opts.stepKey, purpose } }
   }
 }

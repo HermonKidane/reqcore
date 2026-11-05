@@ -46,6 +46,8 @@
 
 export interface DefaultAiPrompt {
   stepKey: string
+  /** Slice 1: 'assist' (typed notes, default) · 'prep' (before a call) · 'outcome' (from a transcript) */
+  purpose?: 'assist' | 'prep' | 'outcome'
   name: string
   version: number
   systemPrompt: string

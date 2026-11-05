@@ -54,8 +54,21 @@ export type UpdateStepInstanceInput = z.infer<typeof updateStepInstanceSchema>
 // AI runs (design-ai-slice.md §5)
 // ─────────────────────────────────────────────
 
-/** POST /api/step-instances/:id/ai-runs — body is intentionally empty (§5) */
-export const generateAiRunSchema = z.record(z.string(), z.unknown())
+/** Prompt purposes (Session W slice 1): typed notes · before a call · from a transcript */
+export const aiPurposeSchema = z.enum(['assist', 'prep', 'outcome'])
+export type AiPurpose = z.infer<typeof aiPurposeSchema>
+
+/**
+ * POST /api/step-instances/:id/ai-runs
+ * `{}` keeps the original behaviour (purpose 'assist'). `outcome` needs a
+ * transcript the caller saved first via POST /api/call-transcripts.
+ */
+export const generateAiRunSchema = z.object({
+  purpose: aiPurposeSchema.default('assist'),
+  transcriptId: z.string().min(1).max(64).optional(),
+  // Interview round for debrief prompts (step 11 serves rounds 1+)
+  round: z.coerce.number().int().min(1).max(9).optional(),
+}).strict()
 
 /** POST /api/ai-runs/:id/review */
 export const reviewAiRunSchema = z.object({

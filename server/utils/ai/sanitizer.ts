@@ -74,3 +74,36 @@ export function sanitizeOpaqueString(data: unknown): string | null {
   const prefix = new TextDecoder().decode(bytes.subarray(0, cut))
   return prefix + MARKER
 }
+
+// ─────────────────────────────────────────────
+// Transcripts (Session W slice 1, plumbing P1)
+// ─────────────────────────────────────────────
+
+/**
+ * A pasted call transcript is long by nature (20 min ≈ 18 000 chars), so it
+ * gets its own bound — 60 000 UTF-8 bytes, roughly an hour of speech — but
+ * the SAME redaction rules: emails and phone-like runs never reach the model.
+ * Consequence (documented in the outcome prompts): a mobile number said on
+ * the call comes back as `mobileMentioned: true`, never as the digits —
+ * the recruiter types it in.
+ */
+export const TRANSCRIPT_LIMIT_BYTES = 60_000
+
+export function sanitizeTranscript(text: string | null | undefined): string | null {
+  if (text === null || text === undefined) return null
+  // Strip C0 control chars except \n \r \t; normalise line endings.
+  let str = text.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').replace(/\r\n?/g, '\n')
+  str = str.replace(EMAIL_RE, '[redacted-contact]')
+  str = str.replace(PHONE_RE, '[redacted-contact]')
+  if (str.trim() === '') return null
+
+  const bytes = encoder.encode(str)
+  if (bytes.length <= TRANSCRIPT_LIMIT_BYTES) return str
+  let cut = TRANSCRIPT_LIMIT_BYTES - MARKER_BYTES
+  let byte = bytes[cut]
+  while (cut > 0 && byte !== undefined && (byte & 0b1100_0000) === 0b1000_0000) {
+    cut--
+    byte = bytes[cut]
+  }
+  return new TextDecoder().decode(bytes.subarray(0, cut)) + MARKER
+}
