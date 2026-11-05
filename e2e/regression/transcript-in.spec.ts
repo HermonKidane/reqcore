@@ -31,14 +31,14 @@ async function makeApplication(api: Api, label: string): Promise<{ applicationId
   expect(jobRes.status()).toBe(201)
   const job = await jobRes.json()
   await api.patch(`/api/jobs/${job.id}`, { data: { status: 'open' } })
-  const applyRes = await api.post(`/api/public/jobs/${job.slug}/apply`, {
-    data: { firstName: 'Tx', lastName: label, email: `tx-${label.toLowerCase()}-${runId}@example.com`, responses: [] },
-  })
-  expect(applyRes.status()).toBeLessThan(300)
-  const apps = await (await api.get('/api/applications', { params: { jobId: job.id } })).json()
-  const applicationId = apps.data[0].id as string
-  const app = await (await api.get(`/api/applications/${applicationId}`)).json()
-  return { applicationId, candidateId: app.candidate.id as string, jobId: job.id as string }
+  // Internal routes, not the public apply: the sandbox allows 50 public applications per IP per 15 min and the full gate exceeds that.
+  const candRes = await api.post('/api/candidates', { data: { firstName: 'Tx', lastName: label, email: `tx-${label.toLowerCase()}-${runId}@example.com` } })
+  expect(candRes.status()).toBe(201)
+  const candidateId = (await candRes.json()).id as string
+  const appRes = await api.post('/api/applications', { data: { candidateId, jobId: job.id } })
+  expect(appRes.status(), 'create application').toBe(201)
+  const applicationId = (await appRes.json()).id as string
+  return { applicationId, candidateId, jobId: job.id as string }
 }
 
 async function steps(api: Api, applicationId: string): Promise<StepInstance[]> {

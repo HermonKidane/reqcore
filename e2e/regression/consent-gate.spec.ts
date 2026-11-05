@@ -14,17 +14,17 @@ type Api = import('@playwright/test').APIRequestContext
 async function makeApplication(api: Api, label: string) {
   const job = await (await api.post('/api/jobs', { data: { title: `Consent ${label} ${runId}` } })).json()
   await api.patch(`/api/jobs/${job.id}`, { data: { status: 'open' } })
-  const applyRes = await api.post(`/api/public/jobs/${job.slug}/apply`, {
-    data: { firstName: 'Con', lastName: label, email: `con-${label.toLowerCase()}-${runId}@example.com`, responses: [] },
-  })
-  expect(applyRes.status()).toBeLessThan(300)
-  const apps = await (await api.get('/api/applications', { params: { jobId: job.id } })).json()
-  const applicationId = apps.data[0].id as string
-  const app = await (await api.get(`/api/applications/${applicationId}`)).json()
+  // Internal routes, not the public apply: the sandbox allows 50 public applications per IP per 15 min and the full gate exceeds that.
+  const candRes = await api.post('/api/candidates', { data: { firstName: 'Con', lastName: label, email: `con-${label.toLowerCase()}-${runId}@example.com` } })
+  expect(candRes.status()).toBe(201)
+  const candidateId = (await candRes.json()).id as string
+  const appRes = await api.post('/api/applications', { data: { candidateId, jobId: job.id } })
+  expect(appRes.status(), 'create application').toBe(201)
+  const applicationId = (await appRes.json()).id as string
   const wf = await (await api.get(`/api/applications/${applicationId}/workflow`)).json()
   const step7 = wf.instances.find((i: any) => i.stepTemplate.stepNumber === 7)
   expect(step7.stepTemplate.key).toBe('candidate_presentation')
-  return { jobId: job.id as string, applicationId, candidateId: app.candidate.id as string, step7Id: step7.id as string }
+  return { jobId: job.id as string, applicationId, candidateId, step7Id: step7.id as string }
 }
 
 /** Client company + a contact person at it, linked to the job as primary. */
