@@ -113,6 +113,7 @@ function toggleExpand(instance: WorkflowInstance) {
   }
   expandedId.value = instance.id
   formMode.value = ''
+  aiPrefilled.value = false
   blockReason.value = ''
   dueInput.value = instance.dueAt ? toLocalInputValue(instance.dueAt) : ''
   // Pre-fill required fields from existing completion data
@@ -134,6 +135,64 @@ function openForm(mode: 'complete' | 'block') {
   formMode.value = formMode.value === mode ? '' : mode
 }
 
+/**
+ * Slice 1 "Use in step": pre-fill the complete form from an approved AI run.
+ * Client-side only — the recruiter edits and saves through the step action.
+ * Existing completion data stays unless the AI run has a value for the key.
+ */
+function prefillFromAi(instance: WorkflowInstance, fields: Record<string, string>) {
+  if (expandedId.value !== instance.id) toggleExpand(instance)
+  const merged: Record<string, string> = { ...completeFields.value }
+  for (const key of instance.stepTemplate.requiredFields) {
+    if (!(key in merged)) merged[key] = ''
+  }
+  for (const [key, value] of Object.entries(fields)) merged[key] = value
+  completeFields.value = merged
+  formMode.value = 'complete'
+  actionError.value = ''
+  aiPrefilled.value = true
+}
+
+const aiPrefilled = ref(false)
+
+/** Keys in the complete form that are not required fields (AI extras / earlier data). */
+function extraKeys(instance: WorkflowInstance): string[] {
+  const required = new Set(instance.stepTemplate.requiredFields)
+  return Object.keys(completeFields.value).filter(k => !required.has(k))
+}
+
+function rowsFor(value: string | undefined): number {
+  const lines = (value ?? '').split('\n').length
+  return Math.min(8, Math.max(1, lines))
+}
+
+/** "Add as tasks" from an approved AI run — wired to the tasks API (slice 1 §4). */
+const tasksAdded = ref<Record<string, number>>({})
+async function addTasksFromAi(instance: WorkflowInstance, tasks: Array<{ title: string, dueAt: string | null }>, runId: string) {
+  if (!tasks.length || tasksAdded.value[runId]) return
+  actionError.value = ''
+  try {
+    const res = await $fetch<{ created: number }>('/api/tasks/bulk', {
+      method: 'POST',
+      body: {
+        tasks: tasks.map(t => ({
+          title: t.title,
+          dueAt: t.dueAt && !Number.isNaN(Date.parse(t.dueAt)) ? new Date(t.dueAt).toISOString() : undefined,
+          applicationId: props.applicationId,
+          stepInstanceId: instance.id,
+          aiRunId: runId,
+        })),
+      },
+    })
+    tasksAdded.value = { ...tasksAdded.value, [runId]: res.created }
+  }
+  catch (err: any) {
+    if (!handlePreviewReadOnlyError(err)) {
+      actionError.value = err.data?.statusMessage ?? err.message ?? 'Tasks not added'
+    }
+  }
+}
+
 function readableKey(key: string): string {
   return key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
 }
@@ -145,6 +204,7 @@ async function submitComplete(instance: WorkflowInstance) {
   }
   if (await run(instance.id, { action: 'complete', completionData })) {
     formMode.value = ''
+    aiPrefilled.value = false
   }
 }
 
@@ -382,17 +442,32 @@ function eventSummary(event: StepEvent): string {
                 </div>
 
                 <!-- Complete form -->
-                <div v-if="formMode === 'complete'" class="space-y-2 rounded-lg border border-surface-200 dark:border-surface-700 p-3">
+                <div v-if="formMode === 'complete'" class="space-y-2 rounded-lg border border-surface-200 dark:border-surface-700 p-3" data-testid="complete-form">
+                  <p v-if="aiPrefilled" class="rounded-lg border border-brand-200 bg-brand-50 px-2.5 py-1.5 text-[11px] text-brand-800 dark:border-brand-900 dark:bg-brand-950/40 dark:text-brand-300">
+                    Filled from the AI draft. Check every line against what was said, edit freely, then save.
+                  </p>
                   <div v-for="key in instance.stepTemplate.requiredFields" :key="key">
                     <label class="mb-0.5 block text-xs font-medium text-surface-500 dark:text-surface-400">
                       {{ readableKey(key) }}
                       <span class="text-danger-500">*</span>
                     </label>
-                    <input
+                    <textarea
                       v-model="completeFields[key]"
-                      type="text"
+                      :rows="rowsFor(completeFields[key])"
+                      :data-testid="`complete-field-${key}`"
                       class="w-full rounded-lg border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-800 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                    >
+                    />
+                  </div>
+                  <div v-for="key in extraKeys(instance)" :key="key">
+                    <label class="mb-0.5 block text-xs font-medium text-surface-500 dark:text-surface-400">
+                      {{ readableKey(key) }}
+                    </label>
+                    <textarea
+                      v-model="completeFields[key]"
+                      :rows="rowsFor(completeFields[key])"
+                      :data-testid="`complete-field-${key}`"
+                      class="w-full rounded-lg border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-800 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    />
                   </div>
                   <p v-if="instance.stepTemplate.requiredFields.length === 0" class="text-xs text-surface-400">
                     Nothing to record for this step. Mark it complete when it's done.
@@ -467,7 +542,13 @@ function eventSummary(event: StepEvent): string {
                 </dl>
 
                 <!-- AI assist (steps flagged completionRules.aiAssist) -->
-                <AiAssistCard :instance="instance" :workflow-active="workflowData.workflow.status === 'active'" />
+                <AiAssistCard
+                  :instance="instance"
+                  :workflow-active="workflowData.workflow.status === 'active'"
+                  :application-id="props.applicationId"
+                  @use-in-step="prefillFromAi(instance, $event)"
+                  @add-tasks="(tasks, runId) => addTasksFromAi(instance, tasks, runId)"
+                />
 
                 <!-- Event trail -->
                 <div v-if="showEvents && eventsInstanceId === instance.id" class="border-t border-surface-100 dark:border-surface-800 pt-2">

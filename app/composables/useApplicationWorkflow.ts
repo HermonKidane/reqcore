@@ -17,6 +17,9 @@ export interface AiRun {
   status: 'pending' | 'running' | 'succeeded' | 'failed' | 'approved' | 'rejected'
   provider: string
   model: string
+  /** Slice 1: which prompt ran ('assist' = typed notes) and the transcript it read */
+  purpose?: 'assist' | 'prep' | 'outcome'
+  transcriptId?: string | null
   output: { text: string, parsed?: unknown } | null
   error: string | null
   reviewNote: string | null
@@ -103,11 +106,29 @@ export function useApplicationWorkflow(id: MaybeRefOrGetter<string>) {
     return res.events
   }
 
-  /** Generate an AI assist run for a step instance (returns the run row). */
-  async function generateAiRun(instanceId: string): Promise<AiRun> {
+  /** Generate an AI run for a step instance (returns the run row). Body = purpose / transcript (slice 1). */
+  async function generateAiRun(
+    instanceId: string,
+    body: { purpose?: 'assist' | 'prep' | 'outcome', transcriptId?: string, round?: number } = {},
+  ): Promise<AiRun> {
     return $fetch<AiRun>(`/api/step-instances/${instanceId}/ai-runs`, {
       method: 'POST',
-      body: {},
+      body,
+      headers: useRequestHeaders(['cookie']),
+    })
+  }
+
+  /** Save a pasted call transcript for an 'outcome' run (slice 1). Returns the row without its text. */
+  async function createCallTranscript(input: {
+    text: string
+    consentNoted: true
+    stepInstanceId: string
+    applicationId?: string
+    recordedAt?: string
+  }): Promise<{ id: string, charCount: number }> {
+    return $fetch<{ id: string, charCount: number }>('/api/call-transcripts', {
+      method: 'POST',
+      body: { source: 'pasted', ...input },
       headers: useRequestHeaders(['cookie']),
     })
   }
@@ -129,5 +150,5 @@ export function useApplicationWorkflow(id: MaybeRefOrGetter<string>) {
     })
   }
 
-  return { workflowData: data, status, error, refresh, updateStep, fetchStepEvents, generateAiRun, fetchAiRuns, reviewAiRun }
+  return { workflowData: data, status, error, refresh, updateStep, fetchStepEvents, generateAiRun, fetchAiRuns, reviewAiRun, createCallTranscript }
 }
