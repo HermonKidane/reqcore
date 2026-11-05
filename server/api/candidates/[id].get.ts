@@ -86,6 +86,12 @@ export default defineEventHandler(async (event) => {
         },
         orderBy: (skill, { asc }) => [asc(skill.normalizedName)],
       },
+      // Slice 1: consent to represent — active first, newest first
+      consents: {
+        columns: { id: true, scope: true, clientCompanyIds: true, roleTypes: true, givenAt: true, channel: true, evidenceQuote: true, revokedAt: true, revokedReason: true, createdAt: true },
+        with: { recordedBy: { columns: { id: true, name: true } } },
+        orderBy: (consent, { desc }) => [desc(consent.givenAt)],
+      },
     },
   })
 

@@ -7,6 +7,8 @@ import {
 } from '../../database/schema'
 import { stepInstanceIdParamSchema, updateStepInstanceSchema } from '../../utils/schemas/recruitment'
 import { completeWorkflowIfDone } from '../../utils/recruitment/workflowService'
+import { resolveJobClientCompany, checkConsentForClient } from '../../utils/consent'
+import { loadWorkflowCandidate } from '../../utils/ai/service'
 
 /**
  * PATCH /api/step-instances/:id
@@ -38,13 +40,30 @@ export default defineEventHandler(async (event) => {
   const instance = await db.query.recruitmentStepInstance.findFirst({
     where: eq(recruitmentStepInstance.id, id),
     with: {
-      stepTemplate: { columns: { id: true, name: true, requiredFields: true } },
-      workflow: { columns: { id: true, organizationId: true, applicationId: true, status: true } },
+      stepTemplate: { columns: { id: true, name: true, key: true, requiredFields: true } },
+      workflow: { columns: { id: true, organizationId: true, applicationId: true, jobId: true, status: true } },
     },
   })
 
   if (!instance || instance.workflow.organizationId !== orgId) {
     throw createError({ statusCode: 404, statusMessage: 'Not found' })
+  }
+
+  // ── Slice 1 (step 7 #1): no presentation without consent covering this client ──
+  if (body.action === 'complete' && instance.stepTemplate.key === 'candidate_presentation') {
+    const person = await loadWorkflowCandidate(orgId, instance.workflow.applicationId)
+    const client = await resolveJobClientCompany(orgId, instance.workflow.jobId)
+    const check = person ? await checkConsentForClient(orgId, person.id, client) : null
+    if (!check || !check.ok) {
+      const code = check?.code ?? 'client_unknown'
+      throw createError({
+        statusCode: 422,
+        statusMessage: code === 'consent_required'
+          ? `No consent on file to put this candidate forward to ${client?.name ?? 'this client'}. Record it on the candidate first.`
+          : 'This job has no primary client contact yet, so consent cannot be checked. Add the client contact on the job first.',
+        data: { code, clientCompany: check?.clientCompany ?? client },
+      })
+    }
   }
 
   // Fast pre-checks (re-verified inside the transaction)

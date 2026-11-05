@@ -1,3 +1,4 @@
+import { art14Defaults } from '../../utils/privacyNotice'
 import { eq } from 'drizzle-orm'
 import { candidate } from '../../database/schema'
 import { createCandidateSchema } from '../../utils/schemas/candidate'
@@ -80,6 +81,8 @@ export default defineEventHandler(async (event) => {
         location: body.location ?? null,
         headline: body.headline ?? null,
         summary: body.summary ?? null,
+        // Slice 1: Art 14 tracker starts at creation
+        ...art14Defaults(),
         // source stays default 'manual'
       }).returning(createdColumns)
 

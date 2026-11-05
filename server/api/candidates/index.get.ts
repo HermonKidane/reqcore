@@ -58,6 +58,10 @@ export default defineEventHandler(async (event) => {
         // photoKey is never exposed — photos stream via /api/candidates/:id/photo
         photoUpdatedAt: candidate.photoUpdatedAt,
         hasPhoto: sql<boolean>`${candidate.photoKey} IS NOT NULL`,
+        // Slice 1: shown as a badge in lists; never contact a flagged person
+        doNotContact: candidate.doNotContact,
+        privacyNoticeDueAt: candidate.privacyNoticeDueAt,
+        privacyNoticeSentAt: candidate.privacyNoticeSentAt,
         createdAt: candidate.createdAt,
         updatedAt: candidate.updatedAt,
         applicationCount: sql<number>`count(${application.id})::int`,

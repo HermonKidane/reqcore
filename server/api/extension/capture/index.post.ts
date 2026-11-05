@@ -5,6 +5,7 @@ import { extensionCaptureSchema } from '../../../utils/schemas/extension'
 import { authenticateExtensionKey, extensionRoleAllows } from '../../../utils/extensionKey'
 import { parseProfileText, type ProfileParseResult } from '../../../utils/ai/profileParse'
 import { findCandidateIdByLinkedinUrl, type DupExecutor } from '../../../utils/linkedinUrl'
+import { art14Defaults } from '../../../utils/privacyNotice'
 
 /**
  * POST /api/extension/capture
@@ -706,6 +707,8 @@ export default defineEventHandler(async (event) => {
 
       // create — mirror server/api/candidates/index.post.ts (cache starts NULL)
       const [created] = await tx.insert(candidate).values({
+        // Slice 1: Art 14 tracker starts at capture (data not collected from the person)
+        ...art14Defaults(),
         organizationId,
         firstName: captureFirstName,
         lastName: captureLastName,

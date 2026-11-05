@@ -2,6 +2,7 @@ import { eq, and, sql } from 'drizzle-orm'
 import { candidate } from '../../database/schema'
 import { candidateIdParamSchema, updateCandidateSchema } from '../../utils/schemas/candidate'
 import { findCandidateIdByLinkedinUrl, canonicalLinkedinUrl } from '../../utils/linkedinUrl'
+import { privacyNoticeDueFrom } from '../../utils/privacyNotice'
 
 export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { candidate: ['update'] })
@@ -23,6 +24,13 @@ export default defineEventHandler(async (event) => {
         location: string | null
         headline: string | null
         summary: string | null
+        doNotContact: boolean
+        doNotContactAt: Date | null
+        doNotContactSource: string | null
+        doNotContactNote: string | null
+        collectedAt: Date | null
+        privacyNoticeDueAt: Date | null
+        privacyNoticeSentAt: Date | null
         createdAt: Date
         updatedAt: Date
       }
@@ -66,8 +74,24 @@ export default defineEventHandler(async (event) => {
       }
 
       const { email: _email, linkedinUrl: _linkedinUrl, ...rest } = body
+
+      // Slice 1: do-not-contact flip + Art 14 dates (server-side bookkeeping)
+      const contactRules: Partial<typeof candidate.$inferInsert> = {}
+      if (body.doNotContact === true) {
+        contactRules.doNotContactAt = new Date()
+      }
+      else if (body.doNotContact === false) {
+        contactRules.doNotContactAt = null
+        contactRules.doNotContactSource = null
+      }
+      if (body.collectedAt) {
+        contactRules.collectedAt = body.collectedAt
+        if (!body.privacyNoticeSentAt) contactRules.privacyNoticeDueAt = privacyNoticeDueFrom(body.collectedAt)
+      }
+      if (body.privacyNoticeSentAt === null) contactRules.privacyNoticeSentAt = null
+
       const [updated] = await tx.update(candidate)
-        .set({ ...rest, linkedinUrl, updatedAt: new Date() })
+        .set({ ...rest, ...contactRules, linkedinUrl, updatedAt: new Date() })
         .where(and(eq(candidate.id, id), eq(candidate.organizationId, orgId)))
         .returning({
           id: candidate.id,
@@ -81,6 +105,13 @@ export default defineEventHandler(async (event) => {
           location: candidate.location,
           headline: candidate.headline,
           summary: candidate.summary,
+          doNotContact: candidate.doNotContact,
+          doNotContactAt: candidate.doNotContactAt,
+          doNotContactSource: candidate.doNotContactSource,
+          doNotContactNote: candidate.doNotContactNote,
+          collectedAt: candidate.collectedAt,
+          privacyNoticeDueAt: candidate.privacyNoticeDueAt,
+          privacyNoticeSentAt: candidate.privacyNoticeSentAt,
           createdAt: candidate.createdAt,
           updatedAt: candidate.updatedAt,
         })
@@ -109,7 +140,11 @@ export default defineEventHandler(async (event) => {
     action: 'updated',
     resourceType: 'candidate',
     resourceId: id,
-    metadata: { name: `${updated.firstName} ${updated.lastName}` },
+    metadata: {
+      name: `${updated.firstName} ${updated.lastName}`,
+      ...(body.doNotContact !== undefined ? { doNotContact: body.doNotContact, source: body.doNotContactSource ?? null } : {}),
+      ...(body.privacyNoticeSentAt ? { privacyNoticeSent: true } : {}),
+    },
   })
 
   return updated

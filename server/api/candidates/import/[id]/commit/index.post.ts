@@ -1,3 +1,4 @@
+import { art14Defaults } from '../../../../../utils/privacyNotice'
 import { eq, and, inArray, sql } from 'drizzle-orm'
 import { candidateImport, candidateImportRow, candidate, application } from '../../../../../database/schema'
 import { z } from 'zod'
@@ -157,6 +158,8 @@ export default defineEventHandler(async (event) => {
             position: nd.position || null,
             source: 'linkedin',
             connectedOn: nd.connectedOn || null,
+            // Slice 1: Art 14 tracker starts at import
+            ...art14Defaults(),
           }).returning({ id: candidate.id })
 
           if (!newCandidate) {

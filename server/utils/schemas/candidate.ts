@@ -57,6 +57,19 @@ export const updateCandidateSchema = z.object({
   location: z.preprocess(blankToUndefined, z.string().max(200).trim().nullish()),
   headline: z.preprocess(blankToUndefined, z.string().max(300).trim().nullish()),
   summary: z.preprocess(blankToUndefined, z.string().max(5000).trim().nullish()),
+  // ── Session W slice 1: contact rules + Art 14 dates ──
+  doNotContact: z.boolean().optional(),
+  doNotContactSource: z.preprocess(blankToUndefined, z.enum(['call', 'email', 'whatsapp', 'sms', 'linkedin', 'other']).nullish()),
+  doNotContactNote: z.preprocess(blankToUndefined, z.string().max(1000).trim().nullish()),
+  collectedAt: z.preprocess(blankToUndefined, z.coerce.date().nullish()),
+  privacyNoticeSentAt: z.preprocess(blankToUndefined, z.coerce.date().nullish()),
+}).superRefine((v, ctx) => {
+  if (v.doNotContact === true && !v.doNotContactSource) {
+    ctx.addIssue({ code: 'custom', path: ['doNotContactSource'], message: 'Say how the person asked not to be contacted' })
+  }
+  if (v.doNotContact === false && !v.doNotContactNote) {
+    ctx.addIssue({ code: 'custom', path: ['doNotContactNote'], message: 'Add a note explaining why the flag is being cleared' })
+  }
 })
 
 /** Schema for candidate list query params */
