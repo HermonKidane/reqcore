@@ -384,6 +384,38 @@ export async function buildInputContext(
   }
 }
 
+/**
+ * Best-effort JSON from a model reply. Models on the OpenAI-compatible
+ * endpoint (Claude included) often wrap the object in a ```json fence or add
+ * a line of prose; the raw text is kept in `output.text` either way, this
+ * only decides whether `output.parsed` exists.
+ */
+export function extractJson(text: string): unknown {
+  const tryParse = (s: string): unknown => {
+    try {
+      return JSON.parse(s)
+    }
+    catch {
+      return undefined
+    }
+  }
+  const trimmed = text.trim()
+  let parsed = tryParse(trimmed)
+  if (parsed !== undefined) return parsed
+  const fence = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i)
+  if (fence?.[1]) {
+    parsed = tryParse(fence[1].trim())
+    if (parsed !== undefined) return parsed
+  }
+  const first = trimmed.indexOf('{')
+  const last = trimmed.lastIndexOf('}')
+  if (first !== -1 && last > first) {
+    parsed = tryParse(trimmed.slice(first, last + 1))
+    if (parsed !== undefined) return parsed
+  }
+  return undefined
+}
+
 // ─────────────────────────────────────────────
 // Generate (claim transaction + provider call)
 // ─────────────────────────────────────────────
@@ -513,13 +545,7 @@ export async function generateAiRun(params: {
       })
       // Parse-only validation (§8): best-effort JSON.parse, strict
       // outputSchema validation is Phase 4.
-      let parsed: unknown
-      try {
-        parsed = JSON.parse(result.text)
-      }
-      catch {
-        parsed = undefined
-      }
+      const parsed = extractJson(result.text)
       await db.update(aiRun).set({
         status: 'succeeded',
         output: parsed === undefined
