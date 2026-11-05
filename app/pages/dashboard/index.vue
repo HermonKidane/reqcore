@@ -117,6 +117,15 @@ const isEmpty = computed(() => jobs.value.length === 0)
       </NuxtLink>
     </div>
 
+    <!-- ─── Your tasks (slice 1): overdue + today, max 5 ─── -->
+    <section class="mb-8 rounded-xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5" data-testid="dashboard-tasks">
+      <div class="mb-3 flex items-center justify-between">
+        <h2 class="text-sm font-semibold text-surface-800 dark:text-surface-200">Your tasks</h2>
+        <NuxtLink :to="$localePath('/dashboard/tasks')" class="text-xs text-brand-600 hover:underline">All tasks</NuxtLink>
+      </div>
+      <TaskList :query="{ scope: 'mine', status: 'open', due: 'any', limit: 5 }" :show-add="false" compact empty-text="Nothing due. Add tasks from a step's AI draft or on the Tasks page." />
+    </section>
+
     <!-- ─── Loading ─── -->
     <div v-if="fetchStatus === 'pending'">
       <div class="space-y-4">

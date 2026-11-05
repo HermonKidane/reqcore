@@ -2,7 +2,7 @@
 import {
   Briefcase, Plus, Bell,
   ChevronLeft, Kanban, FileText, LogOut, Table2,
-  Sun, Moon, MessageSquarePlus, Settings,
+  Sun, Moon, MessageSquarePlus, Settings, ListTodo,
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -189,6 +189,21 @@ function isActiveTab(to: string, exact: boolean) {
             <p class="text-xs text-surface-400 mb-2">No jobs yet</p>
           </div>
         </nav>
+      </div>
+
+      <!-- Tasks (slice 1) -->
+      <div class="border-t border-surface-200 dark:border-surface-800 pt-3">
+        <NuxtLink
+          :to="$localePath('/dashboard/tasks')"
+          data-testid="nav-tasks"
+          class="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-900 dark:hover:text-surface-100 transition-colors no-underline"
+          :class="isActiveTab('/dashboard/tasks', false)
+            ? 'bg-surface-100 dark:bg-surface-800 text-surface-900 dark:text-surface-100 font-medium'
+            : ''"
+        >
+          <ListTodo class="size-4 shrink-0" />
+          Tasks
+        </NuxtLink>
       </div>
 
       <!-- Settings link -->
