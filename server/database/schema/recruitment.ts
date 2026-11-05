@@ -6,12 +6,13 @@ import {
   boolean,
   jsonb,
   pgEnum,
+  primaryKey,
   index,
   uniqueIndex,
 } from 'drizzle-orm/pg-core'
 import { relations, sql } from 'drizzle-orm'
 import { organization, user } from './auth'
-import { job, application } from './app'
+import { job, application, candidate } from './app'
 
 // ─────────────────────────────────────────────
 // Enums
@@ -192,6 +193,10 @@ export const aiPromptTemplate = pgTable('ai_prompt_template', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   organizationId: text('organization_id').references(() => organization.id, { onDelete: 'cascade' }),
   stepKey: text('step_key').notNull(),
+  // Session W slice 1: one step may carry several prompts —
+  // 'assist' (typed notes, the original), 'prep' (before a call),
+  // 'outcome' (from a transcript after the call).
+  purpose: text('purpose').notNull().default('assist'),
   name: text('name').notNull(),
   version: integer('version').notNull().default(1),
   systemPrompt: text('system_prompt').notNull(),
@@ -206,12 +211,43 @@ export const aiPromptTemplate = pgTable('ai_prompt_template', {
   index('ai_prompt_template_step_key_idx').on(t.stepKey),
   // Versioned prompts: one row per (scope, stepKey, version). Prompt rows are
   // insert-only — edits create a new version, preserving aiRun provenance.
+  // Slice 1: `purpose` joins the key so prep/outcome prompts version independently.
   uniqueIndex('ai_prompt_template_global_version_idx')
-    .on(t.stepKey, t.version)
+    .on(t.stepKey, t.purpose, t.version)
     .where(sql`organization_id IS NULL`),
   uniqueIndex('ai_prompt_template_org_version_idx')
-    .on(t.organizationId, t.stepKey, t.version)
+    .on(t.organizationId, t.stepKey, t.purpose, t.version)
     .where(sql`organization_id IS NOT NULL`),
+]))
+
+/**
+ * Call transcripts (Session W slice 1, plumbing P1). Pasted today; Vonage
+ * fetch later (source 'vonage'). The text is the recruiter's own record of a
+ * call the other party was told is transcribed (`consentNoted`). Retention:
+ * 12 months by default (job lands in slice 2) — see MIGRATIONS.md.
+ * Deleting a transcript nulls `ai_run.transcript_id`; the run's inputSnapshot
+ * stays as the audit copy of what the model actually saw.
+ */
+export const callTranscript = pgTable('call_transcript', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  organizationId: text('organization_id').notNull().references(() => organization.id, { onDelete: 'cascade' }),
+  candidateId: text('candidate_id').references(() => candidate.id, { onDelete: 'set null' }),
+  jobId: text('job_id').references(() => job.id, { onDelete: 'set null' }),
+  applicationId: text('application_id').references(() => application.id, { onDelete: 'set null' }),
+  stepInstanceId: text('step_instance_id').references(() => recruitmentStepInstance.id, { onDelete: 'set null' }),
+  // pasted | upload | vonage
+  source: text('source').notNull().default('pasted'),
+  text: text('text').notNull(),
+  charCount: integer('char_count').notNull().default(0),
+  recordedAt: timestamp('recorded_at'),
+  durationSeconds: integer('duration_seconds'),
+  consentNoted: boolean('consent_noted').notNull().default(false),
+  createdById: text('created_by_id').references(() => user.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (t) => ([
+  index('call_transcript_org_idx').on(t.organizationId),
+  index('call_transcript_candidate_idx').on(t.candidateId),
+  index('call_transcript_step_instance_idx').on(t.stepInstanceId),
 ]))
 
 /**
@@ -226,6 +262,9 @@ export const aiRun = pgTable('ai_run', {
   stepInstanceId: text('step_instance_id').references(() => recruitmentStepInstance.id, { onDelete: 'set null' }),
   promptTemplateId: text('prompt_template_id').notNull().references(() => aiPromptTemplate.id, { onDelete: 'restrict' }),
   requestedById: text('requested_by_id').references(() => user.id, { onDelete: 'set null' }),
+  // Slice 1: which prompt purpose ran, and the transcript it read (if any).
+  purpose: text('purpose').notNull().default('assist'),
+  transcriptId: text('transcript_id').references(() => callTranscript.id, { onDelete: 'set null' }),
   provider: text('provider').notNull(),
   model: text('model').notNull(),
   // Full prompt configuration used for the run (design-ai-slice.md §5
@@ -307,4 +346,89 @@ export const aiRunRelations = relations(aiRun, ({ one }) => ({
   promptTemplate: one(aiPromptTemplate, { fields: [aiRun.promptTemplateId], references: [aiPromptTemplate.id] }),
   requestedBy: one(user, { fields: [aiRun.requestedById], references: [user.id] }),
   reviewedBy: one(user, { fields: [aiRun.reviewedById], references: [user.id] }),
+  transcript: one(callTranscript, { fields: [aiRun.transcriptId], references: [callTranscript.id] }),
+}))
+
+// ─────────────────────────────────────────────
+// Session W slice 1 — tasks (plumbing P3: ATS master copy, synced to Microsoft To Do / Outlook)
+// ─────────────────────────────────────────────
+
+export const taskStatusEnum = pgEnum('task_status', ['open', 'done', 'cancelled'])
+
+/**
+ * The recruiter's to-do list. ATS row is the master copy; `task_sync` tracks
+ * the remote copies. Rows are never hard-deleted — cancel instead, so the
+ * remote copy can be removed and the audit stays.
+ */
+export const task = pgTable('task', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  organizationId: text('organization_id').notNull().references(() => organization.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  notes: text('notes'),
+  dueAt: timestamp('due_at'),
+  // all-day tasks go to To Do only; timed tasks also get an Outlook event
+  allDay: boolean('all_day').notNull().default(true),
+  status: taskStatusEnum('status').notNull().default('open'),
+  ownerId: text('owner_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  candidateId: text('candidate_id').references(() => candidate.id, { onDelete: 'set null' }),
+  jobId: text('job_id').references(() => job.id, { onDelete: 'set null' }),
+  applicationId: text('application_id').references(() => application.id, { onDelete: 'set null' }),
+  stepInstanceId: text('step_instance_id').references(() => recruitmentStepInstance.id, { onDelete: 'set null' }),
+  // manual | ai_run | system
+  source: text('source').notNull().default('manual'),
+  aiRunId: text('ai_run_id').references(() => aiRun.id, { onDelete: 'set null' }),
+  completedAt: timestamp('completed_at'),
+  createdById: text('created_by_id').references(() => user.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (t) => ([
+  index('task_org_owner_status_due_idx').on(t.organizationId, t.ownerId, t.status, t.dueAt),
+  index('task_candidate_idx').on(t.candidateId),
+  index('task_application_idx').on(t.applicationId),
+  index('task_job_idx').on(t.jobId),
+]))
+
+/** Remote copy bookkeeping, one row per (task, provider). */
+export const taskSync = pgTable('task_sync', {
+  taskId: text('task_id').notNull().references(() => task.id, { onDelete: 'cascade' }),
+  // microsoft
+  provider: text('provider').notNull(),
+  todoListId: text('todo_list_id'),
+  todoTaskId: text('todo_task_id'),
+  outlookEventId: text('outlook_event_id'),
+  // pending | synced | error
+  state: text('state').notNull().default('pending'),
+  error: text('error'),
+  remoteEtag: text('remote_etag'),
+  lastSyncedAt: timestamp('last_synced_at'),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (t) => ([
+  primaryKey({ columns: [t.taskId, t.provider], name: 'task_sync_pk' }),
+  index('task_sync_todo_task_idx').on(t.todoTaskId),
+]))
+
+export const callTranscriptRelations = relations(callTranscript, ({ one, many }) => ({
+  organization: one(organization, { fields: [callTranscript.organizationId], references: [organization.id] }),
+  candidate: one(candidate, { fields: [callTranscript.candidateId], references: [candidate.id] }),
+  job: one(job, { fields: [callTranscript.jobId], references: [job.id] }),
+  application: one(application, { fields: [callTranscript.applicationId], references: [application.id] }),
+  stepInstance: one(recruitmentStepInstance, { fields: [callTranscript.stepInstanceId], references: [recruitmentStepInstance.id] }),
+  createdBy: one(user, { fields: [callTranscript.createdById], references: [user.id] }),
+  aiRuns: many(aiRun),
+}))
+
+export const taskRelations = relations(task, ({ one, many }) => ({
+  organization: one(organization, { fields: [task.organizationId], references: [organization.id] }),
+  owner: one(user, { fields: [task.ownerId], references: [user.id] }),
+  createdBy: one(user, { fields: [task.createdById], references: [user.id] }),
+  candidate: one(candidate, { fields: [task.candidateId], references: [candidate.id] }),
+  job: one(job, { fields: [task.jobId], references: [job.id] }),
+  application: one(application, { fields: [task.applicationId], references: [application.id] }),
+  stepInstance: one(recruitmentStepInstance, { fields: [task.stepInstanceId], references: [recruitmentStepInstance.id] }),
+  aiRun: one(aiRun, { fields: [task.aiRunId], references: [aiRun.id] }),
+  syncs: many(taskSync),
+}))
+
+export const taskSyncRelations = relations(taskSync, ({ one }) => ({
+  task: one(task, { fields: [taskSync.taskId], references: [task.id] }),
 }))

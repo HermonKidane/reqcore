@@ -9,6 +9,12 @@
 6. Pre-deploy backup → apply to live
 7. Never use `db:push` in prod. Never copy donor migration SQL (history ends at 0009).
 
+## 0019 — Session W slice 1 (2026-11-05)
+- New tables `call_transcript`, `representation_consent`, `task`, `task_sync`, `user_integration`; `candidate` gains do-not-contact + Art 14 date columns; `ai_prompt_template` / `ai_run` gain `purpose` (`assist | prep | outcome`), `ai_run.transcript_id`. The two prompt unique indexes are dropped and recreated with `purpose` (no data loss).
+- Hand-written backfills at the end of the file: `candidate.collected_at = created_at`; `completion_rules.aiAssist = true` on step templates `complete_job_order` and `candidate_profile` (templates seed once per org, so the SQL is what reaches existing orgs — `CANONICAL_PROCESS_VERSION` stays 1).
+- **Transcript retention:** 12 months from `created_at`, or on candidate delete (cascade is `set null` — the transcript row stays until the retention job in slice 2 removes it). Sandbox holds synthetic / consented transcripts only. Hermon's default, 2026-11-05.
+- After deploy, once per environment: `npm run db:encrypt-oauth-tokens` (Better Auth `encryptOAuthTokens` switch — see the slice 1 brief §4b). Prod by Hermon.
+
 ## Expand-Only Contract
 - Additive only: new tables, nullable columns, columns with DEFAULT
 - Never DROP, rename, or add NOT NULL without DEFAULT

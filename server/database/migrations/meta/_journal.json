@@ -134,6 +134,13 @@
       "when": 1791238360371,
       "tag": "0018_0018-candidate-headline-summary-education-skills",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793903180721,
+      "tag": "0019_0019-session-w-slice-1",
+      "breakpoints": true
     }
   ]
 }

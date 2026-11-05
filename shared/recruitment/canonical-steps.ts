@@ -35,7 +35,9 @@ export const CANONICAL_STEPS: CanonicalStep[] = [
     name: 'Complete Job Order',
     description: 'Fully qualify the vacancy with the client: role scope, must-haves, compensation band, interview process, and decision makers.',
     requiredFields: ['jobDescription', 'salaryRange', 'clientContact'],
-    completionRules: { evidence: 'completed_job_order' },
+    // Slice 1: transcript → gap report (prompt purpose 'outcome'). Existing orgs
+    // get the flag via the 0019 migration backfill (templates seed once).
+    completionRules: { evidence: 'completed_job_order', aiAssist: true },
   },
   {
     stepNumber: 2,
@@ -80,7 +82,8 @@ export const CANONICAL_STEPS: CanonicalStep[] = [
     name: 'Candidate Profile',
     description: 'Build the full candidate profile: CV, motivations, criteria match, and summary for presentation.',
     requiredFields: ['profileSummary'],
-    completionRules: {},
+    // Slice 1: prep pack ('prep') + transcript → profile ('outcome'); backfilled by 0019.
+    completionRules: { aiAssist: true },
   },
   // ── Phase 2 — Introduction and initial selection ──
   {

@@ -11,6 +11,7 @@ import {
   foreignKey,
   check,
   date,
+  primaryKey,
 } from 'drizzle-orm/pg-core'
 import { relations, sql } from 'drizzle-orm'
 import { organization, user } from './auth'
@@ -105,10 +106,24 @@ export const candidate = pgTable('candidate', {
   // platform-specific id/URL detail (e.g. LinkedIn public id)
   sourceDetail: text('source_detail'),
   connectedOn: timestamp('connected_on'),
+  // ── Session W slice 1: contact rules (step 5 #4) ──
+  // Org-wide "don't contact me". Checked by AI prep runs, drafts and capture.
+  doNotContact: boolean('do_not_contact').notNull().default(false),
+  doNotContactAt: timestamp('do_not_contact_at'),
+  // call | email | whatsapp | sms | linkedin | other
+  doNotContactSource: text('do_not_contact_source'),
+  doNotContactNote: text('do_not_contact_note'),
+  // ── Session W slice 1: UK GDPR Art 14 tracker (step 4 #5) ──
+  // collectedAt: when the record was first obtained (defaults to createdAt).
+  // privacyNoticeDueAt: collectedAt + 30 days until a notice is sent.
+  collectedAt: timestamp('collected_at'),
+  privacyNoticeDueAt: timestamp('privacy_notice_due_at'),
+  privacyNoticeSentAt: timestamp('privacy_notice_sent_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (t) => ([
   index('candidate_organization_id_idx').on(t.organizationId),
+  index('candidate_org_do_not_contact_idx').on(t.organizationId, t.doNotContact),
   uniqueIndex('candidate_org_email_idx').on(t.organizationId, t.email),
   index('candidate_linkedin_url_idx').on(t.linkedinUrl),
   // Composite unique backing the tenant-scoped FKs from candidate_email / person_role / job_client_contact
@@ -555,6 +570,7 @@ export const candidateRelations = relations(candidate, ({ one, many }) => ({
   education: many(candidateEducation),
   skills: many(candidateSkill),
   jobContactLinks: many(jobClientContact),
+  consents: many(representationConsent),
 }))
 
 export const candidateEmailRelations = relations(candidateEmail, ({ one }) => ({
@@ -865,4 +881,75 @@ export const extensionApiKeyRelations = relations(extensionApiKey, ({ one, many 
 export const extensionCaptureEventRelations = relations(extensionCaptureEvent, ({ one }) => ({
   organization: one(organization, { fields: [extensionCaptureEvent.organizationId], references: [organization.id] }),
   apiKey: one(extensionApiKey, { fields: [extensionCaptureEvent.apiKeyId], references: [extensionApiKey.id] }),
+}))
+
+// ─────────────────────────────────────────────
+// Session W slice 1 — consent to represent (step 6 #5, gates step 7)
+// ─────────────────────────────────────────────
+
+/**
+ * One row per consent the candidate gave to be put forward. Scope:
+ *   all_clients   — any client
+ *   named_clients — only `clientCompanyIds`
+ *   role_types    — only roles of these kinds (recruiter's judgement; shown, not enforced)
+ * Rows are never edited after the fact — revoke + add a new one.
+ */
+export const representationConsent = pgTable('representation_consent', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  organizationId: text('organization_id').notNull().references(() => organization.id, { onDelete: 'cascade' }),
+  candidateId: text('candidate_id').notNull(),
+  scope: text('scope').notNull(),
+  clientCompanyIds: jsonb('client_company_ids').$type<string[]>().notNull().default([]),
+  roleTypes: jsonb('role_types').$type<string[]>().notNull().default([]),
+  givenAt: timestamp('given_at').notNull(),
+  // call | email | whatsapp | in_person | other
+  channel: text('channel').notNull(),
+  evidenceQuote: text('evidence_quote').notNull(),
+  recordedById: text('recorded_by_id').references(() => user.id, { onDelete: 'set null' }),
+  revokedAt: timestamp('revoked_at'),
+  revokedReason: text('revoked_reason'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (t) => ([
+  index('representation_consent_org_candidate_idx').on(t.organizationId, t.candidateId),
+  foreignKey({
+    columns: [t.organizationId, t.candidateId],
+    foreignColumns: [candidate.organizationId, candidate.id],
+    name: 'representation_consent_candidate_fk',
+  }).onDelete('cascade'),
+  check('representation_consent_scope_check', sql`scope IN ('all_clients', 'named_clients', 'role_types')`),
+]))
+
+export const representationConsentRelations = relations(representationConsent, ({ one }) => ({
+  organization: one(organization, { fields: [representationConsent.organizationId], references: [organization.id] }),
+  candidate: one(candidate, { fields: [representationConsent.candidateId], references: [candidate.id] }),
+  recordedBy: one(user, { fields: [representationConsent.recordedById], references: [user.id] }),
+}))
+
+// ─────────────────────────────────────────────
+// Session W slice 1 — per-user integration state (Microsoft To Do / Outlook)
+// ─────────────────────────────────────────────
+
+/**
+ * One row per (user, provider). Tokens stay in Better Auth's `account` table
+ * (encrypted); this row only holds sync bookkeeping. `enabled` flips off on
+ * an invalid_grant so the UI can ask the user to reconnect.
+ */
+export const userIntegration = pgTable('user_integration', {
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  // microsoft
+  provider: text('provider').notNull(),
+  enabled: boolean('enabled').notNull().default(false),
+  todoListId: text('todo_list_id'),
+  deltaLink: text('delta_link'),
+  lastPullAt: timestamp('last_pull_at'),
+  lastPushAt: timestamp('last_push_at'),
+  lastError: text('last_error'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (t) => ([
+  primaryKey({ columns: [t.userId, t.provider], name: 'user_integration_pk' }),
+]))
+
+export const userIntegrationRelations = relations(userIntegration, ({ one }) => ({
+  user: one(user, { fields: [userIntegration.userId], references: [user.id] }),
 }))

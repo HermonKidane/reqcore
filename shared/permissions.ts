@@ -36,6 +36,8 @@ const atsStatements = {
   activityLog: ['read'],
   workflow: ['read', 'update'],
   aiRun: ['read', 'create', 'update'],
+  // Session W slice 1: to-do list (own tasks; admins/owners may list all)
+  task: ['create', 'read', 'update', 'delete'],
 } as const
 
 // ─── Merged statement (Better Auth defaults + ATS resources) ───────
@@ -65,6 +67,7 @@ export const owner = ac.newRole({
   activityLog: ['read'],
   workflow: ['read', 'update'],
   aiRun: ['read', 'create', 'update'],
+  task: ['create', 'read', 'update', 'delete'],
 })
 
 export const admin = ac.newRole({
@@ -79,6 +82,7 @@ export const admin = ac.newRole({
   activityLog: ['read'],
   workflow: ['read', 'update'],
   aiRun: ['read', 'create', 'update'],
+  task: ['create', 'read', 'update', 'delete'],
 })
 
 export const member = ac.newRole({
@@ -93,4 +97,5 @@ export const member = ac.newRole({
   activityLog: ['read'],
   workflow: ['read', 'update'],
   aiRun: ['read', 'create'],
+  task: ['create', 'read', 'update', 'delete'],
 })
