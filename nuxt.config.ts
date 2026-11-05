@@ -189,6 +189,13 @@ export default defineNuxtConfig({
   },
 
   nitro: {
+    // Microsoft To Do / Outlook pull (server/tasks/graph-pull.ts), every 15 min
+    experimental: {
+      tasks: true,
+    },
+    scheduledTasks: {
+      '*/15 * * * *': ['graph:pull'],
+    },
     routeRules: {
       '/**': {
         headers: {

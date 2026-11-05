@@ -170,6 +170,11 @@ function getAuth(): Auth {
         },
       },
       account: {
+        // Access + refresh tokens are stored encrypted (XChaCha20-Poly1305, key
+        // derived from BETTER_AUTH_SECRET). Rows written before this was on are
+        // converted by `npm run db:encrypt-oauth-tokens`. id_token stays plain:
+        // Better Auth 1.4 never encrypts or decrypts it.
+        encryptOAuthTokens: true,
         accountLinking: {
           // Better Auth default: an OAuth login is linked to an existing user with the
           // same email ONLY when the provider reports the email as verified (or the

@@ -2,6 +2,7 @@ import { eq, and, lt, gte, isNull, isNotNull, asc, desc, sql } from 'drizzle-orm
 import { task } from '../../database/schema'
 import { taskQuerySchema } from '../../utils/schemas/task'
 import { taskWith } from '../../utils/tasks'
+import { queuePull } from '../../utils/graph/sync'
 
 /**
  * GET /api/tasks — task:read
@@ -46,6 +47,9 @@ export default defineEventHandler(async (event) => {
     case 'later': conds.push(gte(task.dueAt, endOfWeek)); break
     case 'none': conds.push(isNull(task.dueAt)); break
   }
+
+  // Slice 1: a list load also pulls To Do changes for this user (throttled, fire-and-forget)
+  if (query.scope === 'mine' && !query.candidateId && !query.applicationId && !query.jobId) queuePull(userId)
 
   const rows = await db.query.task.findMany({
     where: and(...conds),

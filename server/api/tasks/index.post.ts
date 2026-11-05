@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import { task } from '../../database/schema'
 import { createTaskSchema } from '../../utils/schemas/task'
 import { createTask, taskWith } from '../../utils/tasks'
+import { syncTaskNow } from '../../utils/graph/sync'
 
 /** POST /api/tasks — task:create. Owner defaults to the caller. */
 export default defineEventHandler(async (event) => {
@@ -11,6 +12,8 @@ export default defineEventHandler(async (event) => {
   const body = await readBody422(event, createTaskSchema)
 
   const row = await createTask({ orgId, createdById: userId, input: body, source: 'manual' })
+  // ?sync=now waits for the Microsoft push (otherwise it runs in the background)
+  if (getQuery(event).sync === 'now') await syncTaskNow(row.id)
 
   recordActivity({
     organizationId: orgId,

@@ -2,7 +2,7 @@ import { eq, and } from 'drizzle-orm'
 import { task } from '../../database/schema'
 import { taskIdParamSchema, updateTaskSchema } from '../../utils/schemas/task'
 import { assertTaskLinks, taskWith } from '../../utils/tasks'
-import { queueTaskSync } from '../../utils/graph/sync'
+import { queueTaskSync, syncTaskNow } from '../../utils/graph/sync'
 
 /**
  * PATCH /api/tasks/:id — task:update
@@ -51,7 +51,8 @@ export default defineEventHandler(async (event) => {
     .returning({ id: task.id })
   if (!updated) throw createError({ statusCode: 404, statusMessage: 'Not found' })
 
-  queueTaskSync(id)
+  if (getQuery(event).sync === 'now') await syncTaskNow(id)
+  else queueTaskSync(id)
   recordActivity({
     organizationId: orgId,
     actorId: userId,
