@@ -1,5 +1,5 @@
 import type { task } from '../../database/schema'
-import { bodyContent, londonDateTime } from './todo'
+import { bodyContent, displayTitle, londonDateTime } from './todo'
 import type { GraphClient } from './client'
 
 /**
@@ -18,10 +18,12 @@ export function needsEvent(t: Pick<TaskRow, 'allDay' | 'dueAt' | 'status'>): t i
   return !t.allDay && !!t.dueAt && t.status === 'open'
 }
 
-export function eventPayload(t: TaskRow & { dueAt: Date }, opts: { create: boolean }) {
+export function eventPayload(t: TaskRow & { dueAt: Date }, opts: { create: boolean, personName?: string | null }) {
   const end = new Date(t.dueAt.getTime() + EVENT_MINUTES * 60_000)
   const payload: Record<string, unknown> = {
-    subject: t.title,
+    subject: displayTitle(t, opts.personName),
+    // Shows as a labelled block in Outlook; the colour comes from the user's own category list
+    categories: ['MyRecruiter'],
     body: { contentType: 'text', content: bodyContent(t) },
     start: { dateTime: londonDateTime(t.dueAt), timeZone: 'Europe/London' },
     end: { dateTime: londonDateTime(end), timeZone: 'Europe/London' },
@@ -37,12 +39,12 @@ export function eventPayload(t: TaskRow & { dueAt: Date }, opts: { create: boole
 }
 
 /** Create or update; a PATCH 404 (event deleted in Outlook) re-creates it. Returns the event id. */
-export async function upsertEvent(g: GraphClient, t: TaskRow & { dueAt: Date }, eventId: string | null): Promise<string | null> {
+export async function upsertEvent(g: GraphClient, t: TaskRow & { dueAt: Date }, eventId: string | null, personName: string | null = null): Promise<string | null> {
   if (eventId) {
-    const res = await g.request<{ id: string }>(`/me/events/${encodeURIComponent(eventId)}`, { method: 'PATCH', body: eventPayload(t, { create: false }) })
+    const res = await g.request<{ id: string }>(`/me/events/${encodeURIComponent(eventId)}`, { method: 'PATCH', body: eventPayload(t, { create: false, personName }) })
     if (res.status !== 404) return res.data?.id ?? eventId
   }
-  const created = await g.request<{ id: string }>('/me/events', { method: 'POST', body: eventPayload(t, { create: true }) })
+  const created = await g.request<{ id: string }>('/me/events', { method: 'POST', body: eventPayload(t, { create: true, personName }) })
   return created.data?.id ?? null
 }
 

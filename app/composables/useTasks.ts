@@ -31,6 +31,8 @@ export interface TaskQuery {
   candidateId?: string
   applicationId?: string
   jobId?: string
+  /** Tasks about any active client contact at this company */
+  companyId?: string
   limit?: number
 }
 

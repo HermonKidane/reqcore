@@ -48,6 +48,8 @@ export const taskQuerySchema = z.object({
   candidateId: linkId,
   applicationId: linkId,
   jobId: linkId,
+  /** Tasks about any active client contact at this company */
+  companyId: linkId,
   limit: z.coerce.number().int().min(1).max(200).default(100),
 })
 

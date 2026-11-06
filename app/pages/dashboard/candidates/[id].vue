@@ -26,7 +26,11 @@ useSeoMeta({
 // Tabs
 // ─────────────────────────────────────────────
 
-const activeTab = ref<'applications' | 'roles' | 'documents' | 'experiences' | 'education' | 'consent' | 'tasks'>('applications')
+type CandidateTab = 'applications' | 'roles' | 'documents' | 'experiences' | 'education' | 'consent' | 'tasks'
+const TABS: CandidateTab[] = ['applications', 'roles', 'documents', 'experiences', 'education', 'consent', 'tasks']
+// ?tab=tasks opens that tab (the To Do / Outlook deep links use it)
+const requestedTab = typeof route.query.tab === 'string' && TABS.includes(route.query.tab as CandidateTab) ? route.query.tab as CandidateTab : 'applications'
+const activeTab = ref<CandidateTab>(requestedTab)
 
 // ─────────────────────────────────────────────
 // Photo avatar + headline (position · company / location / LinkedIn)

@@ -166,6 +166,12 @@ async function handleDelete() {
           <button class="underline ml-1" @click="editError = null">Dismiss</button>
         </p>
 
+        <!-- Tasks about this company's contacts (slice 1b) -->
+        <div class="rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5" data-testid="company-tasks">
+          <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-200 mb-3">Tasks</h2>
+          <TaskList :query="{ scope: 'all', status: 'open', due: 'any', companyId }" :picker-company-id="companyId" empty-text="No open tasks for anyone at this company." />
+        </div>
+
         <!-- Contacts -->
         <div class="rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-5">
           <h2 class="text-sm font-semibold text-surface-700 dark:text-surface-200 mb-3">

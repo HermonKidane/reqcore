@@ -2,8 +2,7 @@
 import {
   X, User, Calendar, Clock, Hash, MessageSquare, FileText,
   ExternalLink, Mail, Phone, Upload, Download, Eye, Trash2,
-  ArrowLeft, AlertTriangle,
-} from 'lucide-vue-next'
+  ArrowLeft, AlertTriangle, ListTodo } from 'lucide-vue-next'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
 
 const props = defineProps<{
@@ -495,6 +494,22 @@ const responsesCount = computed(() => application.value?.responses?.length ?? 0)
             </div>
 
             <!-- Notes -->
+            <!-- Tasks on this application (slice 1b) -->
+            <div class="rounded-xl border border-surface-200/80 dark:border-surface-800/60 bg-white dark:bg-surface-950 p-5 shadow-sm shadow-surface-900/[0.03] dark:shadow-none" data-testid="sidebar-tasks">
+              <div class="flex items-center gap-2.5 mb-4">
+                <div class="flex size-7 items-center justify-center rounded-lg bg-brand-50 dark:bg-brand-950/40">
+                  <ListTodo class="size-3.5 text-brand-600 dark:text-brand-400" />
+                </div>
+                <h3 class="text-sm font-semibold text-surface-800 dark:text-surface-200">Tasks</h3>
+              </div>
+              <TaskList
+                :query="{ scope: 'all', status: 'open', due: 'any', applicationId: props.applicationId }"
+                :link="{ applicationId: props.applicationId, candidateId: application.candidate.id }"
+                compact
+                empty-text="No open tasks for this application."
+              />
+            </div>
+
             <div class="rounded-xl border border-surface-200/80 dark:border-surface-800/60 bg-white dark:bg-surface-950 p-5 shadow-sm shadow-surface-900/[0.03] dark:shadow-none">
               <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center gap-2.5">

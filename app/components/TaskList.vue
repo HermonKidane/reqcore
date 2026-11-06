@@ -10,10 +10,16 @@ const props = withDefaults(defineProps<{
   query?: TaskQuery
   /** Pre-filled link for quick-add */
   link?: { candidateId?: string, applicationId?: string, jobId?: string }
+  /** Narrow the person picker to this company's contacts (company page) */
+  pickerCompanyId?: string
   showAdd?: boolean
   compact?: boolean
   emptyText?: string
 }>(), { query: () => ({}), link: () => ({}), showAdd: true, compact: false, emptyText: 'Nothing to do here.' })
+
+// Person for quick-add: hidden when the list is already pinned to a person
+const person = ref<{ id: string, name: string } | null>(null)
+const showPicker = computed(() => !props.link.candidateId)
 
 const { tasks, status, error, createTask, toggleDone, cancelTask } = useTasks(() => props.query, `tasks-${JSON.stringify(props.link)}`)
 
@@ -33,9 +39,11 @@ async function add() {
       dueAt: newDue.value ? new Date(newDue.value).toISOString() : undefined,
       allDay: !newDue.value || newDue.value.endsWith('T00:00'),
       ...props.link,
+      ...(showPicker.value && person.value ? { candidateId: person.value.id } : {}),
     })
     newTitle.value = ''
     newDue.value = ''
+    person.value = null
   }
   catch (err: any) {
     actionError.value = err?.data?.statusMessage ?? err?.message ?? 'Task not added'
@@ -96,6 +104,7 @@ function syncState(t: TaskRow): 'synced' | 'error' | 'pending' | null {
         class="min-w-0 flex-1 rounded-lg border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 min-h-11 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
         data-testid="task-add-title"
       >
+      <PersonPicker v-if="showPicker" v-model="person" :company-id="pickerCompanyId" class="w-full sm:w-56" />
       <input
         v-model="newDue"
         type="datetime-local"

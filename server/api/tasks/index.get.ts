@@ -1,5 +1,5 @@
-import { eq, and, lt, gte, isNull, isNotNull, asc, desc, sql } from 'drizzle-orm'
-import { task } from '../../database/schema'
+import { eq, and, lt, gte, isNull, isNotNull, asc, desc, sql, inArray } from 'drizzle-orm'
+import { task, personRole } from '../../database/schema'
 import { taskQuerySchema } from '../../utils/schemas/task'
 import { taskWith } from '../../utils/tasks'
 import { queuePull } from '../../utils/graph/sync'
@@ -17,8 +17,9 @@ export default defineEventHandler(async (event) => {
   const userId = session.user.id
   const query = await getValidatedQuery(event, taskQuerySchema.parse)
 
-  if (query.scope === 'all') {
-    // Only owners/admins may see everyone's list
+  const linked = !!(query.candidateId || query.applicationId || query.jobId || query.companyId)
+  if (query.scope === 'all' && !linked) {
+    // Everyone's whole list is for owners/admins; tasks ON a person/job/company are visible to the team
     const role = (session as any).role ?? null
     const membership = await db.query.member.findFirst({
       where: (m, { and, eq }) => and(eq(m.userId, userId), eq(m.organizationId, orgId)),
@@ -40,6 +41,12 @@ export default defineEventHandler(async (event) => {
   if (query.candidateId) conds.push(eq(task.candidateId, query.candidateId))
   if (query.applicationId) conds.push(eq(task.applicationId, query.applicationId))
   if (query.jobId) conds.push(eq(task.jobId, query.jobId))
+  if (query.companyId) {
+    // People with an active client_contact role at the company
+    conds.push(inArray(task.candidateId, db.select({ id: personRole.candidateId })
+      .from(personRole)
+      .where(and(eq(personRole.organizationId, orgId), eq(personRole.clientCompanyId, query.companyId), eq(personRole.role, 'client_contact'), isNull(personRole.endedAt)))))
+  }
   switch (query.due) {
     case 'overdue': conds.push(isNotNull(task.dueAt), lt(task.dueAt, startOfToday)); break
     case 'today': conds.push(gte(task.dueAt, startOfToday), lt(task.dueAt, endOfToday)); break
@@ -49,7 +56,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // Slice 1: a list load also pulls To Do changes for this user (throttled, fire-and-forget)
-  if (query.scope === 'mine' && !query.candidateId && !query.applicationId && !query.jobId) queuePull(userId)
+  if (query.scope === 'mine' && !linked) queuePull(userId)
 
   const rows = await db.query.task.findMany({
     where: and(...conds),

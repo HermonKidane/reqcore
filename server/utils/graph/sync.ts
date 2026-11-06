@@ -1,7 +1,7 @@
 import { and, asc, eq, gt, isNull, lt, ne, or } from 'drizzle-orm'
-import { task, taskSync, userIntegration } from '../../database/schema'
+import { task, taskSync, userIntegration, candidate } from '../../database/schema'
 import { GraphError, GraphReconnectError, MICROSOFT, graphClient, syncErrorMessage, type GraphClient } from './client'
-import { ensureTodoList, londonDate, remoteDueDate, remoteNotes, todoPayload, todoTaskPath, type RemoteTodoTask } from './todo'
+import { ensureTodoList, londonDate, remoteDueDate, remoteNotes, remoteTitle, todoPayload, todoTaskPath, type RemoteTodoTask } from './todo'
 import { deleteEvent, needsEvent, upsertEvent } from './calendar'
 import { getIntegration } from './integration'
 
@@ -105,6 +105,13 @@ async function removeFromPreviousOwner(sync: SyncRow): Promise<void> {
   await setSync(sync.taskId, { todoListId: null, todoTaskId: null, outlookEventId: null, remoteEtag: null })
 }
 
+/** The person a task is about, for "Name: title" in To Do / Outlook. Null when the task has no person. */
+async function loadPersonName(t: Pick<TaskRow, 'candidateId'>): Promise<string | null> {
+  if (!t.candidateId) return null
+  const p = await db.query.candidate.findFirst({ where: eq(candidate.id, t.candidateId), columns: { firstName: true, lastName: true } })
+  return p ? `${p.firstName} ${p.lastName}`.trim() || null : null
+}
+
 export type PushResult = 'skipped' | 'synced' | 'error'
 
 /** Push one task's current state to To Do (+ Outlook for timed tasks). ≤ 4 Graph calls. */
@@ -131,6 +138,7 @@ export async function pushTask(taskId: string): Promise<PushResult> {
     await db.insert(taskSync).values({ taskId, provider: MICROSOFT, state: 'pending' }).onConflictDoNothing()
   }
 
+  const personName = await loadPersonName(t)
   try {
     const g = await graphClient(t.ownerId)
     let listId = await ensureTodoList(g, { cachedListId: integ.todoListId })
@@ -146,24 +154,24 @@ export async function pushTask(taskId: string): Promise<PushResult> {
     }
     else {
       let res = todoTaskId
-        ? await g.request<RemoteTodoTask>(todoTaskPath(todoListId ?? listId, todoTaskId), { method: 'PATCH', body: todoPayload(t, { create: false }) })
+        ? await g.request<RemoteTodoTask>(todoTaskPath(todoListId ?? listId, todoTaskId), { method: 'PATCH', body: todoPayload(t, { create: false, personName }) })
         : null
       if (res && res.status !== 404) {
         todoListId = todoListId ?? listId
       }
       else {
         // New task, or the remote copy / its list was deleted: (re)create it
-        res = await g.request<RemoteTodoTask>(todoTaskPath(listId), { method: 'POST', body: todoPayload(t, { create: true }) })
+        res = await g.request<RemoteTodoTask>(todoTaskPath(listId), { method: 'POST', body: todoPayload(t, { create: true, personName }) })
         if (res.status === 404) {
           listId = await ensureTodoList(g, { cachedListId: listId, refresh: true })
-          res = await g.request<RemoteTodoTask>(todoTaskPath(listId), { method: 'POST', body: todoPayload(t, { create: true }) })
+          res = await g.request<RemoteTodoTask>(todoTaskPath(listId), { method: 'POST', body: todoPayload(t, { create: true, personName }) })
         }
         todoListId = listId
       }
       todoTaskId = res.data?.id ?? todoTaskId
       etag = res.data?.['@odata.etag'] ?? null
 
-      if (needsEvent(t)) eventId = await upsertEvent(g, { ...t, dueAt: t.dueAt }, eventId)
+      if (needsEvent(t)) eventId = await upsertEvent(g, { ...t, dueAt: t.dueAt }, eventId, personName)
       else if (eventId) {
         await deleteEvent(g, eventId)
         eventId = null
@@ -293,7 +301,8 @@ async function applyRemote(userId: string, r: RemoteTodoTask, result: PullResult
     result.reopened++
   }
 
-  const rTitle = (r.title ?? '').trim()
+  // Compare without our "Name: " prefix, or every pull would see a conflict and re-push
+  const rTitle = remoteTitle(r, await loadPersonName(t))
   const rNotes = remoteNotes(r)
   const rDue = remoteDueDate(r)
   const fieldsDiffer = rTitle !== t.title

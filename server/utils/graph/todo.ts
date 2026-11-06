@@ -33,9 +33,29 @@ export function appBaseUrl(): string {
   return railway ? `https://${railway}` : ''
 }
 
-export function taskUrl(t: Pick<TaskRow, 'id'>): string {
+/** Deep link: the person's page (Tasks tab) when the task is about someone, else the Tasks page. */
+export function taskUrl(t: Pick<TaskRow, 'id' | 'candidateId'>): string {
   const base = appBaseUrl()
-  return base ? `${base}/dashboard/tasks?task=${encodeURIComponent(t.id)}` : ''
+  if (!base) return ''
+  if (t.candidateId) return `${base}/dashboard/candidates/${encodeURIComponent(t.candidateId)}?tab=tasks`
+  return `${base}/dashboard/tasks?task=${encodeURIComponent(t.id)}`
+}
+
+/** "Name: title" in To Do and Outlook so the person is visible without opening the ATS. */
+export function titlePrefix(personName: string | null | undefined): string {
+  const name = (personName ?? '').trim()
+  return name ? `${name}: ` : ''
+}
+
+export function displayTitle(t: Pick<TaskRow, 'title'>, personName: string | null | undefined): string {
+  return `${titlePrefix(personName)}${t.title}`.slice(0, 255)
+}
+
+/** The remote title without our "Name: " prefix, so pull compares like with like. */
+export function remoteTitle(r: RemoteTodoTask, personName: string | null | undefined): string {
+  const raw = (r.title ?? '').trim()
+  const prefix = titlePrefix(personName)
+  return prefix && raw.startsWith(prefix) ? raw.slice(prefix.length).trim() : raw
 }
 
 /** "YYYY-MM-DD" of an instant, in London. */
@@ -52,7 +72,7 @@ export function londonDateTime(d: Date): string {
   return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}`
 }
 
-export function bodyContent(t: Pick<TaskRow, 'id' | 'notes'>): string {
+export function bodyContent(t: Pick<TaskRow, 'id' | 'notes' | 'candidateId'>): string {
   const url = taskUrl(t)
   const link = url ? `${LINK_PREFIX}${url}` : ''
   return [t.notes?.trim(), link].filter(Boolean).join('\n\n')
@@ -82,9 +102,9 @@ export function remoteDueDate(r: RemoteTodoTask): string | null {
   return due.dateTime.slice(0, 10)
 }
 
-export function todoPayload(t: TaskRow, opts: { create: boolean }) {
+export function todoPayload(t: TaskRow, opts: { create: boolean, personName?: string | null }) {
   const payload: Record<string, unknown> = {
-    title: t.title,
+    title: displayTitle(t, opts.personName),
     body: { content: bodyContent(t), contentType: 'text' },
     status: t.status === 'done' ? 'completed' : 'notStarted',
     importance: 'normal',
@@ -93,7 +113,7 @@ export function todoPayload(t: TaskRow, opts: { create: boolean }) {
   const url = taskUrl(t)
   // linkedResources can only be set inline on create; PATCH ignores them.
   if (opts.create && url) {
-    payload.linkedResources = [{ webUrl: url, applicationName: 'MyRecruiter', displayName: 'Open in MyRecruiter', externalId: t.id }]
+    payload.linkedResources = [{ webUrl: url, applicationName: 'MyRecruiter', displayName: opts.personName ? `Open ${opts.personName} in MyRecruiter` : 'Open in MyRecruiter', externalId: t.id }]
   }
   return payload
 }
