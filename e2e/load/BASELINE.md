@@ -15,6 +15,7 @@ bypassed). Figures are p95 response time per level.
 | 2026-10-11 | `3447b30` | 0.15 s | 0.4 s | 0.8 s | 1.8 s | 0 | ~115 ceiling | ad-hoc `loadtest.mjs`, not committed |
 | 2026-10-14 | `59f8bd6` | 0.10 s | 0.21 s | 0.75 s | 1.58 s | 0 of 20 795 | 75 (with think time) | first committed baseline; k6 v2.3.0 on the iMac |
 | 2026-11-06 | `72326ba` (slice 1 branch) | 0.15 s | 0.20 s | 0.85 s | 2.52 s | 0 of 21 776 | 80 (with think time) | Session W slice 1: one more read per loop (`GET /api/tasks`, the dashboard card); all thresholds pass; 100-user p95 up from 1.6 s, within the 2.7 s threshold — watch it on the next row |
+| 2026-11-06 | `b3fb17c` (slice 1b) | 0.13 s | 0.27 s | 0.69 s | 2.24 s | 0 of 22374 | 80 (with think time) | Person on every task; same loop as the row above; all thresholds pass |
 
 Reading it: ~25 recruiters hammering the app non-stop still see every page under a quarter of a second; 100
 non-stop users ≈ several hundred real recruiters, and the slowest pages reach 1.6 s. One Node process is the
