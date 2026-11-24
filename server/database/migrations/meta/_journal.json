@@ -141,6 +141,13 @@
       "when": 1793903180721,
       "tag": "0019_0019-session-w-slice-1",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1795492795014,
+      "tag": "0020_0020-schema-drift",
+      "breakpoints": true
     }
   ]
 }
