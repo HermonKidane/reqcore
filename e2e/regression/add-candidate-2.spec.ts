@@ -22,6 +22,41 @@ import { waitForHydration } from '../helpers/hydration'
 
 const runId = Date.now()
 
+/** A minimal one-page PDF with real, extractable text (one line per entry). */
+function makePdf(lines: string[]): Buffer {
+  const esc = (t: string) => t.replace(/[\\()]/g, m => `\\${m}`)
+  const stream = `BT /F1 11 Tf 50 780 Td 14 TL\n${lines.map(l => `(${esc(l)}) Tj T*`).join('\n')}\nET`
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>',
+    `<< /Length ${Buffer.byteLength(stream, 'latin1')} >>\nstream\n${stream}\nendstream`,
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>',
+  ]
+  let pdf = '%PDF-1.4\n'
+  const offsets: number[] = []
+  objects.forEach((body, i) => {
+    offsets.push(Buffer.byteLength(pdf, 'latin1'))
+    pdf += `${i + 1} 0 obj\n${body}\nendobj\n`
+  })
+  const xref = Buffer.byteLength(pdf, 'latin1')
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`
+  for (const off of offsets) pdf += `${String(off).padStart(10, '0')} 00000 n \n`
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`
+  return Buffer.from(pdf, 'latin1')
+}
+
+/** A minimal Word .docx (one paragraph per line). */
+async function makeDocx(lines: string[]): Promise<Buffer> {
+  const { default: JSZip } = await import('jszip')
+  const xmlEsc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  const zip = new JSZip()
+  zip.file('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>')
+  zip.file('_rels/.rels', '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>')
+  zip.file('word/document.xml', `<?xml version="1.0" encoding="UTF-8"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${lines.map(l => `<w:p><w:r><w:t xml:space="preserve">${xmlEsc(l)}</w:t></w:r></w:p>`).join('')}</w:body></w:document>`)
+  return zip.generateAsync({ type: 'nodebuffer' })
+}
+
 async function cleanup(api: APIRequestContext, ids: string[]) {
   for (const id of ids) {
     await api.delete(`/api/candidates/${id}`)
@@ -298,6 +333,22 @@ test.describe('Add Candidate 2.0 — API', () => {
     expect(fileBody.source).toBe('file')
     expect(fileBody.filename).toBe('jane-parser.txt')
     expect(fileBody.fields.email).toBe(email)
+
+    // A real PDF and a real Word file: text is extracted on the server
+    // (unpdf / mammoth) and the contacts are still read locally
+    const cvLines = text.split('\n').filter(Boolean)
+    for (const cv of [
+      { name: 'jane-parser.pdf', mimeType: 'application/pdf', buffer: makePdf(cvLines) },
+      { name: 'jane-parser.docx', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', buffer: await makeDocx(cvLines) },
+    ]) {
+      const cvRes = await api.post('/api/candidates/parse', { multipart: { file: cv }, timeout: 60_000 })
+      expect(cvRes.status(), `${cv.name} is read`).toBe(200)
+      const cvBody = await cvRes.json()
+      expect(cvBody.source).toBe('file')
+      expect(cvBody.filename).toBe(cv.name)
+      expect(cvBody.fields.email, `${cv.name}: email read from the file`).toBe(email)
+      expect(cvBody.fields.phone, `${cv.name}: phone read and normalised`).toBe('+44 7700 900789')
+    }
 
     // Old binary Word (.doc) → 415 with the plain-words message
     const ole2 = Buffer.concat([Buffer.from([0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1]), Buffer.alloc(600)])
@@ -620,6 +671,20 @@ test.describe('Add Candidate 2.0 — UI extras', () => {
     }
     finally {
       await cleanup(api, ids)
+    }
+  })
+})
+
+test.describe('Top bar', () => {
+  test('never makes the page scroll sideways, even with a long organisation name', async ({ authenticatedPage: page }) => {
+    // The fixture org is "E2E Org <timestamp>-<n>" — long enough to have pushed the bar past the page at 1280.
+    for (const width of [768, 900, 1024, 1100, 1280, 1440]) {
+      await page.setViewportSize({ width, height: 800 })
+      await page.goto('/dashboard/candidates')
+      await waitForHydration(page)
+      await expect(page.getByRole('heading', { level: 1, name: 'Candidates' })).toBeVisible()
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+      expect(overflow, `sideways scroll at ${width} px`).toBeLessThanOrEqual(0)
     }
   })
 })

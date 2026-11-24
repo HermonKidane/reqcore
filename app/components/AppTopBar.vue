@@ -145,7 +145,7 @@ onUnmounted(() => document.removeEventListener('click', onClickOutsideUser))
             class="flex items-center gap-2.5 px-2 py-1.5 rounded-lg no-underline hover:bg-surface-100/60 dark:hover:bg-surface-800/60 transition-colors mr-1 lg:mr-4"
           >
             <img src="/myrecruiter-icon.png" alt="MyRecruiter logo" class="size-7 shrink-0 object-contain" />
-            <span class="text-[15px] font-bold text-surface-900 dark:text-surface-100 hidden sm:block tracking-tight">MyRecruiter</span>
+            <span class="text-[15px] font-bold text-surface-900 dark:text-surface-100 hidden sm:block md:hidden lg:block tracking-tight">MyRecruiter</span>
           </NuxtLink>
 
           <!-- Desktop nav links -->
@@ -155,12 +155,13 @@ onUnmounted(() => document.removeEventListener('click', onClickOutsideUser))
               :key="item.to"
               :to="$localePath(item.to)"
               :data-tour="item.to === '/dashboard/settings' ? 'nav-settings' : undefined"
-              class="relative flex items-center gap-2 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all duration-200 no-underline"
+              class="relative flex items-center gap-2 px-2 xl:px-3 py-1.5 rounded-lg text-[13px] font-medium whitespace-nowrap transition-all duration-200 no-underline"
               :class="isActiveRoute(item.to, item.exact)
                 ? 'text-brand-700 dark:text-brand-300 bg-brand-50/80 dark:bg-brand-950/40'
                 : 'text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 hover:bg-surface-100/80 dark:hover:bg-surface-800/60'"
             >
-              <component :is="item.icon" class="size-4" />
+              <!-- Icons only from xl: six labelled links + the right-hand actions do not fit narrower bars -->
+              <component :is="item.icon" class="size-4 hidden xl:block" />
               {{ item.label }}
             </NuxtLink>
           </nav>
@@ -185,7 +186,7 @@ onUnmounted(() => document.removeEventListener('click', onClickOutsideUser))
           </div>
 
           <!-- Language Switcher -->
-          <div class="hidden lg:block">
+          <div class="hidden xl:block">
             <LanguageSwitcher />
           </div>
 
