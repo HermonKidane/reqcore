@@ -172,14 +172,15 @@ onUnmounted(() => document.removeEventListener('click', onClickOutsideUser))
           <NuxtLink
             :to="$localePath('/dashboard/jobs/new')"
             data-tour="nav-new-job"
-            class="hidden sm:inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3.5 py-1.5 text-[13px] font-semibold text-white shadow-sm shadow-brand-600/20 hover:bg-brand-700 hover:shadow-md hover:shadow-brand-600/25 active:bg-brand-800 transition-all duration-200 no-underline"
+            class="hidden sm:inline-flex shrink-0 whitespace-nowrap items-center gap-1.5 rounded-lg bg-brand-600 px-3.5 py-1.5 text-[13px] font-semibold text-white shadow-sm shadow-brand-600/20 hover:bg-brand-700 hover:shadow-md hover:shadow-brand-600/25 active:bg-brand-800 transition-all duration-200 no-underline"
           >
             <Plus class="size-3.5" />
             New Job
           </NuxtLink>
 
           <!-- Org Switcher -->
-          <div class="hidden lg:block ml-1">
+          <!-- Capped width: a long org name truncates instead of pushing the bar wider than the page -->
+          <div class="hidden lg:block ml-1 min-w-0 max-w-36 xl:max-w-56">
             <OrgSwitcher />
           </div>
 
