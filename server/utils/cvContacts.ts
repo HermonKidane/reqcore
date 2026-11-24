@@ -17,7 +17,9 @@ export interface ExtractedContacts {
   redactedText: string
 }
 
-const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g
+// Bounded + anchored at a token start: an unbounded local part is quadratic on a
+// long run of letters (60,000 x 'a' took ~6 s).
+const EMAIL_RE = /(?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,253}\.[A-Za-z]{2,}/g
 
 // Optional "+" / "00" prefix, optional opening bracket, then digits with
 // separators BETWEEN them (space, non-breaking space, dot, brackets, hyphen).
