@@ -155,13 +155,13 @@ onUnmounted(() => document.removeEventListener('click', onClickOutsideUser))
               :key="item.to"
               :to="$localePath(item.to)"
               :data-tour="item.to === '/dashboard/settings' ? 'nav-settings' : undefined"
-              class="relative flex items-center gap-2 px-2 xl:px-3 py-1.5 rounded-lg text-[13px] font-medium whitespace-nowrap transition-all duration-200 no-underline"
+              class="relative flex items-center gap-2 px-2 2xl:px-3 py-1.5 rounded-lg text-[13px] font-medium whitespace-nowrap transition-all duration-200 no-underline"
               :class="isActiveRoute(item.to, item.exact)
                 ? 'text-brand-700 dark:text-brand-300 bg-brand-50/80 dark:bg-brand-950/40'
                 : 'text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100 hover:bg-surface-100/80 dark:hover:bg-surface-800/60'"
             >
-              <!-- Icons only from xl: six labelled links + the right-hand actions do not fit narrower bars -->
-              <component :is="item.icon" class="size-4 hidden xl:block" />
+              <!-- Icons only from 2xl (1536 px): six labelled links + the right-hand actions do not fit narrower bars -->
+              <component :is="item.icon" class="size-4 hidden 2xl:block" />
               {{ item.label }}
             </NuxtLink>
           </nav>

@@ -678,7 +678,7 @@ test.describe('Add Candidate 2.0 — UI extras', () => {
 test.describe('Top bar', () => {
   test('never makes the page scroll sideways, even with a long organisation name', async ({ authenticatedPage: page }) => {
     // The fixture org is "E2E Org <timestamp>-<n>" — long enough to have pushed the bar past the page at 1280.
-    for (const width of [768, 900, 1024, 1100, 1280, 1440]) {
+    for (const width of [768, 900, 1024, 1100, 1280, 1366, 1440, 1536, 1920]) {
       await page.setViewportSize({ width, height: 800 })
       await page.goto('/dashboard/candidates')
       await waitForHydration(page)
