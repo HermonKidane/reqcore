@@ -119,6 +119,17 @@ export const candidate = pgTable('candidate', {
   collectedAt: timestamp('collected_at'),
   privacyNoticeDueAt: timestamp('privacy_notice_due_at'),
   privacyNoticeSentAt: timestamp('privacy_notice_sent_at'),
+  // ── Add Candidate 2.0: qualifiers (option lists in shared/candidate-qualifiers.ts) ──
+  // All nullable, no DB defaults. Money = annual, whole currency units.
+  sourceChannel: text('source_channel'),
+  // ISO code; the API applies 'GBP' when a money field is set without one
+  salaryCurrency: text('salary_currency'),
+  salaryCurrent: integer('salary_current'),
+  salaryExpected: integer('salary_expected'),
+  dayRate: integer('day_rate'),
+  noticePeriod: text('notice_period'),
+  rightToWork: text('right_to_work'),
+  workPreference: text('work_preference'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (t) => ([

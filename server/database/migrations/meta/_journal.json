@@ -148,6 +148,13 @@
       "when": 1795492795014,
       "tag": "0020_0020-schema-drift",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1795493360952,
+      "tag": "0021_0021-candidate-qualifiers",
+      "breakpoints": true
     }
   ]
 }
