@@ -136,6 +136,15 @@ If no experience is listed, return "experiences": [].
 If no education is listed, return "education": [].
 If no skills are listed, return "skills": [].`
 
+/**
+ * Extra system-prompt lines for kind 'cv' (Add Candidate 2.0: an uploaded
+ * CV or pasted bio). Contact details are removed on our server before the
+ * call (server/utils/cvContacts.ts) — the model is told so it omits them.
+ */
+export const CV_PARSE_PROMPT_SUFFIX = `
+
+The text is a CV / résumé or a pasted bio, not a web page; treat "the page" in the rules above as that document. Email addresses and phone numbers have been removed on purpose and appear as [email] and [phone]: omit "email" and "phone" from your answer.`
+
 function parseFail(reason: string): null {
   // One line, reason only — NEVER page text or provider payloads.
   console.error(`[Reqcore] profile parse failed: ${reason}`)
@@ -165,8 +174,10 @@ export async function parseProfileText(params: {
   pageUrl?: string | undefined
   /** Caller-side abort (e.g. request teardown); combined with the 30 s timeout. */
   signal?: AbortSignal | undefined
+  /** 'cv' = an uploaded CV / pasted bio (adds two sentences to the system prompt). Default 'profile'. */
+  kind?: 'profile' | 'cv' | undefined
 }): Promise<ProfileParseResult | null> {
-  const { pageText, pageUrl, signal } = params
+  const { pageText, pageUrl, signal, kind = 'profile' } = params
 
   // Same config source as server/api/step-instances/[id]/ai-runs.post.ts.
   const runtimeConfig = useRuntimeConfig() as unknown as AiRuntimeConfig
@@ -190,7 +201,7 @@ export async function parseProfileText(params: {
   let result: AiGenerateResult
   try {
     result = await selection.provider.generate({
-      systemPrompt: PROFILE_PARSE_SYSTEM_PROMPT,
+      systemPrompt: kind === 'cv' ? PROFILE_PARSE_SYSTEM_PROMPT + CV_PARSE_PROMPT_SUFFIX : PROFILE_PARSE_SYSTEM_PROMPT,
       userPrompt,
       model: selection.model,
       stepKey: PROFILE_PARSE_STEP_KEY,

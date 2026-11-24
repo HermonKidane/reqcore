@@ -3,6 +3,7 @@ import { candidate } from '../../database/schema'
 import { candidateIdParamSchema, updateCandidateSchema } from '../../utils/schemas/candidate'
 import { findCandidateIdByLinkedinUrl, canonicalLinkedinUrl } from '../../utils/linkedinUrl'
 import { privacyNoticeDueFrom } from '../../utils/privacyNotice'
+import { DEFAULT_SALARY_CURRENCY } from '~~/shared/candidate-qualifiers'
 
 export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, { candidate: ['update'] })
@@ -24,6 +25,14 @@ export default defineEventHandler(async (event) => {
         location: string | null
         headline: string | null
         summary: string | null
+        sourceChannel: string | null
+        salaryCurrency: string | null
+        salaryCurrent: number | null
+        salaryExpected: number | null
+        dayRate: number | null
+        noticePeriod: string | null
+        rightToWork: string | null
+        workPreference: string | null
         doNotContact: boolean
         doNotContactAt: Date | null
         doNotContactSource: string | null
@@ -90,8 +99,15 @@ export default defineEventHandler(async (event) => {
       }
       if (body.privacyNoticeSentAt === null) contactRules.privacyNoticeSentAt = null
 
+      // Add Candidate 2.0: a money field set without a currency keeps the
+      // stored currency, or falls back to GBP when none is stored yet.
+      const moneySet = typeof body.salaryCurrent === 'number' || typeof body.salaryExpected === 'number' || typeof body.dayRate === 'number'
+      const currencyDefault = moneySet && body.salaryCurrency == null
+        ? { salaryCurrency: sql`coalesce(${candidate.salaryCurrency}, ${DEFAULT_SALARY_CURRENCY})` }
+        : {}
+
       const [updated] = await tx.update(candidate)
-        .set({ ...rest, ...contactRules, linkedinUrl, updatedAt: new Date() })
+        .set({ ...rest, ...contactRules, ...currencyDefault, linkedinUrl, updatedAt: new Date() })
         .where(and(eq(candidate.id, id), eq(candidate.organizationId, orgId)))
         .returning({
           id: candidate.id,
@@ -105,6 +121,14 @@ export default defineEventHandler(async (event) => {
           location: candidate.location,
           headline: candidate.headline,
           summary: candidate.summary,
+          sourceChannel: candidate.sourceChannel,
+          salaryCurrency: candidate.salaryCurrency,
+          salaryCurrent: candidate.salaryCurrent,
+          salaryExpected: candidate.salaryExpected,
+          dayRate: candidate.dayRate,
+          noticePeriod: candidate.noticePeriod,
+          rightToWork: candidate.rightToWork,
+          workPreference: candidate.workPreference,
           doNotContact: candidate.doNotContact,
           doNotContactAt: candidate.doNotContactAt,
           doNotContactSource: candidate.doNotContactSource,
