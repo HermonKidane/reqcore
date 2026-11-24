@@ -6,6 +6,7 @@ import { authenticateExtensionKey, extensionRoleAllows } from '../../../utils/ex
 import { parseProfileText, type ProfileParseResult } from '../../../utils/ai/profileParse'
 import { findCandidateIdByLinkedinUrl, type DupExecutor } from '../../../utils/linkedinUrl'
 import { art14Defaults } from '../../../utils/privacyNotice'
+import { dedupeSkills } from '../../../utils/skills'
 
 /**
  * POST /api/extension/capture
@@ -161,21 +162,6 @@ function mergeCaptureFields(
     merged.email = undefined
   }
   return merged
-}
-
-/** Skills deduped by normalizedName (lower+trim), blanks skipped. */
-function dedupeSkills(skills: string[]): Array<{ name: string, normalizedName: string }> {
-  const seen = new Set<string>()
-  const out: Array<{ name: string, normalizedName: string }> = []
-  for (const raw of skills) {
-    const name = raw.trim()
-    if (!name) continue
-    const normalizedName = name.toLowerCase()
-    if (seen.has(normalizedName)) continue
-    seen.add(normalizedName)
-    out.push({ name, normalizedName })
-  }
-  return out
 }
 
 /** What the popup shows before saving: merged fields, photo excluded.
