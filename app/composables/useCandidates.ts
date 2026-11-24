@@ -1,6 +1,33 @@
 import type { Ref } from 'vue'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
 
+/** Body of POST /api/candidates (Add Candidate 2.0) */
+export interface CreateCandidatePayload {
+  firstName: string
+  lastName: string
+  email?: string
+  phone?: string
+  linkedinUrl?: string
+  position?: string
+  company?: string
+  location?: string
+  headline?: string
+  summary?: string
+  // Qualifiers — option lists in shared/candidate-qualifiers.ts
+  sourceChannel?: string
+  salaryCurrency?: string
+  salaryCurrent?: number
+  salaryExpected?: number
+  dayRate?: number
+  noticePeriod?: string
+  rightToWork?: string
+  workPreference?: string
+  /** Saved with the person, in the same transaction */
+  skills?: string[]
+  experiences?: Array<Record<string, unknown>>
+  education?: Array<Record<string, unknown>>
+}
+
 /**
  * Composable for managing the candidates list with search, pagination, and mutations.
  * Wraps `useFetch('/api/candidates')` with a singleton key for shared state.
@@ -30,23 +57,15 @@ export function useCandidates(options?: {
   const total = computed(() => data.value?.total ?? 0)
 
   /** Create a new candidate and refresh the list */
-  async function createCandidate(payload: {
-    firstName: string
-    lastName: string
-    email?: string
-    phone?: string
-    linkedinUrl?: string
-    position?: string
-    company?: string
-    location?: string
-    headline?: string
-    summary?: string
-  }) {
+  async function createCandidate(payload: CreateCandidatePayload) {
     try {
-      const created = await $fetch('/api/candidates', {
+      // Untyped alias: the typed /api/candidates route (it has /duplicates,
+      // /parse and /:id siblings) hits TS "excessive stack depth".
+      const $api = $fetch as (url: string, opts?: any) => Promise<any>
+      const created = await $api('/api/candidates', {
         method: 'POST',
         body: payload,
-      })
+      }) as { id: string } & Record<string, unknown>
       await refresh()
       return created
     } catch (error) {

@@ -30,6 +30,14 @@ export function useCandidate(id: MaybeRefOrGetter<string>) {
     location: string | null
     headline: string | null
     summary: string | null
+    sourceChannel: string | null
+    salaryCurrency: string | null
+    salaryCurrent: number | null
+    salaryExpected: number | null
+    dayRate: number | null
+    noticePeriod: string | null
+    rightToWork: string | null
+    workPreference: string | null
     doNotContact: boolean
     doNotContactSource: 'call' | 'email' | 'whatsapp' | 'sms' | 'linkedin' | 'other' | null
     doNotContactNote: string | null

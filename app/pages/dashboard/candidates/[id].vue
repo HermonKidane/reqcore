@@ -2,6 +2,18 @@
 import { ArrowLeft, Pencil, Trash2, Mail, Phone, Calendar, Clock, Briefcase, FileText, Plus, Upload, Download, Eye, X, AlertTriangle, MapPin, Linkedin, GraduationCap } from 'lucide-vue-next'
 import { z } from 'zod'
 import { usePreviewReadOnly } from '~/composables/usePreviewReadOnly'
+import {
+  DAY_RATE_MAX,
+  NOTICE_PERIOD_LABELS,
+  RIGHT_TO_WORK_LABELS,
+  SALARY_MAX,
+  SOURCE_CHANNEL_LABELS,
+  WORK_PREFERENCE_LABELS,
+  emptyQualifiers,
+  formatMoney,
+  parseMoneyInput,
+  type QualifierFormValues,
+} from '~~/shared/candidate-qualifiers'
 
 definePageMeta({
   layout: 'dashboard',
@@ -142,9 +154,40 @@ const editForm = ref({
   summary: '',
 })
 
+// Add Candidate 2.0 qualifiers — same controls as the Add form (QualifierFields.vue)
+const editQualifiers = ref<QualifierFormValues>(emptyQualifiers())
+
+/** Qualifiers that have a value, as label + text rows for the Details card */
+const qualifierRows = computed(() => {
+  const c = candidate.value as any
+  if (!c) return []
+  const label = (map: Record<string, string>, value: string | null | undefined) => (value ? map[value] ?? value : '')
+  const money = (value: number | null | undefined) => (typeof value === 'number' ? formatMoney(value, c.salaryCurrency) : '')
+  return [
+    { key: 'workPreference', label: 'Work preference', value: label(WORK_PREFERENCE_LABELS, c.workPreference) },
+    { key: 'salaryCurrent', label: 'Current salary', value: money(c.salaryCurrent) },
+    { key: 'salaryExpected', label: 'Expected salary', value: money(c.salaryExpected) },
+    { key: 'dayRate', label: 'Day rate', value: money(c.dayRate) },
+    { key: 'noticePeriod', label: 'Notice period', value: label(NOTICE_PERIOD_LABELS, c.noticePeriod) },
+    { key: 'rightToWork', label: 'Right to work', value: label(RIGHT_TO_WORK_LABELS, c.rightToWork) },
+    { key: 'sourceChannel', label: 'How we found them', value: label(SOURCE_CHANNEL_LABELS, c.sourceChannel) },
+  ].filter(row => row.value)
+})
+
 function startEdit() {
   if (!candidate.value) return
   const c = candidate.value as any
+  editQualifiers.value = {
+    ...emptyQualifiers(),
+    sourceChannel: c.sourceChannel ?? '',
+    ...(c.salaryCurrency ? { salaryCurrency: c.salaryCurrency } : {}),
+    salaryCurrent: c.salaryCurrent != null ? String(c.salaryCurrent) : '',
+    salaryExpected: c.salaryExpected != null ? String(c.salaryExpected) : '',
+    dayRate: c.dayRate != null ? String(c.dayRate) : '',
+    noticePeriod: c.noticePeriod ?? '',
+    rightToWork: c.rightToWork ?? '',
+    workPreference: c.workPreference ?? '',
+  }
   editForm.value = {
     firstName: c.firstName,
     lastName: c.lastName,
@@ -201,9 +244,28 @@ async function handleSave() {
   }
   editErrors.value = {}
 
+  // Qualifiers: whole-number money, blank = clear
+  const q = editQualifiers.value
+  const salaryCurrent = parseMoneyInput(q.salaryCurrent, SALARY_MAX)
+  const salaryExpected = parseMoneyInput(q.salaryExpected, SALARY_MAX)
+  const dayRate = parseMoneyInput(q.dayRate, DAY_RATE_MAX)
+  if (salaryCurrent.error) editErrors.value.salaryCurrent = salaryCurrent.error
+  if (salaryExpected.error) editErrors.value.salaryExpected = salaryExpected.error
+  if (dayRate.error) editErrors.value.dayRate = dayRate.error
+  if (Object.keys(editErrors.value).length) return
+  const hasMoney = salaryCurrent.value !== null || salaryExpected.value !== null || dayRate.value !== null
+
   isSaving.value = true
   try {
     await updateCandidate({
+      sourceChannel: q.sourceChannel || null,
+      salaryCurrency: hasMoney ? q.salaryCurrency || null : null,
+      salaryCurrent: salaryCurrent.value,
+      salaryExpected: salaryExpected.value,
+      dayRate: dayRate.value,
+      noticePeriod: q.noticePeriod || null,
+      rightToWork: q.rightToWork || null,
+      workPreference: q.workPreference || null,
       firstName: editForm.value.firstName,
       lastName: editForm.value.lastName,
       // Blank email = leave unchanged (PATCH: absent → no change)
@@ -539,6 +601,16 @@ function formatFileSize(bytes: number | null | undefined): string {
               </dd>
             </div>
           </dl>
+          <!-- Qualifiers (Add Candidate 2.0) — only the ones that have a value -->
+          <div v-if="qualifierRows.length" class="mt-4 pt-3 border-t border-surface-100 dark:border-surface-800" data-testid="candidate-qualifiers">
+            <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-200 mb-2">Qualifiers</h3>
+            <dl class="grid grid-cols-2 gap-3 text-sm">
+              <div v-for="row in qualifierRows" :key="row.key">
+                <dt class="text-surface-400">{{ row.label }}</dt>
+                <dd class="text-surface-700 dark:text-surface-200 font-medium break-words">{{ row.value }}</dd>
+              </div>
+            </dl>
+          </div>
           <!-- Skills (max 20 chips + "+N more") -->
           <div v-if="skillList.length" class="mt-4 pt-3 border-t border-surface-100 dark:border-surface-800">
             <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-200 mb-2">Skills</h3>
@@ -1148,6 +1220,12 @@ function formatFileSize(bytes: number | null | undefined): string {
               class="w-full rounded-lg border border-surface-300 dark:border-surface-700 px-3 py-2 text-sm text-surface-900 dark:text-surface-100 bg-white dark:bg-surface-900 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
             />
           </div>
+
+          <!-- Qualifiers (same controls as the Add form) -->
+          <fieldset class="border-t border-surface-200 dark:border-surface-800 pt-4">
+            <legend class="text-sm font-semibold text-surface-700 dark:text-surface-200 pr-2">Qualifiers</legend>
+            <CandidatesQualifierFields v-model="editQualifiers" :errors="editErrors" id-prefix="edit-" show-work-preference />
+          </fieldset>
 
           <!-- Actions -->
           <div class="flex items-center gap-3 pt-2">
