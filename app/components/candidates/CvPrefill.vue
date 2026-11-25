@@ -90,6 +90,11 @@ function clearChosen() {
   error.value = ''
 }
 
+// The page re-creates this component when the form is cleared ("Save & add another").
+// A CV still being read at that moment must not fill the new, empty form.
+let alive = true
+onBeforeUnmount(() => { alive = false })
+
 async function read() {
   if (!canRead.value) return
   error.value = ''
@@ -110,6 +115,7 @@ async function read() {
       }
       result = await $api('/api/candidates/parse', { method: 'POST', body: { text: pastedText.value } }) as CvParseResult
     }
+    if (!alive) return
     if (file && canAttach(file)) emit('attach', file)
     emit('filled', result)
     note.value = result.aiUnavailable

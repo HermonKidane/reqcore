@@ -99,7 +99,8 @@ check('cv: both phones redacted', full.redactedText.split('[phone]').length - 1,
 check('cv: date range kept', full.redactedText.includes('2019 - 2023'), true)
 check('cv: month/year range kept', full.redactedText.includes('01/2015 - 12/2018'), true)
 check('cv: postcode kept', full.redactedText.includes('SW1A 1AA'), true)
-check('cv: linkedin url kept for the model', full.redactedText.includes('linkedin.com/in/jane-doe-12345678'), true)
+check('cv: linkedin url hidden from the model', full.redactedText.includes('linkedin.com/in/'), false)
+check('cv: linkedin placeholder', full.redactedText.includes('\n[linkedin]\n'), true)
 check('cv: name kept', full.redactedText.startsWith('Jane Doe\n'), true)
 
 const contactCases: Array<[name: string, text: string, expected: { email?: string, phone?: string, linkedinUrl?: string }]> = [
@@ -143,4 +144,32 @@ if (failures.length) {
   for (const f of failures) console.error(`  ✗ ${f}`)
   process.exit(1)
 }
+// Wider redaction (review 2026-11-25): formats the model must not see
+const hidden: Array<[string, string, string]> = [
+  ['slash-separated phone', 'Tel 0171/1234567 home', 'Tel [phone] home'],
+  ['phone glued to the next word', '+44 7700 900123E: x', '[phone]E: x'],
+  ['9-digit run, no leading 0', 'Mobile 771234567', 'Mobile [phone]'],
+  ['spelled-out email (at)', 'john.doe (at) gmail.com', '[email]'],
+  ['spelled-out email [at] [dot]', 'Mail: john [at] gmail [dot] com please', 'Mail: [email] please'],
+  ['linkedin with https', 'See https://www.linkedin.com/in/jane-doe/ now', 'See [linkedin] now'],
+  ['bracketed international', 'Call +44 (0)20 7946 0958.', 'Call [phone].'],
+]
+for (const [name, input, expected] of hidden) check(`redaction: ${name}`, extractContacts(input).redactedText, expected)
+check('extraction: 9-digit run is hidden but not offered to the form', extractContacts('Ref 771234567').phone, undefined)
+check('extraction: spelled-out email is not offered to the form', extractContacts('john.doe (at) gmail.com').email, undefined)
+check('redaction: version numbers and ids inside words stay', extractContacts('Build v1.2345678 ID12345678').redactedText, 'Build v1.2345678 ID12345678')
+
+// Worst-case inputs stay fast (the old phone pattern took 3.5 s on the first one)
+for (const [name, input] of [
+  ['digits and spaces', '1 '.repeat(30_000) + 'x'],
+  ['letters', 'a'.repeat(60_000)],
+  ['dots and digits', '1.'.repeat(30_000)],
+  ['spelled-out email bait', 'a (at '.repeat(10_000)],
+  ['separators', '1' + ' -'.repeat(29_000) + '1'],
+] as Array<[string, string]>) {
+  const started = Date.now()
+  extractContacts(input)
+  check(`speed: ${name} (60k chars) under 250 ms`, Date.now() - started < 250, true)
+}
+
 console.log(`OK — ${passed} checks passed (normalisePhone, isPlausiblePhone, extractContacts)`)

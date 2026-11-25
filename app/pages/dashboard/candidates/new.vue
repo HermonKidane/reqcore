@@ -185,6 +185,7 @@ const differentPerson = ref(false)
 let duplicateTimer: ReturnType<typeof setTimeout> | null = null
 let lastDuplicateKey = ''
 let duplicateRun = 0
+const formRun = ref(0) // bumped when the form is cleared; re-creates the CV reader
 
 function duplicateQuery(): Record<string, string> {
   const f = form.value
@@ -411,6 +412,7 @@ function resetForm(keep: { sourceChannel: string, jobId: string }) {
   differentPerson.value = false
   lastDuplicateKey = ''
   duplicateRun++
+  formRun.value++
 }
 
 async function save(mode: 'open' | 'another') {
@@ -562,6 +564,7 @@ const buttonBase = 'inline-flex min-h-11 items-center justify-center gap-2 round
 
     <!-- Card 1: Start from a CV (optional — the form below works on its own) -->
     <CandidatesCvPrefill
+      :key="formRun"
       class="mb-4"
       :attached-filename="cvFile?.name ?? null"
       :history-summary="historySummary"

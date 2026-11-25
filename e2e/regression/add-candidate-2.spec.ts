@@ -46,15 +46,16 @@ function makePdf(lines: string[]): Buffer {
   return Buffer.from(pdf, 'latin1')
 }
 
-/** A minimal Word .docx (one paragraph per line). */
-async function makeDocx(lines: string[]): Promise<Buffer> {
+/** A minimal Word .docx (one paragraph per line), compressed like Word does. `paddingMb` adds an entry of zeros. */
+async function makeDocx(lines: string[], paddingMb = 0): Promise<Buffer> {
   const { default: JSZip } = await import('jszip')
   const xmlEsc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   const zip = new JSZip()
   zip.file('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>')
   zip.file('_rels/.rels', '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>')
   zip.file('word/document.xml', `<?xml version="1.0" encoding="UTF-8"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${lines.map(l => `<w:p><w:r><w:t xml:space="preserve">${xmlEsc(l)}</w:t></w:r></w:p>`).join('')}</w:body></w:document>`)
-  return zip.generateAsync({ type: 'nodebuffer' })
+  if (paddingMb) zip.file('word/media/padding.bin', Buffer.alloc(paddingMb * 1024 * 1024))
+  return zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' })
 }
 
 async function cleanup(api: APIRequestContext, ids: string[]) {
@@ -357,6 +358,15 @@ test.describe('Add Candidate 2.0 — API', () => {
     })
     expect(docRes.status()).toBe(415)
     expect((await docRes.json()).statusMessage).toBe('Old .doc files can\'t be read. Save it as PDF or .docx and try again.')
+
+    // A small .docx that unpacks to 60 MB (zip bomb shape) is refused before it is unpacked in full
+    const bomb = await makeDocx(cvLines, 60)
+    expect(bomb.length, 'the bomb is small on the wire').toBeLessThan(1024 * 1024)
+    const bombRes = await api.post('/api/candidates/parse', {
+      multipart: { file: { name: 'big.docx', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', buffer: bomb } },
+      timeout: 60_000,
+    })
+    expect(bombRes.status()).toBe(422)
 
     // An image is not a CV we can read
     const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]), Buffer.alloc(200)])
